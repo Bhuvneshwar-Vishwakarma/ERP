@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+
+# Logs & Environment
+*.log
+.system_generated/
+.agents/
+
+# Temporary and Scratch Recovery Files
+*.wiped_backup
+matched_*.json
+gowrie_*.json
+matched_*.js
+recovered_chunk_*.txt
+reconstruct_*.js
+rebuild_*.js
+diagnose_*.js
+bisect_*.js
+audit_*.js
+search_*.js
+scratch_*.js
+read_*.js
+find_*.js
+format_*.js
+fix_*.js
+wire_*.js
+update_*.js
+print_*.js
+restore_*.js
+rewrite_*.js
+write_*.js
+check_*.js
+test_*.js
+inspect_ui.js
+analyzer.js
+logic_analyzer.js
+append_closing_brace_end.js
+add_all_form_handlers.js
+extract_prev_code.js
+logic.txt
+structure.txt
+
+# OS metadata
+.DS_Store
+Thumbs.db

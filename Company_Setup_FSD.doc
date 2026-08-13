@@ -1,0 +1,160 @@
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+    <meta charset="utf-8">
+    <title>Company Setup - Functional Specification Document</title>
+    <style>
+        body { font-family: 'Calibri', 'Arial', sans-serif; line-height: 1.5; color: #333; }
+        h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 5px; }
+        h2 { color: #2980b9; margin-top: 20px; }
+        h3 { color: #16a085; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 20px; }
+        th, td { border: 1px solid #bdc3c7; padding: 8px; text-align: left; }
+        th { background-color: #ecf0f1; color: #2c3e50; }
+        .logic-box { background-color: #f9f9f9; border-left: 4px solid #f39c12; padding: 10px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+
+    <h1>B&S ERP Portal - Functional Specification Document</h1>
+    <h2>Module: Master Data Setup</h2>
+    <h3>Screen: Company Setup</h3>
+
+    <p><b>Objective:</b> The Company Setup screen allows administrators to register new organizational companies, define their identity, configure multiple addresses, define distribution parameters, and set up core accounting rules.</p>
+
+    <h2>1. Company Identity (General Information)</h2>
+    <p>This section defines the core identity of the company.</p>
+    <table>
+        <tr>
+            <th>Field Label</th>
+            <th>Input Type</th>
+            <th>Description / Validation</th>
+        </tr>
+        <tr>
+            <td>Identity</td>
+            <td>Text Input (Combobox)</td>
+            <td>Unique identifier for the company. Users can type to filter existing companies or enter a new one. Supports Arrow Up/Down and Enter key selection.</td>
+        </tr>
+        <tr>
+            <td>Name</td>
+            <td>Text Input</td>
+            <td>Full legal name of the company.</td>
+        </tr>
+        <tr>
+            <td>Creation Date</td>
+            <td>Date Input</td>
+            <td>Date the company entity was established or created in the system.</td>
+        </tr>
+        <tr>
+            <td>Source Company</td>
+            <td>Text Input</td>
+            <td>Optional reference to a parent or source company if cloned/inherited.</td>
+        </tr>
+        <tr>
+            <td>Status</td>
+            <td>Dropdown (Select)</td>
+            <td>Status of the company (e.g., Active, Inactive).</td>
+        </tr>
+    </table>
+
+    <h2>2. Address Details</h2>
+    <p>Companies can have multiple addresses grouped by their purpose. A modal dialog handles specific address breakdowns.</p>
+    <table>
+        <tr>
+            <th>Field Label</th>
+            <th>Input Type</th>
+            <th>Description / Validation</th>
+        </tr>
+        <tr>
+            <td>Address Identity</td>
+            <td>Dropdown (Select)</td>
+            <td>Type of address (e.g., Billing, Delivery).</td>
+        </tr>
+        <tr>
+            <td>Country</td>
+            <td>Dropdown (Select)</td>
+            <td>Select the country. Triggers cascading logic for state/county options if applicable.</td>
+        </tr>
+        <tr>
+            <td>Address</td>
+            <td>Textarea</td>
+            <td>A consolidated block view of the address. Can be edited via the 'Edit Address' modal.</td>
+        </tr>
+        <tr>
+            <td>Valid From / To</td>
+            <td>Date Inputs</td>
+            <td>The date range during which this address is considered valid.</td>
+        </tr>
+    </table>
+    
+    <p><b>Address Modal fields (triggered by "Edit Address"):</b> Address 1, Address 2, Zip Code, City, State, County, Country Code.</p>
+
+    <h2>3. Distribution Parameters</h2>
+    <p>Settings governing how goods are distributed to/from this company.</p>
+    <table>
+        <tr>
+            <th>Field Label</th>
+            <th>Input Type</th>
+            <th>Description / Validation</th>
+        </tr>
+        <tr>
+            <td>Delivery Terms</td>
+            <td>Dropdown (Select)</td>
+            <td>Standard delivery agreements (e.g., FOB, CIF).</td>
+        </tr>
+        <tr>
+            <td>Ship Via</td>
+            <td>Dropdown (Select)</td>
+            <td>Preferred shipping method or courier.</td>
+        </tr>
+    </table>
+
+    <h2>4. Accounting Rules</h2>
+    <p>Financial baseline settings for the company.</p>
+    <table>
+        <tr>
+            <th>Field Label</th>
+            <th>Input Type</th>
+            <th>Description / Validation</th>
+        </tr>
+        <tr>
+            <td>Accounting Currency</td>
+            <td>Dropdown (Select)</td>
+            <td>Primary currency for the company's ledger.</td>
+        </tr>
+        <tr>
+            <td>Valid From</td>
+            <td>Date Input</td>
+            <td>Effective date for the primary currency.</td>
+        </tr>
+        <tr>
+            <td>Parallel Currency</td>
+            <td>Dropdown (Select)</td>
+            <td>Secondary reporting currency (if applicable).</td>
+        </tr>
+        <tr>
+            <td>Valid From (Parallel)</td>
+            <td>Date Input</td>
+            <td>Effective date for the parallel currency.</td>
+        </tr>
+    </table>
+
+    <h2>5. Screen Actions & Buttons</h2>
+    <ul>
+        <li><b>➕ Create Company:</b> Clears all fields in the form to allow entry of a new company.</li>
+        <li><b>Export to Excel:</b> Exports the list of registered companies into an `.xlsx` or `.csv` file.</li>
+        <li><b>💾 Save Configuration:</b> Submits the form data to the database.</li>
+    </ul>
+
+    <h2>6. Business Logic & Conditions</h2>
+    <div class="logic-box">
+        <ul>
+            <li><b>Uniqueness Check:</b> Upon saving, the system validates if the entered `Company Identity` already exists. If it does, a warning notification is thrown, and the save is aborted.</li>
+            <li><b>Shortcut Keys:</b> Users can press <code>Ctrl + S</code> or <code>Cmd + S</code> anywhere on the page to trigger the "Save Configuration" action.</li>
+            <li><b>Notifications:</b> The system uses a floating toast notification system to display Success (✅), Error (❌), and Warning (⚠️) messages upon save or validation failure.</li>
+            <li><b>Combobox Navigation:</b> The Identity field acts as an autocomplete dropdown. Users can press <code>ArrowDown</code> and <code>ArrowUp</code> to traverse options and <code>Enter</code> to select.</li>
+            <li><b>Data Loading:</b> Selecting an existing company from the identity combobox automatically fetches and populates the remaining form fields (Name, Status, Address, Accounting rules).</li>
+        </ul>
+    </div>
+
+</body>
+</html>

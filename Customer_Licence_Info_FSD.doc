@@ -1,0 +1,134 @@
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+    <meta charset="utf-8">
+    <title>Customer Creation - Licence Info FSD</title>
+    <style>
+        body { font-family: 'Times New Roman', serif; line-height: 1.4; color: #000; }
+        h1, h2, h3, h4 { color: #800000; }
+        h1 { border-bottom: 2px solid #000; padding-bottom: 5px; font-size: 24pt; }
+        h2 { font-size: 18pt; margin-top: 20px; border-bottom: 1px solid #ccc; padding-bottom: 3px; }
+        h3 { font-size: 14pt; margin-top: 15px; }
+        h4 { font-size: 12pt; font-style: italic; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 20px; font-family: 'Arial', sans-serif; font-size: 10pt; page-break-inside: avoid; }
+        th, td { border: 1px solid #000; padding: 6px; text-align: left; vertical-align: top; }
+        th { background-color: #1a237e; color: #ffffff; font-weight: bold; }
+        .ident-th { background-color: #f2f2f2; color: #000; font-weight: bold; width: 30%; }
+        .screenshot-box { border: 2px dashed #999; padding: 40px; text-align: center; color: #999; margin: 20px 0; background: #f9f9f9; font-style: italic; }
+        ul { margin-top: 5px; margin-bottom: 15px; }
+        .notes-section { background-color: #fdfdfd; border-left: 4px solid #800000; padding: 10px; margin: 10px 0; font-family: 'Arial', sans-serif; font-size: 10pt; }
+    </style>
+</head>
+<body>
+
+    <p style="text-align: right; color: #666; font-family: 'Arial', sans-serif; font-size: 9pt;">Screen Spec: Customer Creation - Sub-Module</p>
+    <h1>Customer Creation: Licence Info Tab (Updated)</h1>
+    <p><b>V2.0 &mdash; Date: 11 August 2026</b></p>
+
+    <h2>1. Purpose of This Document</h2>
+    <p>This document details the functional specifications for the newly redesigned <b>Licence Info Tab</b> within the Customer Creation workflow. The updated tab features dynamic form layouts based on the selected Customer Type, robust Product Purchase Authorizations, and a comprehensive Dispensing Data log.</p>
+
+    <hr>
+
+    <h2>2. Shared Top Row (Global Controls)</h2>
+    <p>These fields persist at the top of the tab regardless of the specific customer type selected.</p>
+    <table>
+        <tr>
+            <th>Field Name</th>
+            <th>Data Type</th>
+            <th>Mandatory</th>
+            <th>Validation / Business Rule</th>
+        </tr>
+        <tr>
+            <td>Customer Type</td>
+            <td>Dropdown</td>
+            <td>Y</td>
+            <td>Options include: Pharmacy, Dispensing Doctor, 100Hrs Pharmacy, 700 HR Pharmacy, Wholesaler, Export, Online Pharmacy, Broker Account, Non Pharmaceutical, Pharmacy Hub, NHS Hospital.<br><b>Logic:</b> Changing this dropdown toggles the visibility of the dynamic layouts below (e.g., Pharmacy layout vs Online Pharmacy layout).</td>
+        </tr>
+        <tr>
+            <td>Country</td>
+            <td>Dropdown</td>
+            <td>Y</td>
+            <td>Options: England, Scotland, Wales, Northern Ireland. Adjacent is a <b>"Log Detail"</b> button to view historical changes.</td>
+        </tr>
+        <tr>
+            <td>Change Account Ownership</td>
+            <td>Checkbox</td>
+            <td>N</td>
+            <td>Flags if the account is undergoing an ownership transition.</td>
+        </tr>
+    </table>
+
+    <hr>
+
+    <h2>3. Dynamic Layout: Pharmacy (Standard)</h2>
+    <p>Visible when Customer Type is set to Pharmacy, 100Hrs Pharmacy, etc.</p>
+    <div class="screenshot-box">[Screenshot needed - Pharmacy Layout]</div>
+    <table>
+        <tr><th>Field Name</th><th>Data Type</th><th>Description / Validation</th></tr>
+        <tr><td>GPhC Registration Number</td><td>Text</td><td>General Pharmaceutical Council registry number.</td></tr>
+        <tr><td>Expiry Date</td><td>Date</td><td>Expiration date of the GPhC license. Includes inline ⬇️ (Download) and ⬆️ (Upload) file management buttons.</td></tr>
+        <tr><td>Customer Risk Score</td><td>Numeric</td><td>Quantitative risk assessment.</td></tr>
+        <tr><td>Customer Risk Classification</td><td>Dropdown</td><td>Low, Medium, High.</td></tr>
+        <tr><td>Customer Avg. Monthly Scripts</td><td>Numeric</td><td>Average volume metric.</td></tr>
+        <tr><td>NHS Contractor Code / Name / Address</td><td>Text (Multiple)</td><td>NHS integration identifiers.</td></tr>
+        <tr><td>Scripts Range</td><td>Text</td><td>Expected dispensing bracket.</td></tr>
+        <tr><td>Customer Group</td><td>Text</td><td>-</td></tr>
+        <tr><td>Postcode</td><td>Text</td><td>-</td></tr>
+        <tr><td>Sales Limit%</td><td>Text</td><td>Percentage tolerance (e.g., 85%).</td></tr>
+    </table>
+
+    <hr>
+
+    <h2>4. Dynamic Layout: Online Pharmacy</h2>
+    <p>Visible when Customer Type is set to "Online Pharmacy". Retains the core fields from the standard pharmacy layout but introduces specialized purchase authorization controls.</p>
+    <div class="screenshot-box">[Screenshot needed - Online Pharmacy Layout]</div>
+    
+    <h3>A. Specialized Fields</h3>
+    <table>
+        <tr><th>Field Name</th><th>Data Type</th><th>Description / Validation</th></tr>
+        <tr><td>GPhC Registration Number</td><td>Text</td><td>Specific to the online entity.</td></tr>
+        <tr><td>Requalification Date</td><td>Date</td><td>Instead of standard Expiry, captures requalification date. Includes inline ⬇️ (Download) and ⬆️ (Upload) file management buttons.</td></tr>
+    </table>
+
+    <h3>B. Product Purchase Authorization (Checkboxes)</h3>
+    <p>A dedicated block defining which restricted categories the Online Pharmacy is legally permitted to purchase.</p>
+    <ul>
+        <li><b>[ ] Specials</b> &mdash; Unlicensed medicines manufactured for specific patient needs.</li>
+        <li><b>[ ] Control Drugs</b> &mdash; Regulated narcotics/substances.</li>
+        <li><b>[ ] Cold Chain</b> &mdash; Temperature-sensitive logistics required.</li>
+        <li><b>[ ] High Risk</b> &mdash; Highly regulated inventory.</li>
+        <li><b>[ ] Licensed</b> &mdash; Standard licensed pharmaceuticals.</li>
+    </ul>
+    <div class="notes-section">
+        <b>Logic:</b> If the customer attempts to purchase an item flagged as "Cold Chain" but the corresponding authorization box is unchecked here, the Sales Order will be hard-blocked.
+    </div>
+
+    <hr>
+
+    <h2>5. Customer Items Dispensing Data (Script by Month)</h2>
+    <p>A data-grid section for tracking historical dispensing volumes over a rolling 12-month period.</p>
+    
+    <h3>A. Controls</h3>
+    <table>
+        <tr><th>Control</th><th>Functionality</th></tr>
+        <tr><td>Form (Date) / To (Date)</td><td>Filters the grid data within a specific date range.</td></tr>
+        <tr><td>Search Here</td><td>Free text search within the grid.</td></tr>
+        <tr><td>Action Buttons</td><td>Search, Upload, Edit, Download, Log Detail. Enables bulk manipulation and extraction of dispensing metrics.</td></tr>
+    </table>
+
+    <h3>B. Grid Structure</h3>
+    <p>The table presents monthly NHS dispensing metrics. Columns are dynamically generated as rolling months (e.g., <i>NHS Aug 2025, NHS Sep 2025... NHS Jul 2026</i>). It includes standard pagination controls at the footer.</p>
+
+    <hr>
+
+    <h2>6. Footer Controls</h2>
+    <p>Global save and status controls for the tab.</p>
+    <table>
+        <tr><th>Field</th><th>Description</th></tr>
+        <tr><td>Status</td><td>Dropdown (Active / Inactive).</td></tr>
+        <tr><td>Note</td><td>Free text area for internal administrative comments.</td></tr>
+        <tr><td>Save Button</td><td>Validates the tab data and commits the record.</td></tr>
+    </table>
+
+</body>
+</html>
