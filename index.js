@@ -6254,9 +6254,8 @@ SyriMed Healthcare`
                         }
                     } else if (action.includes('save')) {
                         showToast('Licence information saved successfully.', 'success');
-                    } else if (action.includes('view account')) {
-                        const linkedModal = document.getElementById('linked-account-modal-overlay');
-                        if (linkedModal) linkedModal.classList.remove('hidden');
+                    } else if (action.includes('view account') || (btn.id && btn.id.includes('view-linked-account')) || btn.classList.contains('btn-view-linked-account')) {
+                        openLinkedAccountModal();
                     } else if (action.includes('add schedule')) {
                         let schedulesList = document.getElementById('wholesaler-schedules-list');
                         if (!schedulesList || schedulesList.closest('.hidden')) schedulesList = document.getElementById('broker-schedules-list');
@@ -6308,13 +6307,73 @@ SyriMed Healthcare`
             });
         }
 
-        // Linked Account Modal Close Setup
+        // Linked Account Modal Open & Close Functions
         const linkedModal = document.getElementById('linked-account-modal-overlay');
+        const btnViewLinkedDirect = document.getElementById('btn-view-linked-account');
         const btnCloseLinked1 = document.getElementById('btn-close-linked-account-modal');
         const btnCloseLinked2 = document.getElementById('btn-close-linked-account-modal-bottom');
-        const closeLinkedModal = () => { if (linkedModal) linkedModal.classList.add('hidden'); };
-        if (btnCloseLinked1) btnCloseLinked1.addEventListener('click', closeLinkedModal);
-        if (btnCloseLinked2) btnCloseLinked2.addEventListener('click', closeLinkedModal);
+
+        function openLinkedAccountModal() {
+            if (linkedModal) {
+                linkedModal.classList.remove('hidden');
+                linkedModal.style.display = 'flex';
+            }
+        }
+
+        function closeLinkedAccountModal() {
+            if (linkedModal) {
+                linkedModal.classList.add('hidden');
+                linkedModal.style.display = 'none';
+            }
+        }
+
+        if (btnViewLinkedDirect) {
+            btnViewLinkedDirect.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                openLinkedAccountModal();
+            });
+        }
+
+        if (btnCloseLinked1) {
+            btnCloseLinked1.addEventListener('click', (e) => {
+                e.preventDefault();
+                closeLinkedAccountModal();
+            });
+        }
+
+        if (btnCloseLinked2) {
+            btnCloseLinked2.addEventListener('click', (e) => {
+                e.preventDefault();
+                closeLinkedAccountModal();
+            });
+        }
+
+        if (linkedModal) {
+            linkedModal.addEventListener('click', (e) => {
+                if (e.target === linkedModal) {
+                    closeLinkedAccountModal();
+                }
+            });
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && linkedModal && !linkedModal.classList.contains('hidden')) {
+                closeLinkedAccountModal();
+            }
+        });
+
+        // Row button clicks inside Linked Account table
+        if (linkedModal) {
+            linkedModal.querySelectorAll('.btn-view-single-linked').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const accId = btn.getAttribute('data-id');
+                    showToast(`Loaded account ${accId} details.`, 'info');
+                    closeLinkedAccountModal();
+                });
+            });
+        }
 
         // Form action buttons
         const btnCustSave = document.getElementById('btn-cust-save');
