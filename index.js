@@ -1826,9 +1826,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         <button class="btn btn-secondary btn-sm edit-comp-btn" data-id="${comp.companyId}" title="Edit Company">
                             ✏️ Edit
                         </button>
-                        <button class="btn btn-sm delete-comp-btn" data-id="${comp.companyId}" title="Delete Company" style="background: rgba(239, 68, 68, 0.1); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.2); padding: 4px 8px; border-radius: 4px; cursor: pointer;">
-                            🗑️
-                        </button>
                     </div>
                 </td>
             `;
@@ -1851,22 +1848,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.preventDefault();
                 const id = btn.getAttribute('data-id');
                 showCompanyFormView(id, false);
-            });
-        });
-
-        // Delete button click listeners
-        companiesListBody.querySelectorAll('.delete-comp-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                const id = btn.getAttribute('data-id');
-                if (confirm(`Are you sure you want to delete company '${id}'?`)) {
-                    companies = companies.filter(c => c.companyId !== id);
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(companies));
-                    populateCompanyFilterOptions();
-                    populateSiteFilterOptions();
-                    renderCompaniesTable();
-                    showToast(`Company '${id}' deleted successfully.`, 'info');
-                }
             });
         });
     }
@@ -2023,8 +2004,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     companyStatusSelect.disabled = isViewOnly;
                 }
 
-                // Auto populated system fields (hidden from form)
-                if (creationDateInput) creationDateInput.value = comp.creationDate || '';
+                // Company Creation Date: strictly read-only and non-editable in both View and Edit modes
+                if (creationDateInput) {
+                    creationDateInput.value = comp.creationDate || '';
+                    creationDateInput.disabled = true;
+                    creationDateInput.readOnly = true;
+                }
                 if (createdByInput) createdByInput.value = comp.createdBy || 'Bhuvenshwar Vishwakarma';
                 
                 // Accounting
@@ -2079,9 +2064,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 companyStatusSelect.disabled = false;
             }
 
-            // Auto populated system fields (hidden from initial user-facing form)
+            // Company Creation Date: automatically populated with today's date on creation, strictly read-only and non-editable
             const today = new Date().toISOString().split('T')[0];
-            if (creationDateInput) creationDateInput.value = today;
+            if (creationDateInput) {
+                creationDateInput.value = today;
+                creationDateInput.disabled = true;
+                creationDateInput.readOnly = true;
+            }
             if (createdByInput) createdByInput.value = 'Bhuvenshwar Vishwakarma';
             
             // Accounting defaults
@@ -2198,10 +2187,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // 4. Build configuration object
+        const existingComp = companies.find(c => c.companyId === companyId);
+        const resolvedCreationDate = (existingComp && existingComp.creationDate)
+            ? existingComp.creationDate
+            : ((creationDateInput && creationDateInput.value) ? creationDateInput.value : new Date().toISOString().split('T')[0]);
+
         const companyConfig = {
             companyId,
             companyName,
-            creationDate: (creationDateInput && creationDateInput.value) ? creationDateInput.value : new Date().toISOString().split('T')[0],
+            creationDate: resolvedCreationDate,
             createdBy: (createdByInput && createdByInput.value) ? createdByInput.value : 'Bhuvenshwar Vishwakarma',
             sourceCompany: sourceCompanyInput ? sourceCompanyInput.value.trim() : '',
             status: companyStatusSelect ? companyStatusSelect.value : 'Active',

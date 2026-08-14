@@ -41,8 +41,8 @@
         </tr>
         <tr>
             <td>Creation Date</td>
-            <td>Date Input</td>
-            <td>Date the company entity was established or created in the system.</td>
+            <td>Date Input (Read-only)</td>
+            <td>Date the company entity was created in the system. Automatically populated on company creation; read-only and non-editable across View, Edit, and Create modes.</td>
         </tr>
         <tr>
             <td>Source Company</td>
@@ -152,7 +152,8 @@
             <li><b>Shortcut Keys:</b> Users can press <code>Ctrl + S</code> or <code>Cmd + S</code> anywhere on the page to trigger the "Save Configuration" action.</li>
             <li><b>Notifications:</b> The system uses a floating toast notification system to display Success (✅), Error (❌), and Warning (⚠️) messages upon save or validation failure.</li>
             <li><b>Combobox Navigation:</b> The Identity field acts as an autocomplete dropdown. Users can press <code>ArrowDown</code> and <code>ArrowUp</code> to traverse options and <code>Enter</code> to select.</li>
-            <li><b>Data Loading:</b> Selecting an existing company from the identity combobox automatically fetches and populates the remaining form fields (Name, Status, Address, Accounting rules).</li>
+            <li><b>Creation Date Immutability:</b> The Company Creation Date is automatically captured when a new company is registered. It is presented as a read-only field in both View and Edit modes, and users cannot modify the Creation Date.</li>
+            <li><b>Company Deletion Policy:</b> Company records cannot be deleted. The actions column provides '👁️ View' and '✏️ Edit' options only; no 'Delete' option is provided.</li>
         </ul>
     </div>
 

@@ -392,8 +392,15 @@
                                 <span class="field-hint">Active or Inactive state.</span>
                             </div>
 
+                            <div class="form-group">
+                                <label for="creation-date">Company Creation Date</label>
+                                <input type="date" id="creation-date" class="read-only" readonly disabled
+                                    style="background-color: var(--color-bg-base); color: var(--color-text-muted); cursor: not-allowed;"
+                                    title="Company Creation Date (System Generated / Non-editable)">
+                                <span class="field-hint">System generated creation date.</span>
+                            </div>
+
                             <!-- Hidden System Fields as requested -->
-                            <input type="hidden" id="creation-date" value="">
                             <input type="hidden" id="created-by" value="Bhuvenshwar Vishwakarma">
                         </div>
                     </div>
