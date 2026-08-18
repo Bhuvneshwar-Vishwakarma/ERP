@@ -6933,15 +6933,9 @@ SyriMed Healthcare`
             statGroup: "OH Overheads",
             buyerId: "*",
             categoryCode: "",
-            invoicingSupplier: "ACC007",
-            paymentAuthorizer: "PRICHA",
-            nettingAllowed: false,
-            invoiceRecipient: "*",
-            blockedForPayment: false,
-            licenceType: "Non WDA Holder",
-            supplierFor: "Select...",
             companyRegNo: "",
-            expiryDate: "",
+            gdpGmpCertNo: "UK GDP 48291/001",
+            expiryDate: "2028-12-31",
             riskScore: "Select...",
             questionnaire: false,
             techApprovedDate: "",
@@ -6957,6 +6951,11 @@ SyriMed Healthcare`
             addresses: [
                 {
                     addressId: "01",
+                    addressTypes: ["Delivery", "Invoice", "Pay"],
+                    addressType: "Delivery + Invoice + Pay",
+                    deliveryDefault: true,
+                    invoiceDefault: true,
+                    payDefault: true,
                     addr1: "UNITS 2A -2D EUROWAY TRADING EST",
                     addr2: "WHARFEDALE ROAD",
                     city: "BRADFORD",
@@ -6965,13 +6964,39 @@ SyriMed Healthcare`
                     state: "",
                     country: "GB UNITED KINGDOM",
                     validFrom: "",
+                    validTo: ""
+                }
+            ],
+            paymentMethods: [
+                { method: "BACS", description: "Automated Bank Transfer", isDefault: true },
+                { method: "CHEQUE", description: "Standard UK Cheque", isDefault: false }
+            ],
+            paymentAddresses: [
+                {
+                    seqId: "01",
+                    method: "BACS",
+                    description: "Settlement Account",
+                    bankAccount: "GB29NWBK60161331926819",
+                    isDefault: true,
+                    sortCode: "60-16-13",
+                    accountName: "Accent Wire Tie Ltd",
+                    bldgRef: "REF-001",
+                    status: "Active"
+                }
+            ],
+            dispatchAddresses: [
+                {
+                    addressId: "01",
+                    addr1: "UNITS 2A -2D EUROWAY TRADING EST",
+                    addr2: "WHARFEDALE ROAD",
+                    city: "BRADFORD",
+                    postcode: "BD4 6SG",
+                    county: "Bradford",
+                    state: "West Yorkshire",
+                    country: "GB UNITED KINGDOM",
+                    validFrom: "",
                     validTo: "",
-                    delivery: true,
-                    deliveryDefault: true,
-                    invoice: true,
-                    invoiceDefault: true,
-                    pay: true,
-                    payDefault: true
+                    isDefault: true
                 }
             ],
             files: [
@@ -6989,6 +7014,8 @@ SyriMed Healthcare`
             currency: "GBP",
             taxLiability: "TAX Taxable",
             licenceType: "WDA Holder",
+            gdpGmpCertNo: "UK WDA 19382/001",
+            expiryDate: "2029-06-30",
             status: "Active"
         },
         {
@@ -6999,6 +7026,8 @@ SyriMed Healthcare`
             currency: "GBP",
             taxLiability: "TAX Taxable",
             licenceType: "WDA Holder",
+            gdpGmpCertNo: "UK WDA 22094/002",
+            expiryDate: "2029-11-15",
             status: "Active"
         }
     ];
@@ -7008,6 +7037,13 @@ SyriMed Healthcare`
     let currentSupplierContacts = [];
     let currentSupplierAddresses = [];
     let currentSupplierFiles = [];
+    let currentSupplierPaymentMethods = [];
+    let currentSupplierPaymentAddresses = [];
+    let currentSupplierDispatchAddresses = [];
+    let editingSupplierAddressIndex = null;
+    let editingPaymentMethodIndex = null;
+    let editingPaymentAddressIndex = null;
+    let editingDispatchAddressIndex = null;
 
     function loadSavedSupplierConfig() {
         const raw = localStorage.getItem(SUPPLIER_STORAGE_KEY);
@@ -7053,41 +7089,55 @@ SyriMed Healthcare`
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
+    function isUserApprover() {
+        const rbacRole = document.getElementById('rbac-role-selector') ? document.getElementById('rbac-role-selector').value : '';
+        const simManager = document.getElementById('sim-manager-role')?.checked || false;
+        return rbacRole === 'QA' || rbacRole === 'Manager' || rbacRole === 'Admin' || simManager;
+    }
+
     function renderSupplierList() {
-        const body = document.getElementById('supplier-list-body');
+        const body = document.getElementById('supplier-list-body') || document.getElementById('sup-list-table-body');
         if (!body) return;
         body.innerHTML = '';
 
-        const searchId = document.getElementById('sup-search-id') ? document.getElementById('sup-search-id').value.trim().toLowerCase() : '';
-        const searchName = document.getElementById('sup-search-name') ? document.getElementById('sup-search-name').value.trim().toLowerCase() : '';
+        const searchId = document.getElementById('sup-search-id') ? document.getElementById('sup-search-id').value.toLowerCase().trim() : '';
+        const searchName = document.getElementById('sup-search-name') ? document.getElementById('sup-search-name').value.toLowerCase().trim() : '';
 
         const filtered = suppliers.filter(s => {
-            if (!s || !s.supplierId) return false;
-            const matchId = !searchId || s.supplierId.toLowerCase().includes(searchId);
+            if (!s) return false;
+            const matchId = !searchId || (s.supplierId && s.supplierId.toLowerCase().includes(searchId));
             const matchName = !searchName || (s.supplierName && s.supplierName.toLowerCase().includes(searchName));
             return matchId && matchName;
         });
 
         if (filtered.length === 0) {
-            body.innerHTML = `<tr><td colspan="9" class="text-center" style="color: var(--color-text-muted); padding: 20px;">No suppliers found matching search criteria.</td></tr>`;
+            body.innerHTML = `<tr><td colspan="9" class="text-center" style="color: var(--color-text-muted); padding: 20px;">No suppliers found matching the criteria.</td></tr>`;
             return;
         }
 
         filtered.forEach(s => {
             const tr = document.createElement('tr');
-            let badgeStyle = "background-color: #d1fae5; color: #10b981;";
-            if (s.status === 'Inactive') {
-                badgeStyle = "background-color: #fee2e2; color: #ef4444;";
-            } else if (s.status === 'Pending QA Approval') {
-                badgeStyle = "background-color: #fffbeb; color: #d97706;";
+            const hasPendingPaymentAddress = Array.isArray(s.paymentAddresses) && s.paymentAddresses.some(a => (a.status || '').toLowerCase().includes('pending'));
+            const isPendingApproval = hasPendingPaymentAddress || (s.status || '').toLowerCase().includes('pending');
+            const isInactive = !isPendingApproval && s.status === 'Inactive';
+            const isActive = !isPendingApproval && !isInactive;
+
+            let statusBadge = '';
+            if (isPendingApproval) {
+                statusBadge = `<span class="badge" style="background-color: #fef3c7; color: #b45309; border: 1px solid #fde68a; padding: 3px 8px; border-radius: 12px; font-weight:600; font-size:11px;">Pending for Approval</span>`;
+            } else if (isActive) {
+                statusBadge = `<span class="badge badge-success" style="background-color: var(--color-success-light); color: var(--color-success); padding: 3px 8px; border-radius: 12px; font-weight:600; font-size:11px;">Active</span>`;
+            } else {
+                statusBadge = `<span class="badge badge-danger" style="background-color: var(--color-danger-light); color: var(--color-danger); padding: 3px 8px; border-radius: 12px; font-weight:600; font-size:11px;">Inactive</span>`;
             }
 
-            const approveBtn = (s.status === 'Pending QA Approval') 
-                ? `<button class="btn btn-primary btn-sup-approve" data-id="${s.supplierId}" style="padding: 2px 6px; font-size:11px; background-color:#10b981; border:none; color:#fff; border-radius:4px; cursor:pointer;">QA Approve</button>`
+            const isApprover = isUserApprover();
+            const approveBtn = ((isPendingApproval || isInactive) && isApprover)
+                ? `<button class="btn btn-primary btn-sup-approve" data-id="${s.supplierId}" style="padding: 2px 6px; font-size:11px; background-color: var(--color-success); border-color: var(--color-success);" title="Approve QA">Approve</button>`
                 : '';
 
-            const deactivateBtn = (s.status === 'Active')
-                ? `<button class="btn btn-secondary btn-sup-deactivate" data-id="${s.supplierId}" style="padding: 2px 6px; font-size:11px; background-color:#ef4444; border:none; color:#fff; border-radius:4px; cursor:pointer;">Deactivate</button>`
+            const deactivateBtn = isActive
+                ? `<button class="btn btn-secondary btn-sup-deactivate" data-id="${s.supplierId}" style="padding: 2px 6px; font-size:11px; background-color: var(--color-danger); color: white; border-color: var(--color-danger);" title="Deactivate">Deactivate</button>`
                 : '';
 
             tr.innerHTML = `
@@ -7098,10 +7148,10 @@ SyriMed Healthcare`
                 <td>${escapeHtml(s.currency || 'GBP')}</td>
                 <td>${escapeHtml(s.taxLiability || 'TAX Taxable')}</td>
                 <td>${escapeHtml(s.licenceType || 'Non WDA Holder')}</td>
-                <td><span class="badge" style="${badgeStyle} font-weight:600; padding: 2px 8px; border-radius: 4px;">${escapeHtml(s.status || 'Active')}</span></td>
+                <td>${statusBadge}</td>
                 <td style="text-align: center;">
-                    <div style="display:flex; gap:6px; justify-content:center;">
-                        <button class="btn btn-secondary btn-sup-edit" data-id="${s.supplierId}" style="padding: 2px 6px; font-size:11px; background-color: var(--color-primary); border:none; color:#fff; border-radius:4px; cursor:pointer;">Edit</button>
+                    <div style="display: flex; gap: 4px; justify-content: center;">
+                        <button class="btn btn-secondary btn-sup-edit" data-id="${s.supplierId}" style="padding: 2px 6px; font-size:11px; background-color: var(--color-primary); color: white; border: none;" title="Edit Supplier">Edit</button>
                         ${approveBtn}
                         ${deactivateBtn}
                     </div>
@@ -7130,9 +7180,16 @@ SyriMed Healthcare`
                 const idx = suppliers.findIndex(item => item && item.supplierId && item.supplierId.trim().toUpperCase() === id.trim().toUpperCase());
                 if (idx !== -1) {
                     suppliers[idx].status = 'Active';
+                    if (Array.isArray(suppliers[idx].paymentAddresses)) {
+                        suppliers[idx].paymentAddresses.forEach(a => {
+                            if ((a.status || '').toLowerCase().includes('pending')) {
+                                a.status = 'Active';
+                            }
+                        });
+                    }
                     saveSuppliersState();
                     renderSupplierList();
-                    showToast(`Supplier account '${suppliers[idx].supplierName}' QA Approved!`, "success");
+                    showToast(`Supplier account '${suppliers[idx].supplierName}' and payment addresses QA Approved!`, "success");
                 }
             });
         });
@@ -7206,20 +7263,138 @@ SyriMed Healthcare`
         });
     }
 
+    // 1. INVOICE ADDRESS HELPERS & LIST RENDERING
+    function getNextSupplierAddressId() {
+        if (currentSupplierAddresses.length === 0) return "01";
+        const numericIds = currentSupplierAddresses
+            .map(a => parseInt(a.addressId, 10))
+            .filter(n => !isNaN(n) && n > 0);
+        if (numericIds.length === 0) return String(currentSupplierAddresses.length + 1).padStart(2, '0');
+        const maxId = Math.max(...numericIds);
+        return String(maxId + 1).padStart(2, '0');
+    }
+
+    function getSelectedInvoiceAddressTypes() {
+        const checkboxes = document.querySelectorAll('#sup-inv-addr-type-dropdown .chk-sup-addr-type:checked');
+        const types = [];
+        checkboxes.forEach(cb => types.push(cb.value));
+        return types;
+    }
+
+    function updateDefaultOptionsVisibility(types = []) {
+        const lblDeliv = document.getElementById('lbl-sup-inv-def-deliv');
+        const lblInvo = document.getElementById('lbl-sup-inv-def-invo');
+        const lblPay = document.getElementById('lbl-sup-inv-def-pay');
+        const chkDeliv = document.getElementById('chk-sup-inv-def-deliv');
+        const chkInvo = document.getElementById('chk-sup-inv-def-invo');
+        const chkPay = document.getElementById('chk-sup-inv-def-pay');
+
+        if (lblDeliv) lblDeliv.style.display = types.includes('Delivery') ? 'flex' : 'none';
+        if (chkDeliv && !types.includes('Delivery')) chkDeliv.checked = false;
+
+        if (lblInvo) lblInvo.style.display = types.includes('Invoice') ? 'flex' : 'none';
+        if (chkInvo && !types.includes('Invoice')) chkInvo.checked = false;
+
+        if (lblPay) lblPay.style.display = types.includes('Pay') ? 'flex' : 'none';
+        if (chkPay && !types.includes('Pay')) chkPay.checked = false;
+    }
+
+    function renderInvoiceAddressTypeChips(types = []) {
+        const container = document.getElementById('sup-inv-addr-type-chips');
+        if (!container) return;
+        container.innerHTML = '';
+
+        if (types.length === 0) {
+            container.innerHTML = `<span class="multiselect-placeholder" style="color: var(--color-text-muted); font-size: 12.5px;">Select Address Type(s)...</span>`;
+            updateDefaultOptionsVisibility([]);
+            return;
+        }
+
+        const typeColorMap = {
+            'Delivery': { bg: '#dbeafe', color: '#1e40af', border: '#bfdbfe' },
+            'Invoice': { bg: '#ede9fe', color: '#6d28d9', border: '#ddd6fe' },
+            'Pay': { bg: '#d1fae5', color: '#065f46', border: '#a7f3d0' }
+        };
+
+        types.forEach(t => {
+            const style = typeColorMap[t] || { bg: '#f1f5f9', color: '#334155', border: '#cbd5e1' };
+            const chip = document.createElement('span');
+            chip.className = 'addr-type-chip';
+            chip.style.cssText = `background: ${style.bg}; color: ${style.color}; border: 1px solid ${style.border}; font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 4px; display: inline-flex; align-items: center; gap: 5px;`;
+            chip.innerHTML = `<span>${t}</span><span class="btn-remove-addr-type-chip" data-type="${t}" style="cursor: pointer; font-size: 13px; font-weight: bold; line-height: 1; opacity: 0.75;" title="Remove ${t}">×</span>`;
+
+            chip.querySelector('.btn-remove-addr-type-chip').addEventListener('click', (e) => {
+                e.stopPropagation();
+                const targetType = e.currentTarget.getAttribute('data-type');
+                const cb = document.querySelector(`#sup-inv-addr-type-dropdown .chk-sup-addr-type[value="${targetType}"]`);
+                if (cb) {
+                    cb.checked = false;
+                    const updated = getSelectedInvoiceAddressTypes();
+                    renderInvoiceAddressTypeChips(updated);
+                    updateDefaultOptionsVisibility(updated);
+                }
+            });
+
+            container.appendChild(chip);
+        });
+
+        updateDefaultOptionsVisibility(types);
+    }
+
+    function setSelectedInvoiceAddressTypes(types = []) {
+        const checkboxes = document.querySelectorAll('#sup-inv-addr-type-dropdown .chk-sup-addr-type');
+        checkboxes.forEach(cb => {
+            cb.checked = types.includes(cb.value);
+        });
+        renderInvoiceAddressTypeChips(types);
+        updateDefaultOptionsVisibility(types);
+    }
+
     function renderSupplierAddressList() {
         const body = document.getElementById('sup-inv-addr-table-body');
         if (!body) return;
         body.innerHTML = '';
 
         if (currentSupplierAddresses.length === 0) {
-            body.innerHTML = `<tr><td colspan="10" class="text-center" style="color: var(--color-text-muted); padding: 15px;">No addresses entered.</td></tr>`;
+            body.innerHTML = `<tr><td colspan="12" class="text-center" style="color: var(--color-text-muted); padding: 15px;">No addresses entered. Fill the form above and click 'Add / Update Address Line'.</td></tr>`;
             return;
         }
 
-        currentSupplierAddresses.forEach(a => {
+        currentSupplierAddresses.forEach((a, idx) => {
             const tr = document.createElement('tr');
+            
+            let types = [];
+            if (Array.isArray(a.addressTypes) && a.addressTypes.length > 0) {
+                types = a.addressTypes;
+            } else if (typeof a.addressType === 'string' && a.addressType.trim()) {
+                types = a.addressType.split(/[\+,]/).map(s => s.trim()).filter(s => ['Delivery', 'Invoice', 'Pay'].includes(s));
+            }
+            if (types.length === 0) {
+                if (a.deliveryDefault || a.delivery) types.push('Delivery');
+                if (a.invoiceDefault || a.invoice) types.push('Invoice');
+                if (a.payDefault || a.pay) types.push('Pay');
+            }
+            if (types.length === 0) types = ['Invoice'];
+
+            const badgesHtml = types.map(t => {
+                if (t === 'Delivery') {
+                    const isDef = !!a.deliveryDefault;
+                    return `<span style="background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px; display: inline-flex; align-items: center; gap: 3px;">Delivery${isDef ? ' <span style="background: #fef08a; color: #854d0e; padding: 1px 4px; border-radius: 2px; font-size: 9px;">★ Default</span>' : ''}</span>`;
+                }
+                if (t === 'Invoice') {
+                    const isDef = !!a.invoiceDefault;
+                    return `<span style="background: #ede9fe; color: #6d28d9; border: 1px solid #ddd6fe; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px; display: inline-flex; align-items: center; gap: 3px;">Invoice${isDef ? ' <span style="background: #fef08a; color: #854d0e; padding: 1px 4px; border-radius: 2px; font-size: 9px;">★ Default</span>' : ''}</span>`;
+                }
+                if (t === 'Pay') {
+                    const isDef = !!a.payDefault;
+                    return `<span style="background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px; display: inline-flex; align-items: center; gap: 3px;">Pay${isDef ? ' <span style="background: #fef08a; color: #854d0e; padding: 1px 4px; border-radius: 2px; font-size: 9px;">★ Default</span>' : ''}</span>`;
+                }
+                return `<span style="background: #f1f5f9; color: #334155; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px;">${escapeHtml(t)}</span>`;
+            }).join(' ');
+
             tr.innerHTML = `
-                <td><strong>${escapeHtml(a.addressId || '01')}</strong></td>
+                <td><strong>${escapeHtml(a.addressId || `0${idx + 1}`)}</strong></td>
+                <td><div style="display: flex; gap: 4px; flex-wrap: wrap;">${badgesHtml}</div></td>
                 <td>${escapeHtml(a.addr1 || '')}</td>
                 <td>${escapeHtml(a.addr2 || '')}</td>
                 <td>${escapeHtml(a.city || '')}</td>
@@ -7229,9 +7404,353 @@ SyriMed Healthcare`
                 <td>${escapeHtml(a.country || 'GB UNITED KINGDOM')}</td>
                 <td>${escapeHtml(a.validFrom || '-')}</td>
                 <td>${escapeHtml(a.validTo || '-')}</td>
+                <td style="text-align: center;">
+                    <div style="display: flex; gap: 4px; justify-content: center;">
+                        <button type="button" class="btn btn-secondary btn-sm btn-edit-sup-inv-addr" data-index="${idx}" style="padding: 2px 6px; font-size: 11px; background: #3b82f6; color: white; border: none; border-radius: 3px; cursor: pointer;">Edit</button>
+                        <button type="button" class="btn btn-secondary btn-sm btn-del-sup-inv-addr" data-index="${idx}" style="padding: 2px 6px; font-size: 11px; background: var(--color-danger); color: white; border: none; border-radius: 3px; cursor: pointer;">Delete</button>
+                    </div>
+                </td>
             `;
+
+            tr.querySelector('.btn-edit-sup-inv-addr').addEventListener('click', () => {
+                editingSupplierAddressIndex = idx;
+                const item = currentSupplierAddresses[idx];
+                const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+                const setChk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
+
+                let rowTypes = [];
+                if (Array.isArray(item.addressTypes) && item.addressTypes.length > 0) {
+                    rowTypes = item.addressTypes;
+                } else if (typeof item.addressType === 'string' && item.addressType.trim()) {
+                    rowTypes = item.addressType.split(/[\+,]/).map(s => s.trim()).filter(s => ['Delivery', 'Invoice', 'Pay'].includes(s));
+                }
+                if (rowTypes.length === 0) {
+                    if (item.deliveryDefault || item.delivery) rowTypes.push('Delivery');
+                    if (item.invoiceDefault || item.invoice) rowTypes.push('Invoice');
+                    if (item.payDefault || item.pay) rowTypes.push('Pay');
+                }
+                if (rowTypes.length === 0) rowTypes = ['Delivery', 'Invoice', 'Pay'];
+
+                setSelectedInvoiceAddressTypes(rowTypes);
+
+                setChk('chk-sup-inv-def-deliv', item.deliveryDefault);
+                setChk('chk-sup-inv-def-invo', item.invoiceDefault);
+                setChk('chk-sup-inv-def-pay', item.payDefault);
+
+                setVal('sup-inv-addr1', item.addr1 || '');
+                setVal('sup-inv-addr2', item.addr2 || '');
+                setVal('sup-inv-city', item.city || '');
+                setVal('sup-inv-postcode', item.postcode || '');
+                setVal('sup-inv-county', item.county || '');
+                setVal('sup-inv-state', item.state || '');
+                setVal('sup-inv-country', item.country || 'GB UNITED KINGDOM');
+                setVal('sup-inv-valid-from', item.validFrom || '');
+                setVal('sup-inv-valid-to', item.validTo || '');
+
+                showToast(`Loaded Address ID '${item.addressId || `0${idx + 1}`}' into form for editing.`, "info");
+            });
+
+            tr.querySelector('.btn-del-sup-inv-addr').addEventListener('click', () => {
+                currentSupplierAddresses.splice(idx, 1);
+                if (editingSupplierAddressIndex === idx) editingSupplierAddressIndex = null;
+                renderSupplierAddressList();
+                showToast("Invoice address line removed.", "warning");
+            });
+
             body.appendChild(tr);
         });
+    }
+
+    // 2. PAYMENT METHODS LIST RENDERING
+    function renderSupplierPaymentMethodsList() {
+        const body = document.getElementById('sup-pay-methods-body');
+        const countSpan = document.getElementById('sup-pay-methods-count');
+        if (!body) return;
+        body.innerHTML = '';
+
+        if (countSpan) {
+            countSpan.textContent = `${currentSupplierPaymentMethods.length} record${currentSupplierPaymentMethods.length === 1 ? '' : 's'}`;
+        }
+
+        if (currentSupplierPaymentMethods.length === 0) {
+            body.innerHTML = `<tr><td colspan="4" class="text-center" style="color: var(--color-text-muted); padding: 16px;">No payment methods. Click '➕ Add' to configure.</td></tr>`;
+            return;
+        }
+
+        currentSupplierPaymentMethods.forEach((m, idx) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${escapeHtml(m.method || '')}</strong></td>
+                <td>${escapeHtml(m.description || '')}</td>
+                <td style="text-align: center;">
+                    ${m.isDefault ? '<span style="background: #dcfce7; color: #15803d; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 3px; border: 1px solid #bbf7d0;">YES</span>' : '<span style="color: #94a3b8; font-size: 10px; font-weight: 600;">NO</span>'}
+                </td>
+                <td style="text-align: center;">
+                    <div style="display: flex; gap: 4px; justify-content: center;">
+                        <button type="button" class="btn btn-secondary btn-sm btn-edit-pay-method" data-index="${idx}" style="padding: 2px 6px; font-size: 11px; background-color: #3b82f6; color: white; border: none; border-radius: 3px; cursor: pointer;">Edit</button>
+                        <button type="button" class="btn btn-secondary btn-sm btn-del-pay-method" data-index="${idx}" style="padding: 2px 6px; font-size: 11px; background-color: var(--color-danger); color: white; border: none; border-radius: 3px; cursor: pointer;">Delete</button>
+                    </div>
+                </td>
+            `;
+
+            tr.querySelector('.btn-edit-pay-method').addEventListener('click', () => {
+                editingPaymentMethodIndex = idx;
+                const method = currentSupplierPaymentMethods[idx];
+                const codeInput = document.getElementById('modal-pay-method-code');
+                const descInput = document.getElementById('modal-pay-method-desc');
+                const defChk = document.getElementById('modal-pay-method-default');
+                const title = document.getElementById('sup-pay-method-modal-title');
+                const modal = document.getElementById('sup-pay-method-modal');
+
+                if (codeInput) codeInput.value = method.method || '';
+                if (descInput) descInput.value = method.description || '';
+                if (defChk) defChk.checked = !!method.isDefault;
+                if (title) title.textContent = 'Edit Payment Method';
+                if (modal) modal.classList.remove('hidden');
+            });
+
+            tr.querySelector('.btn-del-pay-method').addEventListener('click', () => {
+                currentSupplierPaymentMethods.splice(idx, 1);
+                renderSupplierPaymentMethodsList();
+                showToast("Payment method removed.", "warning");
+            });
+
+            body.appendChild(tr);
+        });
+    }
+
+    // 3. PAYMENT ADDRESSES LIST RENDERING
+    function renderSupplierPaymentAddressesList() {
+        const body = document.getElementById('sup-pay-addresses-body');
+        const countSpan = document.getElementById('sup-pay-addresses-count');
+        const isApprover = isUserApprover();
+        if (!body) return;
+        body.innerHTML = '';
+
+        if (countSpan) {
+            countSpan.textContent = `${currentSupplierPaymentAddresses.length} record${currentSupplierPaymentAddresses.length === 1 ? '' : 's'}`;
+        }
+
+        if (currentSupplierPaymentAddresses.length === 0) {
+            body.innerHTML = `<tr><td colspan="10" class="text-center" style="color: var(--color-text-muted); padding: 16px;">No payment addresses. Click '➕ Add' to configure.</td></tr>`;
+            return;
+        }
+
+        currentSupplierPaymentAddresses.forEach((a, idx) => {
+            const tr = document.createElement('tr');
+            const isApproved = a.status === 'Active' || a.status === 'Approved';
+            const statusBadge = isApproved
+                ? `<span style="background: #dcfce7; color: #15803d; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px; border: 1px solid #bbf7d0;">Active</span>`
+                : (a.status === 'Inactive'
+                    ? `<span style="background: #fee2e2; color: #dc2626; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px; border: 1px solid #fca5a5;">Inactive</span>`
+                    : `<span style="background: #fef3c7; color: #b45309; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px; border: 1px solid #fde68a;">Pending</span>`);
+
+            const approveBtn = (!isApproved && isApprover)
+                ? `<button type="button" class="btn btn-secondary btn-sm btn-approve-pay-addr" data-index="${idx}" style="padding: 2px 6px; font-size: 11px; background-color: #10b981; color: white; border: none; border-radius: 3px; cursor: pointer;">Approve</button>`
+                : '';
+
+            tr.innerHTML = `
+                <td><strong>${escapeHtml(a.seqId || `0${idx + 1}`)}</strong></td>
+                <td><span style="background: #e0f2fe; color: #0369a1; font-weight: 600; padding: 2px 6px; border-radius: 3px; font-size: 11px;">${escapeHtml(a.method || '')}</span></td>
+                <td>${escapeHtml(a.description || '')}</td>
+                <td style="font-family: monospace; font-size: 12px;">${escapeHtml(a.bankAccount || '')}</td>
+                <td style="text-align: center;">
+                    ${a.isDefault ? '<span style="background: #dcfce7; color: #15803d; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 3px; border: 1px solid #bbf7d0;">YES</span>' : '<span style="color: #94a3b8; font-size: 10px; font-weight: 600;">NO</span>'}
+                </td>
+                <td>${escapeHtml(a.sortCode || '-')}</td>
+                <td>${escapeHtml(a.accountName || '-')}</td>
+                <td>${escapeHtml(a.bldgRef || '-')}</td>
+                <td style="text-align: center;">${statusBadge}</td>
+                <td style="text-align: center;">
+                    <div style="display: flex; gap: 4px; justify-content: center; flex-wrap: wrap;">
+                        <button type="button" class="btn btn-secondary btn-sm btn-edit-pay-addr" data-index="${idx}" style="padding: 2px 6px; font-size: 11px; background-color: #3b82f6; color: white; border: none; border-radius: 3px; cursor: pointer;">Edit</button>
+                        ${approveBtn}
+                        <button type="button" class="btn btn-secondary btn-sm btn-del-pay-addr" data-index="${idx}" style="padding: 2px 6px; font-size: 11px; background-color: var(--color-danger); color: white; border: none; border-radius: 3px; cursor: pointer;">Delete</button>
+                    </div>
+                </td>
+            `;
+
+            tr.querySelector('.btn-edit-pay-addr').addEventListener('click', () => {
+                editingPaymentAddressIndex = idx;
+                const addr = currentSupplierPaymentAddresses[idx];
+                const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+                const setChk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
+
+                setVal('modal-pay-addr-seq', addr.seqId || `0${idx + 1}`);
+                setVal('modal-pay-addr-method', addr.method || '');
+                setVal('modal-pay-addr-desc', addr.description || '');
+                setVal('modal-pay-addr-bank-acc', addr.bankAccount || '');
+                setVal('modal-pay-addr-sort-code', addr.sortCode || '');
+                setVal('modal-pay-addr-name', addr.accountName || '');
+                setVal('modal-pay-addr-bldg-ref', addr.bldgRef || '');
+                setVal('modal-pay-addr-status', addr.status || 'Approval Pending');
+                setChk('modal-pay-addr-default', addr.isDefault);
+
+                const title = document.getElementById('sup-pay-addr-modal-title');
+                if (title) title.textContent = 'Edit Payment Address';
+                const modal = document.getElementById('sup-pay-addr-modal');
+                if (modal) modal.classList.remove('hidden');
+            });
+
+            const approveBtnEl = tr.querySelector('.btn-approve-pay-addr');
+            if (approveBtnEl) {
+                approveBtnEl.addEventListener('click', () => {
+                    currentSupplierPaymentAddresses[idx].status = 'Active';
+                    renderSupplierPaymentAddressesList();
+                    showToast(`Payment address '${currentSupplierPaymentAddresses[idx].seqId}' approved.`, "success");
+                });
+            }
+
+            tr.querySelector('.btn-del-pay-addr').addEventListener('click', () => {
+                currentSupplierPaymentAddresses.splice(idx, 1);
+                renderSupplierPaymentAddressesList();
+                showToast("Payment address removed.", "warning");
+            });
+
+            body.appendChild(tr);
+        });
+    }
+
+    // 4. DISPATCH ADDRESSES LIST RENDERING
+    function renderSupplierDispatchAddressList() {
+        const body = document.getElementById('sup-disp-addr-body');
+        if (!body) return;
+        body.innerHTML = '';
+
+        if (currentSupplierDispatchAddresses.length === 0) {
+            body.innerHTML = `<tr><td colspan="10" class="text-center" style="color: var(--color-text-muted); padding: 20px;">No dispatch addresses configured. Fill details above and click '➕ Add Address'.</td></tr>`;
+            return;
+        }
+
+        currentSupplierDispatchAddresses.forEach((d, idx) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${escapeHtml(d.addressId || `0${idx + 1}`)}</strong></td>
+                <td>${escapeHtml(d.addr1 || '')}</td>
+                <td>${escapeHtml(d.addr2 || '')}</td>
+                <td>${escapeHtml(d.city || '')}</td>
+                <td>${escapeHtml(d.postcode || '')}</td>
+                <td>${escapeHtml(d.state || '-')}</td>
+                <td>${escapeHtml(d.county || '-')}</td>
+                <td>${escapeHtml(d.country || 'GB UNITED KINGDOM')}</td>
+                <td style="text-align: center;">
+                    ${d.isDefault ? '<span style="background: #dcfce7; color: #15803d; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px;">YES</span>' : '<span style="color: #94a3b8; font-size: 10px;">NO</span>'}
+                </td>
+                <td style="text-align: center;">
+                    <div style="display: flex; gap: 4px; justify-content: center;">
+                        <button type="button" class="btn btn-secondary btn-sm btn-edit-disp-addr" data-index="${idx}" style="padding: 2px 6px; font-size: 11px; background: #3b82f6; color: white; border: none; border-radius: 3px; cursor: pointer;">Edit</button>
+                        <button type="button" class="btn btn-secondary btn-sm btn-del-disp-addr" data-index="${idx}" style="padding: 2px 6px; font-size: 11px; background: var(--color-danger); color: white; border: none; border-radius: 3px; cursor: pointer;">Delete</button>
+                    </div>
+                </td>
+            `;
+
+            tr.querySelector('.btn-edit-disp-addr').addEventListener('click', () => {
+                editingDispatchAddressIndex = idx;
+                const item = currentSupplierDispatchAddresses[idx];
+                const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+                const setChk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
+
+                setVal('sup-disp-typing-addrid', item.addressId || `0${idx + 1}`);
+                setVal('sup-disp-typing-addr1', item.addr1 || '');
+                setVal('sup-disp-typing-addr2', item.addr2 || '');
+                setVal('sup-disp-typing-city', item.city || '');
+                setVal('sup-disp-typing-postcode', item.postcode || '');
+                setVal('sup-disp-typing-county', item.county || '');
+                setVal('sup-disp-typing-state', item.state || '');
+                setVal('sup-disp-typing-country', item.country || 'GB UNITED KINGDOM');
+                setVal('sup-disp-typing-valid-from', item.validFrom || '');
+                setVal('sup-disp-typing-valid-to', item.validTo || '');
+                setChk('sup-disp-typing-default', item.isDefault);
+
+                showToast(`Loaded Dispatch Address ID '${item.addressId || `0${idx + 1}`}' into form for editing.`, "info");
+            });
+
+            tr.querySelector('.btn-del-disp-addr').addEventListener('click', () => {
+                currentSupplierDispatchAddresses.splice(idx, 1);
+                if (editingDispatchAddressIndex === idx) editingDispatchAddressIndex = null;
+                renderSupplierDispatchAddressList();
+                showToast("Dispatch address removed.", "warning");
+            });
+
+            body.appendChild(tr);
+        });
+    }
+
+    // 5. LICENCE EXPIRY DATE VALIDATION & FEEDBACK
+    function updateCompanyRegExpiryFeedback(dateVal) {
+        const feedbackEl = document.getElementById('sup-lic-company-reg-expiry-feedback');
+        if (!feedbackEl) return;
+
+        if (!dateVal) {
+            feedbackEl.style.display = 'none';
+            feedbackEl.textContent = '';
+            return;
+        }
+
+        const expDate = new Date(dateVal);
+        if (isNaN(expDate.getTime())) {
+            feedbackEl.style.display = 'block';
+            feedbackEl.style.color = 'var(--color-danger)';
+            feedbackEl.textContent = '❌ Invalid date format.';
+            return;
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        expDate.setHours(0, 0, 0, 0);
+
+        const diffTime = expDate.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        feedbackEl.style.display = 'block';
+        if (diffDays < 0) {
+            feedbackEl.style.color = 'var(--color-danger)';
+            feedbackEl.textContent = `⚠️ Company Reg has expired (${Math.abs(diffDays)} days ago)`;
+        } else if (diffDays <= 30) {
+            feedbackEl.style.color = '#d97706';
+            feedbackEl.textContent = `⚠️ Company Reg expires soon (${diffDays} days remaining)`;
+        } else {
+            feedbackEl.style.color = '#10b981';
+            feedbackEl.textContent = `✅ Company Reg valid until ${dateVal} (${diffDays} days remaining)`;
+        }
+    }
+
+    function updateLicenceExpiryFeedback(dateVal) {
+        const feedbackEl = document.getElementById('sup-lic-expiry-feedback');
+        if (!feedbackEl) return;
+
+        if (!dateVal) {
+            feedbackEl.style.display = 'none';
+            feedbackEl.textContent = '';
+            return;
+        }
+
+        const expDate = new Date(dateVal);
+        if (isNaN(expDate.getTime())) {
+            feedbackEl.style.display = 'block';
+            feedbackEl.style.color = 'var(--color-danger)';
+            feedbackEl.textContent = '❌ Invalid date format.';
+            return;
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        expDate.setHours(0, 0, 0, 0);
+
+        const diffTime = expDate.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        feedbackEl.style.display = 'block';
+        if (diffDays < 0) {
+            feedbackEl.style.color = 'var(--color-danger)';
+            feedbackEl.textContent = `⚠️ Certificate has expired (${Math.abs(diffDays)} days ago)`;
+        } else if (diffDays <= 30) {
+            feedbackEl.style.color = '#d97706';
+            feedbackEl.textContent = `⚠️ Certificate expires soon (${diffDays} days remaining)`;
+        } else {
+            feedbackEl.style.color = '#10b981';
+            feedbackEl.textContent = `✅ Certificate valid until ${dateVal} (${diffDays} days remaining)`;
+        }
     }
 
     function renderSupplierFileList() {
@@ -7288,7 +7807,15 @@ SyriMed Healthcare`
         setVal('sup-gen-buyer-id', '*');
         setVal('sup-gen-category-code', '');
 
-        setVal('sup-inv-addr-id', '01');
+        // Invoice Address Info
+        setSelectedInvoiceAddressTypes(['Delivery', 'Invoice', 'Pay']);
+        const hasDelivDef = currentSupplierAddresses.some(a => a.deliveryDefault);
+        const hasInvoDef = currentSupplierAddresses.some(a => a.invoiceDefault);
+        const hasPayDef = currentSupplierAddresses.some(a => a.payDefault);
+        setChk('chk-sup-inv-def-deliv', !hasDelivDef);
+        setChk('chk-sup-inv-def-invo', !hasInvoDef);
+        setChk('chk-sup-inv-def-pay', !hasPayDef);
+
         setVal('sup-inv-addr1', '');
         setVal('sup-inv-addr2', '');
         setVal('sup-inv-city', '');
@@ -7296,27 +7823,80 @@ SyriMed Healthcare`
         setVal('sup-inv-county', '');
         setVal('sup-inv-state', '');
         setVal('sup-inv-country', 'GB UNITED KINGDOM');
+        setVal('sup-inv-valid-from', '');
+        setVal('sup-inv-valid-to', '');
 
+        // Payment Info
         setVal('sup-pay-invoicing-supplier', '');
         setVal('sup-pay-authorizer', 'PRICHA');
         setChk('sup-pay-netting', false);
         setVal('sup-pay-invoice-recipient', '*');
         setChk('sup-pay-blocked', false);
 
+        // Licence Info
         setVal('sup-lic-type', 'Non WDA Holder');
         setVal('sup-lic-supplier-for', 'Select...');
         setVal('sup-lic-company-reg', '');
+        setVal('sup-lic-company-reg-expiry', '');
+        setVal('sup-lic-gdp-gmp-cert-no', '');
+        setVal('sup-lic-expiry-date', '');
         setVal('sup-lic-risk-score', 'Select...');
         setChk('sup-lic-questionnaire', false);
+        setVal('sup-lic-tech-approved-date', '');
+        setVal('sup-lic-tech-renewal-date', '');
+        setVal('sup-lic-review-date', '');
+        const rActive = document.getElementById('sup-lic-active');
+        if (rActive) rActive.checked = true;
         setVal('sup-lic-note', 'Inactivated due to communication method changed in General tab.');
+        updateCompanyRegExpiryFeedback('');
+        updateLicenceExpiryFeedback('');
+
+        // Dispatch Personnel & Address
+        setVal('sup-disp-supname', '');
+        setVal('sup-disp-ship-via', '');
+        setVal('sup-disp-resp-person', '');
+        setVal('sup-disp-qual-person', '');
+        setVal('sup-disp-typing-addrid', '01');
+        setVal('sup-disp-typing-addr1', '');
+        setVal('sup-disp-typing-addr2', '');
+        setVal('sup-disp-typing-city', '');
+        setVal('sup-disp-typing-postcode', '');
+        setVal('sup-disp-typing-county', '');
+        setVal('sup-disp-typing-state', '');
+        setVal('sup-disp-typing-country', 'GB UNITED KINGDOM');
+        setVal('sup-disp-typing-valid-from', '');
+        setVal('sup-disp-typing-valid-to', '');
+        setChk('sup-disp-typing-default', false);
+
+        setVal('sup-disp-copy-addrid', '');
+        setVal('sup-disp-copy-addr1', '');
+        setVal('sup-disp-copy-addr2', '');
+        setVal('sup-disp-copy-city', '');
+        setVal('sup-disp-copy-postcode', '');
+        setVal('sup-disp-copy-county', '');
+        setVal('sup-disp-copy-state', '');
+        setVal('sup-disp-copy-country', 'GB UNITED KINGDOM');
+        setVal('sup-disp-copy-valid-from', '');
+        setVal('sup-disp-copy-valid-to', '');
 
         editingSupplierNo = null;
+        editingSupplierAddressIndex = null;
+        editingPaymentMethodIndex = null;
+        editingPaymentAddressIndex = null;
+        editingDispatchAddressIndex = null;
+
         currentSupplierContacts = [];
         currentSupplierAddresses = [];
         currentSupplierFiles = [];
+        currentSupplierPaymentMethods = [];
+        currentSupplierPaymentAddresses = [];
+        currentSupplierDispatchAddresses = [];
 
         renderSupplierContactsList();
         renderSupplierAddressList();
+        renderSupplierPaymentMethodsList();
+        renderSupplierPaymentAddressesList();
+        renderSupplierDispatchAddressList();
         renderSupplierFileList();
 
         const formTitle = document.getElementById('sup-form-title');
@@ -7340,6 +7920,10 @@ SyriMed Healthcare`
         };
 
         editingSupplierNo = s.supplierId;
+        editingSupplierAddressIndex = null;
+        editingPaymentMethodIndex = null;
+        editingPaymentAddressIndex = null;
+        editingDispatchAddressIndex = null;
 
         setVal('sup-form-id', s.supplierId);
         setVal('sup-form-name', s.supplierName);
@@ -7358,25 +7942,54 @@ SyriMed Healthcare`
         setVal('sup-gen-buyer-id', s.buyerId || '*');
         setVal('sup-gen-category-code', s.categoryCode);
 
+        // Payment Info
         setVal('sup-pay-invoicing-supplier', s.invoicingSupplier || s.supplierId);
         setVal('sup-pay-authorizer', s.paymentAuthorizer || 'PRICHA');
         setChk('sup-pay-netting', s.nettingAllowed);
         setVal('sup-pay-invoice-recipient', s.invoiceRecipient || '*');
         setChk('sup-pay-blocked', s.blockedForPayment);
 
+        // Licence Info
         setVal('sup-lic-type', s.licenceType || 'Non WDA Holder');
         setVal('sup-lic-supplier-for', s.supplierFor || 'Select...');
-        setVal('sup-lic-company-reg', s.companyRegNo);
+        setVal('sup-lic-company-reg', s.companyRegNo || '');
+        setVal('sup-lic-company-reg-expiry', s.companyRegExpiry || '');
+        setVal('sup-lic-gdp-gmp-cert-no', s.gdpGmpCertNo || '');
+        setVal('sup-lic-expiry-date', s.expiryDate || s.gdpGmpExpiry || '');
         setVal('sup-lic-risk-score', s.riskScore || 'Select...');
         setChk('sup-lic-questionnaire', s.questionnaire);
+        setVal('sup-lic-tech-approved-date', s.techApprovedDate || '');
+        setVal('sup-lic-tech-renewal-date', s.techRenewalDate || '');
+        setVal('sup-lic-review-date', s.reviewDate || '');
+        if (s.licenceStatus === 'Inactive') {
+            const rInactive = document.getElementById('sup-lic-inactive');
+            if (rInactive) rInactive.checked = true;
+        } else {
+            const rActive = document.getElementById('sup-lic-active');
+            if (rActive) rActive.checked = true;
+        }
         setVal('sup-lic-note', s.licenceNote || '');
+        updateCompanyRegExpiryFeedback(s.companyRegExpiry || '');
+        updateLicenceExpiryFeedback(s.expiryDate || s.gdpGmpExpiry || '');
+
+        // Dispatch Personnel
+        setVal('sup-disp-supname', s.dispSupName || s.supplierName || '');
+        setVal('sup-disp-ship-via', s.dispShipVia || '');
+        setVal('sup-disp-resp-person', s.dispRespPerson || '');
+        setVal('sup-disp-qual-person', s.dispQualPerson || '');
 
         currentSupplierContacts = s.contacts ? JSON.parse(JSON.stringify(s.contacts)) : [];
         currentSupplierAddresses = s.addresses ? JSON.parse(JSON.stringify(s.addresses)) : [];
         currentSupplierFiles = s.files ? JSON.parse(JSON.stringify(s.files)) : [];
+        currentSupplierPaymentMethods = s.paymentMethods ? JSON.parse(JSON.stringify(s.paymentMethods)) : [];
+        currentSupplierPaymentAddresses = s.paymentAddresses ? JSON.parse(JSON.stringify(s.paymentAddresses)) : [];
+        currentSupplierDispatchAddresses = s.dispatchAddresses ? JSON.parse(JSON.stringify(s.dispatchAddresses)) : [];
 
         renderSupplierContactsList();
         renderSupplierAddressList();
+        renderSupplierPaymentMethodsList();
+        renderSupplierPaymentAddressesList();
+        renderSupplierDispatchAddressList();
         renderSupplierFileList();
 
         const formTitle = document.getElementById('sup-form-title');
@@ -7390,6 +8003,19 @@ SyriMed Healthcare`
     function getSupplierFormData() {
         const getVal = id => document.getElementById(id) ? document.getElementById(id).value.trim() : '';
         const getChk = id => document.getElementById(id) ? document.getElementById(id).checked : false;
+
+        const licStatus = document.getElementById('sup-lic-inactive')?.checked ? 'Inactive' : 'Active';
+
+        const hasPendingPayAddr = currentSupplierPaymentAddresses.some(a => (a.status || '').toLowerCase().includes('pending'));
+        let supplierStatus = 'Active';
+        if (hasPendingPayAddr) {
+            supplierStatus = 'Pending for Approval';
+        } else if (editingSupplierNo) {
+            const existing = suppliers.find(s => s && s.supplierId && s.supplierId.toUpperCase() === editingSupplierNo.toUpperCase());
+            if (existing && existing.status === 'Inactive') {
+                supplierStatus = 'Inactive';
+            }
+        }
 
         return {
             supplierId: getVal('sup-form-id'),
@@ -7415,12 +8041,27 @@ SyriMed Healthcare`
             licenceType: getVal('sup-lic-type'),
             supplierFor: getVal('sup-lic-supplier-for'),
             companyRegNo: getVal('sup-lic-company-reg'),
+            companyRegExpiry: getVal('sup-lic-company-reg-expiry'),
+            gdpGmpCertNo: getVal('sup-lic-gdp-gmp-cert-no'),
+            expiryDate: getVal('sup-lic-expiry-date'),
+            gdpGmpExpiry: getVal('sup-lic-expiry-date'),
             riskScore: getVal('sup-lic-risk-score'),
             questionnaire: getChk('sup-lic-questionnaire'),
+            techApprovedDate: getVal('sup-lic-tech-approved-date'),
+            techRenewalDate: getVal('sup-lic-tech-renewal-date'),
+            reviewDate: getVal('sup-lic-review-date'),
+            licenceStatus: licStatus,
             licenceNote: getVal('sup-lic-note'),
-            status: "Active",
+            dispSupName: getVal('sup-disp-supname'),
+            dispShipVia: getVal('sup-disp-ship-via'),
+            dispRespPerson: getVal('sup-disp-resp-person'),
+            dispQualPerson: getVal('sup-disp-qual-person'),
+            status: supplierStatus,
             contacts: currentSupplierContacts,
             addresses: currentSupplierAddresses,
+            paymentMethods: currentSupplierPaymentMethods,
+            paymentAddresses: currentSupplierPaymentAddresses,
+            dispatchAddresses: currentSupplierDispatchAddresses,
             files: currentSupplierFiles
         };
     }
@@ -7433,6 +8074,20 @@ SyriMed Healthcare`
         if (!data.supplierName) {
             showToast("Error: Supplier Name is required.", "danger");
             return false;
+        }
+        if (data.companyRegExpiry) {
+            const exp = new Date(data.companyRegExpiry);
+            if (isNaN(exp.getTime())) {
+                showToast("Error: Company Reg Expiry Date is not a valid date.", "danger");
+                return false;
+            }
+        }
+        if (data.expiryDate) {
+            const exp = new Date(data.expiryDate);
+            if (isNaN(exp.getTime())) {
+                showToast("Error: GDP/GMP Certificate Expiry Date is not a valid date.", "danger");
+                return false;
+            }
         }
         return true;
     }
@@ -7448,22 +8103,24 @@ SyriMed Healthcare`
                 document.querySelectorAll('.sub-item').forEach(el => el.classList.remove('active'));
                 btnNavSupplierSub.classList.add('active');
 
-                // Hide other workspace panels
-                document.querySelectorAll('.workspace-panel').forEach(p => p.classList.add('hidden'));
+                // Switch workspace module view
+                switchModule('supplier-setup');
+
+                // Hide other specific workspaces
+                const custWorkspace = document.getElementById('customer-creation-workspace');
+                const compWorkspace = document.getElementById('company-setup-workspace');
+                if (custWorkspace) custWorkspace.classList.add('hidden');
+                if (compWorkspace) compWorkspace.classList.add('hidden');
                 if (supplierWorkspace) supplierWorkspace.classList.remove('hidden');
 
-                const btnSave = document.getElementById('btn-save');
-                const btnCancel = document.getElementById('btn-cancel');
-                if (btnSave) btnSave.style.display = 'none';
-                if (btnCancel) btnCancel.style.display = 'none';
-
-                renderSupplierList();
+                // Sub-tab reset & render
+                showSupplierListView();
                 showToast("Switched to Supplier Setup profile.", "success");
             });
         }
 
-        // Sub-tabs switching
-        const subTabs = [
+        // Sub-tabs in Supplier Form
+        const supplierSubTabs = [
             { btnId: 'btn-sup-subtab-general', panelId: 'panel-sup-subtab-general' },
             { btnId: 'btn-sup-subtab-invoice-addr', panelId: 'panel-sup-subtab-invoice-addr' },
             { btnId: 'btn-sup-subtab-payment', panelId: 'panel-sup-subtab-payment' },
@@ -7472,11 +8129,12 @@ SyriMed Healthcare`
             { btnId: 'btn-sup-subtab-dispatch-addr', panelId: 'panel-sup-subtab-dispatch-addr' }
         ];
 
-        subTabs.forEach(st => {
+        supplierSubTabs.forEach(st => {
             const btn = document.getElementById(st.btnId);
             if (btn) {
-                btn.addEventListener('click', () => {
-                    subTabs.forEach(t => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    supplierSubTabs.forEach(t => {
                         const b = document.getElementById(t.btnId);
                         const p = document.getElementById(t.panelId);
                         if (b) b.classList.remove('active');
@@ -7489,43 +8147,26 @@ SyriMed Healthcare`
             }
         });
 
-        // View Directory Button
-        const btnSupViewDirectory = document.getElementById('btn-sup-view-directory');
-        if (btnSupViewDirectory) {
-            btnSupViewDirectory.addEventListener('click', () => {
-                showSupplierListView();
-            });
-        }
-
-        // Quick Create New Supplier Button
-        const btnCreateSupplierQuick = document.getElementById('btn-create-supplier-quick');
-        if (btnCreateSupplierQuick) {
-            btnCreateSupplierQuick.addEventListener('click', () => {
-                resetSupplierForm();
-                showSupplierFormView();
-            });
-        }
-
-        // Add Contact Row
-        const btnContactAddRow = document.getElementById('btn-sup-contact-add-row');
-        if (btnContactAddRow) {
-            btnContactAddRow.addEventListener('click', () => {
+        // Add Contact Row Button
+        const btnAddContact = document.getElementById('btn-sup-contact-add-row') || document.getElementById('btn-sup-add-contact');
+        if (btnAddContact) {
+            btnAddContact.addEventListener('click', () => {
                 currentSupplierContacts.push({
                     selected: false,
-                    name: '',
-                    description: '',
-                    commMethod: 'Phone',
-                    value: '',
+                    name: "",
+                    description: "",
+                    commMethod: "Phone",
+                    value: "",
                     docReceiver: false,
-                    docType: ''
+                    docType: ""
                 });
                 renderSupplierContactsList();
                 showToast("Supplier contact row added.", "success");
             });
         }
 
-        // Delete Contact Row
-        const btnContactDeleteSelected = document.getElementById('btn-sup-contact-delete-selected');
+        // Delete Contact Rows Button
+        const btnContactDeleteSelected = document.getElementById('btn-sup-contact-delete-selected') || document.getElementById('btn-sup-contact-del-selected');
         if (btnContactDeleteSelected) {
             btnContactDeleteSelected.addEventListener('click', () => {
                 const initLen = currentSupplierContacts.length;
@@ -7537,10 +8178,57 @@ SyriMed Healthcare`
             });
         }
 
-        // Add Address Line
+        // Toggle All Contacts Checkbox
+        const chkContactsAll = document.getElementById('chk-sup-contacts-all-toggle');
+        if (chkContactsAll) {
+            chkContactsAll.addEventListener('change', (e) => {
+                const checked = e.target.checked;
+                currentSupplierContacts.forEach(c => c.selected = checked);
+                renderSupplierContactsList();
+            });
+        }
+
+        // View Directory Header Button
+        const btnSupViewDir = document.getElementById('btn-sup-view-directory');
+        if (btnSupViewDir) {
+            btnSupViewDir.addEventListener('click', () => {
+                showSupplierListView();
+            });
+        }
+
+        // 1. INVOICE ADDRESS INFO: Multi-Select, Per-Type Defaults & Add/Update
+        const triggerBox = document.getElementById('sup-inv-addr-type-trigger');
+        const dropdownMenu = document.getElementById('sup-inv-addr-type-dropdown');
+
+        if (triggerBox && dropdownMenu) {
+            triggerBox.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdownMenu.classList.toggle('hidden');
+            });
+
+            document.querySelectorAll('#sup-inv-addr-type-dropdown .chk-sup-addr-type').forEach(cb => {
+                cb.addEventListener('change', () => {
+                    const current = getSelectedInvoiceAddressTypes();
+                    renderInvoiceAddressTypeChips(current);
+                    updateDefaultOptionsVisibility(current);
+                });
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!triggerBox.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                    dropdownMenu.classList.add('hidden');
+                }
+            });
+
+            renderInvoiceAddressTypeChips(getSelectedInvoiceAddressTypes());
+        }
+
         const btnInvAddUpdate = document.getElementById('btn-sup-inv-add-update');
+        const btnInvReset = document.getElementById('btn-sup-inv-reset');
+        
         if (btnInvAddUpdate) {
             btnInvAddUpdate.addEventListener('click', () => {
+                const selectedTypes = getSelectedInvoiceAddressTypes();
                 const addr1 = document.getElementById('sup-inv-addr1') ? document.getElementById('sup-inv-addr1').value.trim() : '';
                 const addr2 = document.getElementById('sup-inv-addr2') ? document.getElementById('sup-inv-addr2').value.trim() : '';
                 const city = document.getElementById('sup-inv-city') ? document.getElementById('sup-inv-city').value.trim() : '';
@@ -7548,14 +8236,377 @@ SyriMed Healthcare`
                 const county = document.getElementById('sup-inv-county') ? document.getElementById('sup-inv-county').value.trim() : '';
                 const state = document.getElementById('sup-inv-state') ? document.getElementById('sup-inv-state').value.trim() : '';
                 const country = document.getElementById('sup-inv-country') ? document.getElementById('sup-inv-country').value : 'GB UNITED KINGDOM';
+                const validFrom = document.getElementById('sup-inv-valid-from') ? document.getElementById('sup-inv-valid-from').value : '';
+                const validTo = document.getElementById('sup-inv-valid-to') ? document.getElementById('sup-inv-valid-to').value : '';
 
-                currentSupplierAddresses.push({
-                    addressId: `0${currentSupplierAddresses.length + 1}`,
-                    addr1, addr2, city, postcode, county, state, country,
-                    validFrom: '', validTo: ''
+                const isDefDeliv = selectedTypes.includes('Delivery') && (document.getElementById('chk-sup-inv-def-deliv')?.checked || false);
+                const isDefInvo = selectedTypes.includes('Invoice') && (document.getElementById('chk-sup-inv-def-invo')?.checked || false);
+                const isDefPay = selectedTypes.includes('Pay') && (document.getElementById('chk-sup-inv-def-pay')?.checked || false);
+
+                if (selectedTypes.length === 0) {
+                    showToast("Error: Please select at least one Address Type (Delivery, Invoice, or Pay).", "danger");
+                    return;
+                }
+
+                if (!addr1) {
+                    showToast("Error: Please enter Address 1.", "danger");
+                    return;
+                }
+
+                let addressId;
+                if (editingSupplierAddressIndex !== null && editingSupplierAddressIndex >= 0 && editingSupplierAddressIndex < currentSupplierAddresses.length) {
+                    addressId = currentSupplierAddresses[editingSupplierAddressIndex].addressId || getNextSupplierAddressId();
+                } else {
+                    addressId = getNextSupplierAddressId();
+                }
+
+                // Automatic single default replacement per type
+                const replacedDefaults = [];
+                currentSupplierAddresses.forEach((a, i) => {
+                    if (editingSupplierAddressIndex === null || i !== editingSupplierAddressIndex) {
+                        if (isDefDeliv && a.deliveryDefault) {
+                            a.deliveryDefault = false;
+                            replacedDefaults.push(`Delivery (replaced on Address ${a.addressId})`);
+                        }
+                        if (isDefInvo && a.invoiceDefault) {
+                            a.invoiceDefault = false;
+                            replacedDefaults.push(`Invoice (replaced on Address ${a.addressId})`);
+                        }
+                        if (isDefPay && a.payDefault) {
+                            a.payDefault = false;
+                            replacedDefaults.push(`Pay (replaced on Address ${a.addressId})`);
+                        }
+                    }
                 });
+
+                const newAddr = {
+                    addressId,
+                    addressTypes: selectedTypes,
+                    addressType: selectedTypes.join(' + '),
+                    addr1, addr2, city, postcode, county, state, country,
+                    validFrom, validTo,
+                    deliveryDefault: isDefDeliv,
+                    invoiceDefault: isDefInvo,
+                    payDefault: isDefPay
+                };
+
+                if (editingSupplierAddressIndex !== null && editingSupplierAddressIndex >= 0 && editingSupplierAddressIndex < currentSupplierAddresses.length) {
+                    currentSupplierAddresses[editingSupplierAddressIndex] = newAddr;
+                    showToast(`Address '${newAddr.addressId}' updated.`, "success");
+                    editingSupplierAddressIndex = null;
+                } else {
+                    currentSupplierAddresses.push(newAddr);
+                    showToast(`Address '${newAddr.addressId}' added.`, "success");
+                }
+
+                if (replacedDefaults.length > 0) {
+                    showToast(`Default updated: ${replacedDefaults.join('; ')}`, "info");
+                }
+
                 renderSupplierAddressList();
-                showToast("Address line added.", "success");
+
+                // Clear fields
+                if (btnInvReset) btnInvReset.click();
+            });
+        }
+
+        if (btnInvReset) {
+            btnInvReset.addEventListener('click', () => {
+                editingSupplierAddressIndex = null;
+                const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+                const setChk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
+
+                setSelectedInvoiceAddressTypes(['Delivery', 'Invoice', 'Pay']);
+                const hasDelivDef = currentSupplierAddresses.some(a => a.deliveryDefault);
+                const hasInvoDef = currentSupplierAddresses.some(a => a.invoiceDefault);
+                const hasPayDef = currentSupplierAddresses.some(a => a.payDefault);
+
+                setChk('chk-sup-inv-def-deliv', !hasDelivDef);
+                setChk('chk-sup-inv-def-invo', !hasInvoDef);
+                setChk('chk-sup-inv-def-pay', !hasPayDef);
+
+                setVal('sup-inv-addr1', '');
+                setVal('sup-inv-addr2', '');
+                setVal('sup-inv-city', '');
+                setVal('sup-inv-postcode', '');
+                setVal('sup-inv-county', '');
+                setVal('sup-inv-state', '');
+                setVal('sup-inv-country', 'GB UNITED KINGDOM');
+                setVal('sup-inv-valid-from', '');
+                setVal('sup-inv-valid-to', '');
+            });
+        }
+
+        // 2. PAYMENT METHODS: Add Modal & Handlers
+        const btnPayMethodAdd = document.getElementById('btn-sup-pay-method-add');
+        const modalPayMethod = document.getElementById('sup-pay-method-modal');
+        const btnClosePayMethod = document.getElementById('btn-close-pay-method-modal');
+        const btnCancelPayMethod = document.getElementById('btn-cancel-pay-method-modal');
+        const btnSavePayMethod = document.getElementById('btn-save-pay-method-modal');
+
+        if (btnPayMethodAdd) {
+            btnPayMethodAdd.addEventListener('click', () => {
+                editingPaymentMethodIndex = null;
+                const codeInput = document.getElementById('modal-pay-method-code');
+                const descInput = document.getElementById('modal-pay-method-desc');
+                const defChk = document.getElementById('modal-pay-method-default');
+                const title = document.getElementById('sup-pay-method-modal-title');
+
+                if (codeInput) codeInput.value = '';
+                if (descInput) descInput.value = '';
+                if (defChk) defChk.checked = currentSupplierPaymentMethods.length === 0;
+                if (title) title.textContent = 'Add Payment Method';
+                if (modalPayMethod) modalPayMethod.classList.remove('hidden');
+            });
+        }
+
+        [btnClosePayMethod, btnCancelPayMethod].forEach(btn => {
+            if (btn) {
+                btn.addEventListener('click', () => {
+                    if (modalPayMethod) modalPayMethod.classList.add('hidden');
+                    editingPaymentMethodIndex = null;
+                });
+            }
+        });
+
+        if (btnSavePayMethod) {
+            btnSavePayMethod.addEventListener('click', () => {
+                const code = document.getElementById('modal-pay-method-code')?.value.trim() || '';
+                const desc = document.getElementById('modal-pay-method-desc')?.value.trim() || '';
+                const isDefault = document.getElementById('modal-pay-method-default')?.checked || false;
+
+                if (!code) {
+                    showToast("Error: Payment Method Code/Name is required.", "danger");
+                    return;
+                }
+                if (!desc) {
+                    showToast("Error: Payment Method Description is required.", "danger");
+                    return;
+                }
+
+                if (isDefault) {
+                    currentSupplierPaymentMethods.forEach(m => m.isDefault = false);
+                }
+
+                const item = { method: code.toUpperCase(), description: desc, isDefault };
+
+                if (editingPaymentMethodIndex !== null && editingPaymentMethodIndex >= 0 && editingPaymentMethodIndex < currentSupplierPaymentMethods.length) {
+                    currentSupplierPaymentMethods[editingPaymentMethodIndex] = item;
+                    showToast(`Payment method '${item.method}' updated.`, "success");
+                } else {
+                    currentSupplierPaymentMethods.push(item);
+                    showToast(`Payment method '${item.method}' added.`, "success");
+                }
+
+                if (modalPayMethod) modalPayMethod.classList.add('hidden');
+                editingPaymentMethodIndex = null;
+                renderSupplierPaymentMethodsList();
+            });
+        }
+
+        // 3. PAYMENT ADDRESSES: Add Modal & Handlers
+        const btnPayAddrAdd = document.getElementById('btn-sup-pay-addr-add');
+        const modalPayAddr = document.getElementById('sup-pay-addr-modal');
+        const btnClosePayAddr = document.getElementById('btn-close-pay-addr-modal');
+        const btnCancelPayAddr = document.getElementById('btn-cancel-pay-addr-modal');
+        const btnSavePayAddr = document.getElementById('btn-save-pay-addr-modal');
+
+        if (btnPayAddrAdd) {
+            btnPayAddrAdd.addEventListener('click', () => {
+                editingPaymentAddressIndex = null;
+                const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+                const setChk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
+
+                setVal('modal-pay-addr-seq', `0${currentSupplierPaymentAddresses.length + 1}`);
+                setVal('modal-pay-addr-method', currentSupplierPaymentMethods.length > 0 ? currentSupplierPaymentMethods[0].method : 'BACS');
+                setVal('modal-pay-addr-desc', 'Settlement Account');
+                setVal('modal-pay-addr-bank-acc', '');
+                setVal('modal-pay-addr-sort-code', '');
+                setVal('modal-pay-addr-name', document.getElementById('sup-form-name')?.value || '');
+                setVal('modal-pay-addr-bldg-ref', '');
+                setVal('modal-pay-addr-status', 'Approval Pending');
+                setChk('modal-pay-addr-default', currentSupplierPaymentAddresses.length === 0);
+
+                const title = document.getElementById('sup-pay-addr-modal-title');
+                if (title) title.textContent = 'Add Payment Address';
+                if (modalPayAddr) modalPayAddr.classList.remove('hidden');
+            });
+        }
+
+        [btnClosePayAddr, btnCancelPayAddr].forEach(btn => {
+            if (btn) {
+                btn.addEventListener('click', () => {
+                    if (modalPayAddr) modalPayAddr.classList.add('hidden');
+                    editingPaymentAddressIndex = null;
+                });
+            }
+        });
+
+        if (btnSavePayAddr) {
+            btnSavePayAddr.addEventListener('click', () => {
+                const getVal = id => document.getElementById(id) ? document.getElementById(id).value.trim() : '';
+                const seqId = getVal('modal-pay-addr-seq') || `0${currentSupplierPaymentAddresses.length + 1}`;
+                const method = getVal('modal-pay-addr-method');
+                const desc = getVal('modal-pay-addr-desc');
+                const bankAccount = getVal('modal-pay-addr-bank-acc');
+                const sortCode = getVal('modal-pay-addr-sort-code');
+                const accountName = getVal('modal-pay-addr-name');
+                const bldgRef = getVal('modal-pay-addr-bldg-ref');
+                const status = getVal('modal-pay-addr-status') || 'Approval Pending';
+                const isDefault = document.getElementById('modal-pay-addr-default')?.checked || false;
+
+                if (!method) {
+                    showToast("Error: Payment Method is required.", "danger");
+                    return;
+                }
+                if (!bankAccount) {
+                    showToast("Error: Bank Account / IBAN is required.", "danger");
+                    return;
+                }
+
+                if (isDefault) {
+                    currentSupplierPaymentAddresses.forEach(a => a.isDefault = false);
+                }
+
+                const item = {
+                    seqId,
+                    method,
+                    description: desc,
+                    bankAccount,
+                    sortCode,
+                    accountName,
+                    bldgRef,
+                    status,
+                    isDefault
+                };
+
+                if (editingPaymentAddressIndex !== null && editingPaymentAddressIndex >= 0 && editingPaymentAddressIndex < currentSupplierPaymentAddresses.length) {
+                    currentSupplierPaymentAddresses[editingPaymentAddressIndex] = item;
+                    showToast(`Payment address '${item.seqId}' updated.`, "success");
+                } else {
+                    currentSupplierPaymentAddresses.push(item);
+                    showToast(`Payment address '${item.seqId}' added.`, "success");
+                }
+
+                if (modalPayAddr) modalPayAddr.classList.add('hidden');
+                editingPaymentAddressIndex = null;
+                renderSupplierPaymentAddressesList();
+            });
+        }
+
+        // Manager Role simulation toggle
+        const simManagerRole = document.getElementById('sim-manager-role');
+        if (simManagerRole) {
+            simManagerRole.addEventListener('change', () => {
+                renderSupplierPaymentAddressesList();
+            });
+        }
+
+        // 4. LICENCE INFO: Expiry Date Event Listeners
+        const compRegExpiryInput = document.getElementById('sup-lic-company-reg-expiry');
+        if (compRegExpiryInput) {
+            compRegExpiryInput.addEventListener('input', (e) => {
+                updateCompanyRegExpiryFeedback(e.target.value);
+            });
+            compRegExpiryInput.addEventListener('change', (e) => {
+                updateCompanyRegExpiryFeedback(e.target.value);
+            });
+        }
+
+        const licExpiryInput = document.getElementById('sup-lic-expiry-date');
+        if (licExpiryInput) {
+            licExpiryInput.addEventListener('input', (e) => {
+                updateLicenceExpiryFeedback(e.target.value);
+            });
+            licExpiryInput.addEventListener('change', (e) => {
+                updateLicenceExpiryFeedback(e.target.value);
+            });
+        }
+
+        // 5. DISPATCH ADDRESS INFO: Add Address & Reset
+        const btnDispAddAddr = document.getElementById('btn-sup-disp-add-addr');
+        const btnDispReset = document.getElementById('btn-sup-disp-reset');
+
+        if (btnDispAddAddr) {
+            btnDispAddAddr.addEventListener('click', () => {
+                const getVal = id => document.getElementById(id) ? document.getElementById(id).value.trim() : '';
+                const addrId = getVal('sup-disp-typing-addrid');
+                const addr1 = getVal('sup-disp-typing-addr1');
+                const addr2 = getVal('sup-disp-typing-addr2');
+                const city = getVal('sup-disp-typing-city');
+                const postcode = getVal('sup-disp-typing-postcode');
+                const county = getVal('sup-disp-typing-county');
+                const state = getVal('sup-disp-typing-state');
+                const country = getVal('sup-disp-typing-country') || 'GB UNITED KINGDOM';
+                const validFrom = getVal('sup-disp-typing-valid-from');
+                const validTo = getVal('sup-disp-typing-valid-to');
+                const isDefault = document.getElementById('sup-disp-typing-default')?.checked || false;
+
+                if (!addr1 && !addrId) {
+                    showToast("Error: Please provide Address ID or Address 1.", "danger");
+                    return;
+                }
+
+                if (isDefault) {
+                    currentSupplierDispatchAddresses.forEach(d => d.isDefault = false);
+                }
+
+                const item = {
+                    addressId: addrId || `0${currentSupplierDispatchAddresses.length + 1}`,
+                    addr1,
+                    addr2,
+                    city,
+                    postcode,
+                    county,
+                    state,
+                    country,
+                    validFrom,
+                    validTo,
+                    isDefault
+                };
+
+                if (editingDispatchAddressIndex !== null && editingDispatchAddressIndex >= 0 && editingDispatchAddressIndex < currentSupplierDispatchAddresses.length) {
+                    currentSupplierDispatchAddresses[editingDispatchAddressIndex] = item;
+                    showToast(`Dispatch address '${item.addressId}' updated.`, "success");
+                    editingDispatchAddressIndex = null;
+                } else {
+                    currentSupplierDispatchAddresses.push(item);
+                    showToast(`Dispatch address '${item.addressId}' added.`, "success");
+                }
+
+                renderSupplierDispatchAddressList();
+                if (btnDispReset) btnDispReset.click();
+            });
+        }
+
+        if (btnDispReset) {
+            btnDispReset.addEventListener('click', () => {
+                editingDispatchAddressIndex = null;
+                const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+                const setChk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
+
+                setVal('sup-disp-typing-addrid', `0${currentSupplierDispatchAddresses.length + 1}`);
+                setVal('sup-disp-typing-addr1', '');
+                setVal('sup-disp-typing-addr2', '');
+                setVal('sup-disp-typing-city', '');
+                setVal('sup-disp-typing-postcode', '');
+                setVal('sup-disp-typing-county', '');
+                setVal('sup-disp-typing-state', '');
+                setVal('sup-disp-typing-country', 'GB UNITED KINGDOM');
+                setVal('sup-disp-typing-valid-from', '');
+                setVal('sup-disp-typing-valid-to', '');
+                setChk('sup-disp-typing-default', false);
+
+                setVal('sup-disp-copy-addrid', '');
+                setVal('sup-disp-copy-addr1', '');
+                setVal('sup-disp-copy-addr2', '');
+                setVal('sup-disp-copy-city', '');
+                setVal('sup-disp-copy-postcode', '');
+                setVal('sup-disp-copy-county', '');
+                setVal('sup-disp-copy-state', '');
+                setVal('sup-disp-copy-country', 'GB UNITED KINGDOM');
+                setVal('sup-disp-copy-valid-from', '');
+                setVal('sup-disp-copy-valid-to', '');
             });
         }
 
@@ -7587,102 +8638,15 @@ SyriMed Healthcare`
             });
         }
 
-
-        const btnPayMethodAdd = document.getElementById('btn-sup-pay-method-add');
-        const payMethodsBody = document.getElementById('sup-pay-methods-body');
-        if (btnPayMethodAdd && payMethodsBody) {
-            btnPayMethodAdd.addEventListener('click', (e) => {
-                e.preventDefault();
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td style="padding: 4px; border: 1px solid #bfdbfe;"><input type="text" placeholder="Method" style="width: 100%; border: none; background: transparent; outline: none;"></td>
-                    <td style="padding: 4px; border: 1px solid #bfdbfe;"><input type="text" placeholder="Description" style="width: 100%; border: none; background: transparent; outline: none;"></td>
-                    <td style="padding: 4px; border: 1px solid #bfdbfe; text-align: center;"><input type="checkbox"></td>
-                `;
-                payMethodsBody.appendChild(tr);
+        // Quick Create New Supplier Button
+        const btnCreateSupplierQuick = document.getElementById('btn-create-supplier-quick');
+        if (btnCreateSupplierQuick) {
+            btnCreateSupplierQuick.addEventListener('click', () => {
+                resetSupplierForm();
+                showSupplierFormView();
             });
         }
 
-        const btnPayAddrAdd = document.getElementById('btn-sup-pay-addr-add');
-        const payAddressesBody = document.getElementById('sup-pay-addresses-body');
-        if (btnPayAddrAdd && payAddressesBody) {
-            btnPayAddrAdd.addEventListener('click', (e) => {
-                e.preventDefault();
-                const tr = document.createElement('tr');
-                tr.classList.add('new-pending-row');
-                tr.innerHTML = `
-                    <td style="padding: 4px; border: 1px solid #bfdbfe;"><input type="text" placeholder="Seq" style="width: 100%; border: none; background: transparent; outline: none; font-size: 11px;"></td>
-                    <td style="padding: 4px; border: 1px solid #bfdbfe;"><input type="text" placeholder="Method" style="width: 100%; border: none; background: transparent; outline: none; font-size: 11px;"></td>
-                    <td style="padding: 4px; border: 1px solid #bfdbfe;"><input type="text" placeholder="Desc" style="width: 100%; border: none; background: transparent; outline: none; font-size: 11px;"></td>
-                    <td style="padding: 4px; border: 1px solid #bfdbfe;"><input type="text" placeholder="Bank Acc" style="width: 100%; border: none; background: transparent; outline: none; font-size: 11px;"></td>
-                    <td style="padding: 4px; border: 1px solid #bfdbfe; text-align: center;"><input type="checkbox"></td>
-                    <td style="padding: 4px; border: 1px solid #bfdbfe;"><input type="text" placeholder="Sort Code" style="width: 100%; border: none; background: transparent; outline: none; font-size: 11px;"></td>
-                    <td style="padding: 4px; border: 1px solid #bfdbfe;"><input type="text" placeholder="Name" style="width: 100%; border: none; background: transparent; outline: none; font-size: 11px;"></td>
-                    <td style="padding: 4px; border: 1px solid #bfdbfe;"><input type="text" placeholder="Bldg Ref" style="width: 100%; border: none; background: transparent; outline: none; font-size: 11px;"></td>
-                    <td style="padding: 4px; border: 1px solid #bfdbfe; color: #64748b; font-weight: bold;" class="status-cell">Not Saved</td>
-                    <td style="padding: 4px; border: 1px solid #bfdbfe; text-align: center;" class="action-cell">
-                        <button type="button" class="btn btn-secondary btn-sm btn-delete-row" style="padding: 2px 6px; font-size: 11px; background-color: var(--color-danger); color: white; border: none; border-radius: 2px; cursor: pointer;">Delete</button>
-                    </td>
-                `;
-                payAddressesBody.appendChild(tr);
-            });
-        }
-
-        // Inline Action handlers for Payment Addresses table
-        if (payAddressesBody) {
-            payAddressesBody.addEventListener('click', (e) => {
-                if (e.target.classList.contains('btn-delete-row')) {
-                    e.preventDefault();
-                    e.target.closest('tr').remove();
-                } else if (e.target.classList.contains('btn-approve-row')) {
-                    e.preventDefault();
-                    const tr = e.target.closest('tr');
-                    const statusCell = tr.querySelector('.status-cell');
-                    if (statusCell) {
-                        statusCell.textContent = 'Approved';
-                        statusCell.style.color = '#10b981'; // Green
-                    }
-                    e.target.remove(); // Remove approve button once approved
-                    showToast('Payment address approved.', 'success');
-                } else if (e.target.classList.contains('btn-edit-row')) {
-                    e.preventDefault();
-                    const tr = e.target.closest('tr');
-                    // Convert row to edit mode
-                    if (!tr.classList.contains('new-pending-row')) {
-                        tr.classList.add('new-pending-row');
-                        
-                        const cells = tr.querySelectorAll('td');
-                        const createInput = (val) => `<input type="text" value="${val}" style="width: 100%; border: none; background: transparent; outline: none; font-size: 11px;">`;
-                        
-                        for (let i = 0; i < 8; i++) {
-                            if (i !== 4) {
-                                cells[i].innerHTML = createInput(cells[i].textContent.trim());
-                            } else {
-                                const isChecked = cells[i].querySelector('input') ? cells[i].querySelector('input').checked : false;
-                                cells[i].innerHTML = `<input type="checkbox" ${isChecked ? 'checked' : ''}>`;
-                            }
-                        }
-                        
-                        cells[8].textContent = 'Not Saved';
-                        cells[8].style.color = '#64748b';
-                        
-                        cells[9].innerHTML = `<button type="button" class="btn btn-secondary btn-sm btn-delete-row" style="padding: 2px 6px; font-size: 11px; background-color: var(--color-danger); color: white; border: none; border-radius: 2px; cursor: pointer;">Delete</button>`;
-                    }
-                }
-            });
-        }
-
-        // Manager Role simulation
-        const simManagerRole = document.getElementById('sim-manager-role');
-        if (simManagerRole) {
-            simManagerRole.addEventListener('change', (e) => {
-                const isManager = e.target.checked;
-                const approveBtns = document.querySelectorAll('.btn-approve-row');
-                approveBtns.forEach(btn => {
-                    btn.style.display = isManager ? 'inline-block' : 'none';
-                });
-            });
-        }
         // Action Buttons
         const btnSupSave = document.getElementById('btn-sup-save');
         const btnSupCopy = document.getElementById('btn-sup-copy');
@@ -7740,54 +8704,21 @@ SyriMed Healthcare`
                 if (idx !== -1) {
                     suppliers[idx] = data;
                     saveSuppliersState();
-
-                    // Process pending payment addresses
-                    const pendingRows = document.querySelectorAll('#sup-pay-addresses-body .new-pending-row');
-                    if (pendingRows.length > 0) {
-                        const isManager = document.getElementById('sim-manager-role')?.checked || false;
-                        
-                        pendingRows.forEach(tr => {
-                            const inputs = tr.querySelectorAll('input[type="text"]');
-                            const chk = tr.querySelector('input[type="checkbox"]');
-                            
-                            const seq = inputs[0]?.value || '';
-                            const method = inputs[1]?.value || '';
-                            const desc = inputs[2]?.value || '';
-                            const acc = inputs[3]?.value || '';
-                            const isDefault = chk ? chk.checked : false;
-                            const sort = inputs[4]?.value || '';
-                            const name = inputs[5]?.value || '';
-                            const bldg = inputs[6]?.value || '';
-
-                            tr.classList.remove('new-pending-row');
-                            
-                            const cells = tr.querySelectorAll('td');
-                            cells[0].textContent = seq;
-                            cells[1].textContent = method;
-                            cells[2].textContent = desc;
-                            cells[3].textContent = acc;
-                            cells[4].innerHTML = `<input type="checkbox" ${isDefault ? 'checked' : ''} disabled>`;
-                            cells[5].textContent = sort;
-                            cells[6].textContent = name;
-                            cells[7].textContent = bldg;
-                            
-                            cells[8].textContent = 'Approval Pending';
-                            cells[8].style.color = '#d97706'; // Orange
-                            
-                            cells[9].innerHTML = `
-                                <button type="button" class="btn btn-secondary btn-sm btn-edit-row" style="padding: 2px 6px; font-size: 11px; background-color: #3b82f6; color: white; border: none; border-radius: 2px; cursor: pointer; margin-right: 4px;">Edit</button>
-                                <button type="button" class="btn btn-secondary btn-sm btn-approve-row" style="padding: 2px 6px; font-size: 11px; background-color: #10b981; color: white; border: none; border-radius: 2px; cursor: pointer; display: ${isManager ? 'inline-block' : 'none'};">Approve</button>
-                            `;
-                        });
-                        showToast(`${pendingRows.length} payment addresses saved and pending approval.`, 'info');
-                    }
-
                     showToast(`Supplier '${data.supplierName}' updated successfully.`, "success");
                     resetSupplierForm();
                     showSupplierListView();
                 } else {
                     showToast(`Error: Supplier '${editingSupplierNo}' not found.`, "danger");
                 }
+            });
+        }
+
+        // Simulate Manager Role change
+        const simManagerRoleChk = document.getElementById('sim-manager-role');
+        if (simManagerRoleChk) {
+            simManagerRoleChk.addEventListener('change', () => {
+                renderSupplierPaymentAddressesList();
+                renderSupplierList();
             });
         }
 
@@ -7923,9 +8854,15 @@ SyriMed Healthcare`
                 
                 showToast(`Switched user role to ${role}`, 'success');
                 
-                // Refresh specific module views that depend on RBAC (e.g. Customer QA Approval)
+                // Refresh specific module views that depend on RBAC (e.g. Customer QA Approval, Supplier QA Approval, Payment Address QA Approval)
                 if (typeof renderCustomerList === 'function') {
                     renderCustomerList();
+                }
+                if (typeof renderSupplierList === 'function') {
+                    renderSupplierList();
+                }
+                if (typeof renderSupplierPaymentAddressesList === 'function') {
+                    renderSupplierPaymentAddressesList();
                 }
             });
         }

@@ -37,6 +37,12 @@ logic_analyzer.js
 append_closing_brace_end.js
 add_all_form_handlers.js
 extract_prev_code.js
+extract_*.js
+parse_*.js
+show_*.js
+recovered_*.js
+index_reconstructed_*.js
+scratch/
 logic.txt
 structure.txt
 
