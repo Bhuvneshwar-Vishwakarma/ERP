@@ -6975,8 +6975,9 @@
                                         <label for="sup-lic-company-reg-expiry">Expiry Date</label>
                                         <div style="display: flex; gap: 6px;">
                                             <input type="date" id="sup-lic-company-reg-expiry" style="flex: 1;">
-                                            <button type="button" class="btn btn-outline-primary btn-sm" style="padding: 0 10px;" title="Upload Document">📥</button>
-                                            <button type="button" class="btn btn-outline-success btn-sm" style="padding: 0 10px;" title="View Document">📤</button>
+                                            <button type="button" class="btn btn-outline-primary btn-sm" id="btn-sup-lic-reg-upload" style="padding: 0 10px;" title="Upload Document">📥</button>
+                                            <button type="button" class="btn btn-outline-success btn-sm" id="btn-sup-lic-reg-download" style="padding: 0 10px;" title="View / Download Document">📤</button>
+                                            <input type="file" id="input-sup-lic-reg-file" style="display: none;" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx">
                                         </div>
                                         <div id="sup-lic-company-reg-expiry-feedback" style="font-size: 11px; margin-top: 4px; display: none;"></div>
                                     </div>
@@ -6992,8 +6993,9 @@
                                         <label for="sup-lic-expiry-date">Expiry Date</label>
                                         <div style="display: flex; gap: 6px;">
                                             <input type="date" id="sup-lic-expiry-date" style="flex: 1;">
-                                            <button type="button" class="btn btn-outline-primary btn-sm" style="padding: 0 10px;" title="Upload Document">📥</button>
-                                            <button type="button" class="btn btn-outline-success btn-sm" style="padding: 0 10px;" title="View Document">📤</button>
+                                            <button type="button" class="btn btn-outline-primary btn-sm" id="btn-sup-lic-gdp-upload" style="padding: 0 10px;" title="Upload Document">📥</button>
+                                            <button type="button" class="btn btn-outline-success btn-sm" id="btn-sup-lic-gdp-download" style="padding: 0 10px;" title="View / Download Document">📤</button>
+                                            <input type="file" id="input-sup-lic-gdp-file" style="display: none;" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx">
                                         </div>
                                         <div id="sup-lic-expiry-feedback" style="font-size: 11px; margin-top: 4px; display: none;"></div>
                                     </div>
@@ -7036,9 +7038,11 @@
                                                 <input type="checkbox" id="sup-lic-questionnaire" style="width: 16px; height: 16px; accent-color: var(--color-primary);">
                                                 <span style="color: var(--color-text-muted);">Questionnaire Received & Checked</span>
                                             </label>
-                                            <button type="button" class="btn btn-outline-primary btn-sm" style="padding: 0 10px;" title="Upload Document">📥</button>
-                                            <button type="button" class="btn btn-outline-success btn-sm" style="padding: 0 10px;" title="View Document">📤</button>
+                                            <button type="button" class="btn btn-outline-primary btn-sm" id="btn-sup-lic-quest-upload" style="padding: 0 10px;" title="Upload Document">📥</button>
+                                            <button type="button" class="btn btn-outline-success btn-sm" id="btn-sup-lic-quest-download" style="padding: 0 10px;" title="View / Download Document">📤</button>
+                                            <input type="file" id="input-sup-lic-quest-file" style="display: none;" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx">
                                         </div>
+                                        <div id="sup-lic-questionnaire-feedback" style="font-size: 11px; margin-top: 4px; display: none;"></div>
                                     </div>
 
                                     <!-- Technical Agreement Approved Date -->

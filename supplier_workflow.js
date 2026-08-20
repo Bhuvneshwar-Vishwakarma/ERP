@@ -2247,6 +2247,33 @@
         currentSupplierFiles = s.files ? JSON.parse(JSON.stringify(s.files)) : [];
         currentSupplierAuditTrail = s.auditTrail ? JSON.parse(JSON.stringify(s.auditTrail)) : [];
 
+        // Sync licenceFieldFiles and feedback labels
+        const fieldConfigs = [
+            { fieldKey: 'company_reg_doc', category: 'Company Registration Document', feedbackId: 'sup-lic-company-reg-expiry-feedback' },
+            { fieldKey: 'gdp_gmp_cert', category: 'GDP/GMP Certificate', feedbackId: 'sup-lic-expiry-feedback' },
+            { fieldKey: 'questionnaire_doc', category: 'Questionnaire Document', feedbackId: 'sup-lic-questionnaire-feedback' }
+        ];
+
+        fieldConfigs.forEach(cfg => {
+            const feedbackEl = document.getElementById(cfg.feedbackId);
+            const foundFile = currentSupplierFiles.find(f => f.fieldKey === cfg.fieldKey || f.otherType === cfg.category);
+            if (foundFile) {
+                licenceFieldFiles[cfg.fieldKey] = foundFile;
+                if (feedbackEl) {
+                    feedbackEl.style.display = 'block';
+                    feedbackEl.style.color = '#059669';
+                    feedbackEl.style.fontWeight = '600';
+                    feedbackEl.innerHTML = `✓ Attached & added to File Info: <strong>${escapeHtml(foundFile.name || foundFile.fileName)}</strong>`;
+                }
+            } else {
+                delete licenceFieldFiles[cfg.fieldKey];
+                if (feedbackEl) {
+                    feedbackEl.style.display = 'none';
+                    feedbackEl.innerHTML = '';
+                }
+            }
+        });
+
         // Update visuals
         const formTitle = document.getElementById('sup-form-title');
         const formSubtitle = document.getElementById('sup-form-mode-subtitle');
@@ -2895,8 +2922,138 @@
         // 9. Filters
         initMultiSelectFilters();
 
-        // 10. Initial List Render
+        // 10. Licence Upload & Download Handlers
+        setupLicenceFileUploadHandlers();
+
+        // 11. Initial List Render
         renderSupplierList();
+    }
+
+    const licenceFieldFiles = {};
+
+    function setupLicenceFileUploadHandlers() {
+        const configs = [
+            {
+                uploadBtnId: 'btn-sup-lic-reg-upload',
+                downloadBtnId: 'btn-sup-lic-reg-download',
+                fileInputId: 'input-sup-lic-reg-file',
+                feedbackId: 'sup-lic-company-reg-expiry-feedback',
+                category: 'Company Registration Document',
+                licenceType: 'Company Registration',
+                fieldKey: 'company_reg_doc'
+            },
+            {
+                uploadBtnId: 'btn-sup-lic-gdp-upload',
+                downloadBtnId: 'btn-sup-lic-gdp-download',
+                fileInputId: 'input-sup-lic-gdp-file',
+                feedbackId: 'sup-lic-expiry-feedback',
+                category: 'GDP/GMP Certificate',
+                licenceType: 'Wholesaler / GDP-GMP Cert',
+                fieldKey: 'gdp_gmp_cert'
+            },
+            {
+                uploadBtnId: 'btn-sup-lic-quest-upload',
+                downloadBtnId: 'btn-sup-lic-quest-download',
+                fileInputId: 'input-sup-lic-quest-file',
+                feedbackId: 'sup-lic-questionnaire-feedback',
+                category: 'Questionnaire Document',
+                licenceType: 'Questionnaire Verification',
+                fieldKey: 'questionnaire_doc'
+            }
+        ];
+
+        configs.forEach(cfg => {
+            const uploadBtn = document.getElementById(cfg.uploadBtnId);
+            const downloadBtn = document.getElementById(cfg.downloadBtnId);
+            const fileInput = document.getElementById(cfg.fileInputId);
+            const feedbackEl = document.getElementById(cfg.feedbackId);
+
+            if (uploadBtn && fileInput) {
+                uploadBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    fileInput.click();
+                });
+
+                fileInput.addEventListener('change', (e) => {
+                    const file = e.target.files && e.target.files[0];
+                    if (!file) return;
+
+                    const reader = new FileReader();
+                    reader.onload = function(evt) {
+                        const base64Data = evt.target.result;
+                        const dateStr = new Date().toISOString().split('T')[0];
+                        const userRoleStr = (typeof currentRole !== 'undefined') ? currentRole : 'QA';
+
+                        const fileObj = {
+                            id: 'LIC-DOC-' + Date.now(),
+                            name: file.name,
+                            fileName: file.name,
+                            otherType: cfg.category,
+                            licenceType: cfg.licenceType,
+                            uploadedBy: userRoleStr + ' User',
+                            date: dateStr,
+                            fileData: base64Data,
+                            fieldKey: cfg.fieldKey
+                        };
+
+                        licenceFieldFiles[cfg.fieldKey] = fileObj;
+
+                        const existingIdx = currentSupplierFiles.findIndex(f => f.fieldKey === cfg.fieldKey || f.otherType === cfg.category);
+                        if (existingIdx >= 0) {
+                            currentSupplierFiles[existingIdx] = fileObj;
+                        } else {
+                            currentSupplierFiles.push(fileObj);
+                        }
+
+                        renderSupplierFileList();
+
+                        if (feedbackEl) {
+                            feedbackEl.style.display = 'block';
+                            feedbackEl.style.color = '#059669';
+                            feedbackEl.style.fontWeight = '600';
+                            feedbackEl.innerHTML = `✓ Attached & added to File Info: <strong>${escapeHtml(file.name)}</strong> (${Math.round(file.size / 1024)} KB)`;
+                        }
+
+                        showToast(`Uploaded '${file.name}' and added to File Info tab!`, "success");
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            if (downloadBtn) {
+                downloadBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+
+                    let fileObj = licenceFieldFiles[cfg.fieldKey];
+                    if (!fileObj) {
+                        fileObj = currentSupplierFiles.find(f => f.fieldKey === cfg.fieldKey || f.otherType === cfg.category);
+                    }
+
+                    if (fileObj && fileObj.fileData) {
+                        const a = document.createElement('a');
+                        a.href = fileObj.fileData;
+                        a.download = fileObj.fileName || fileObj.name || (cfg.category + '.pdf');
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        showToast(`Downloading '${fileObj.name}'...`, "info");
+                    } else if (fileObj && fileObj.name) {
+                        const mockBlob = new Blob([`Document Content for ${fileObj.name}\nCategory: ${cfg.category}\nUploaded By: ${fileObj.uploadedBy}`], { type: 'text/plain' });
+                        const mockUrl = URL.createObjectURL(mockBlob);
+                        const a = document.createElement('a');
+                        a.href = mockUrl;
+                        a.download = fileObj.name;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(mockUrl);
+                        showToast(`Downloading '${fileObj.name}'...`, "info");
+                    } else {
+                        showToast(`No document uploaded yet for ${cfg.category}. Click 📥 to upload.`, "warning");
+                    }
+                });
+            }
+        });
     }
 
     // Expose global interface for inter-module communication
