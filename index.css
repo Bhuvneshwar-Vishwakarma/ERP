@@ -3725,3 +3725,1067 @@ tr.pur-doc-row td { padding: 12px 16px; border-bottom: 1px solid var(--color-bor
     gap: 8px;
 }
 
+/* ============================================================= */
+/* SUPPLIER STATUS & SUB-STATUS WORKFLOW DESIGN SYSTEM */
+/* ============================================================= */
+
+/* Role Simulation Header Bar */
+.sup-role-bar {
+    background: linear-gradient(90deg, #0f172a 0%, #1e293b 100%);
+    border: 1px solid #334155;
+    border-radius: var(--radius-md);
+    padding: 10px 18px;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    color: #f8fafc;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.sup-role-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #e2e8f0;
+}
+
+.sup-role-pills {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    padding: 4px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sup-role-btn {
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.sup-role-btn:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.sup-role-btn.active {
+    background: var(--color-primary);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.4);
+}
+
+.sup-role-btn.role-finance.active {
+    background: #0284c7;
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
+}
+
+.sup-role-btn.role-qa.active {
+    background: #7c3aed;
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.4);
+}
+
+.sup-role-btn.role-rp.active {
+    background: #d97706;
+    box-shadow: 0 2px 8px rgba(217, 119, 6, 0.4);
+}
+
+.sup-role-btn.role-admin.active {
+    background: #059669;
+    box-shadow: 0 2px 8px rgba(5, 150, 105, 0.4);
+}
+
+/* Status & Sub-Status Badges */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 9px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.2;
+    text-transform: capitalize;
+    white-space: nowrap;
+}
+
+.status-badge .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: currentColor;
+}
+
+/* Status Variants */
+.status-draft {
+    background-color: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+}
+
+.status-pending-qa {
+    background-color: #f5f3ff;
+    color: #6d28d9;
+    border: 1px solid #ddd6fe;
+}
+
+.status-qa-review {
+    background-color: #ede9fe;
+    color: #5b21b6;
+    border: 1px solid #c4b5fd;
+}
+
+.status-pending-rp {
+    background-color: #fffbeb;
+    color: #b45309;
+    border: 1px solid #fde68a;
+}
+
+.status-rp-review {
+    background-color: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fcd34d;
+}
+
+.status-activation-pending {
+    background-color: #ecfeff;
+    color: #0e7490;
+    border: 1px solid #a5f3fc;
+}
+
+.status-active {
+    background-color: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+}
+
+.status-inactive {
+    background-color: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+}
+
+/* Sub-Status Badges */
+.substatus-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    background: #f8fafc;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+    white-space: nowrap;
+}
+
+.substatus-finance-in-progress {
+    background: #f0f9ff;
+    color: #0369a1;
+    border-color: #bae6fd;
+}
+
+.substatus-awaiting-qa {
+    background: #faf5ff;
+    color: #7e22ce;
+    border-color: #e9d5ff;
+}
+
+.substatus-licence-pending {
+    background: #fdf4ff;
+    color: #a21caf;
+    border-color: #f5d0fe;
+}
+
+.substatus-verification-in-progress {
+    background: #f3e8ff;
+    color: #6b21a8;
+    border-color: #d8b4fe;
+}
+
+.substatus-awaiting-rp {
+    background: #fff7ed;
+    color: #c2410c;
+    border-color: #fed7aa;
+}
+
+.substatus-under-rp-review {
+    background: #fefce8;
+    color: #a16207;
+    border-color: #fef08a;
+}
+
+.substatus-approved-activation-pending {
+    background: #f0fdfa;
+    color: #0f766e;
+    border-color: #99f6e4;
+}
+
+.substatus-rejected-correction {
+    background: #fff1f2;
+    color: #be123c;
+    border-color: #fecdd3;
+    font-weight: 700;
+}
+
+.substatus-awaiting-qa-activation {
+    background: #ecfeff;
+    color: #0891b2;
+    border-color: #67e8f9;
+}
+
+.substatus-active {
+    background: #f0fdf4;
+    color: #15803d;
+    border-color: #bbf7d0;
+}
+
+.substatus-inactive {
+    background: #f8fafc;
+    color: #64748b;
+    border-color: #e2e8f0;
+}
+
+/* Owner Pills */
+.owner-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 9px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+}
+
+.owner-pill.owner-finance {
+    background-color: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+}
+
+.owner-pill.owner-qa {
+    background-color: #ede9fe;
+    color: #6d28d9;
+    border: 1px solid #ddd6fe;
+}
+
+.owner-pill.owner-rp {
+    background-color: #fef3c7;
+    color: #b45309;
+    border: 1px solid #fde68a;
+}
+
+.owner-pill.owner-none {
+    background-color: #f1f5f9;
+    color: #94a3b8;
+    border: 1px solid #e2e8f0;
+}
+
+/* Visual Workflow Stepper Bar */
+.workflow-stepper-card {
+    background: #ffffff;
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-md);
+    padding: 18px 24px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow-sm);
+}
+
+.workflow-stepper-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--color-border-light);
+}
+
+.workflow-stepper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    padding: 8px 0;
+}
+
+.workflow-stepper::before {
+    content: '';
+    position: absolute;
+    top: 24px;
+    left: 40px;
+    right: 40px;
+    height: 3px;
+    background: #e2e8f0;
+    z-index: 1;
+}
+
+.stepper-step {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    flex: 1;
+    cursor: default;
+}
+
+.stepper-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 3px solid #cbd5e1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: #64748b;
+    margin-bottom: 8px;
+    transition: all 0.25s ease;
+    box-shadow: 0 0 0 4px #ffffff;
+}
+
+.stepper-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+    margin-bottom: 2px;
+}
+
+.stepper-role {
+    font-size: 10px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Stepper States */
+.stepper-step.completed .stepper-icon {
+    background: #10b981;
+    border-color: #10b981;
+    color: #ffffff;
+}
+
+.stepper-step.completed .stepper-label {
+    color: #047857;
+}
+
+.stepper-step.active .stepper-icon {
+    background: #ffffff;
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    box-shadow: 0 0 0 4px #e0e7ff;
+    animation: pulseGlow 2s infinite;
+}
+
+.stepper-step.active .stepper-label {
+    color: var(--color-primary);
+    font-weight: 700;
+}
+
+.stepper-step.rejected .stepper-icon {
+    background: #ef4444;
+    border-color: #ef4444;
+    color: #ffffff;
+    box-shadow: 0 0 0 4px #fee2e2;
+}
+
+.stepper-step.rejected .stepper-label {
+    color: #b91c1c;
+    font-weight: 700;
+}
+
+@keyframes pulseGlow {
+    0% {
+        box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+    }
+    50% {
+        box-shadow: 0 0 0 6px rgba(79, 70, 229, 0.4);
+    }
+    100% {
+        box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+    }
+}
+
+/* Workflow Status Banner */
+.workflow-status-banner {
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 14px;
+}
+
+.workflow-status-banner.banner-rejected {
+    background: #fef2f2;
+    border-color: #fecaca;
+}
+
+.workflow-banner-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.workflow-banner-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.workflow-banner-val {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Rejection Alert Box */
+.rejection-alert-box {
+    background: #fff1f2;
+    border: 1px solid #fda4af;
+    border-left: 4px solid #e11d48;
+    border-radius: 6px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    color: #881337;
+}
+
+.rejection-alert-title {
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    color: #9f1239;
+}
+
+.rejection-alert-reason {
+    font-size: 13px;
+    line-height: 1.5;
+    background: rgba(255, 255, 255, 0.7);
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: 1px dashed #f43f5e;
+    font-family: var(--font-sans);
+    margin-top: 6px;
+    color: #4c0519;
+}
+
+/* Filter Controls & Multiselect */
+.sup-filter-container {
+    background: #ffffff;
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-md);
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow-sm);
+}
+
+.sup-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+    align-items: flex-end;
+}
+
+.sup-multiselect-container {
+    position: relative;
+}
+
+.sup-multiselect-trigger {
+    min-height: 38px;
+    background: #ffffff;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+    font-size: 12.5px;
+    transition: border-color 0.15s ease;
+}
+
+.sup-multiselect-trigger:hover {
+    border-color: var(--color-primary);
+}
+
+.sup-multiselect-trigger .chips-box {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+    max-width: calc(100% - 20px);
+}
+
+.sup-multiselect-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    box-shadow: var(--shadow-xl);
+    z-index: 1050;
+    max-height: 260px;
+    overflow-y: auto;
+    padding: 6px 0;
+}
+
+.sup-multiselect-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    font-size: 12.5px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.sup-multiselect-item:hover {
+    background: #f1f5f9;
+}
+
+.sup-multiselect-item input[type="checkbox"] {
+    cursor: pointer;
+    accent-color: var(--color-primary);
+    width: 15px;
+    height: 15px;
+}
+
+/* Audit History Timeline */
+.audit-timeline {
+    position: relative;
+    padding: 12px 0 12px 24px;
+}
+
+.audit-timeline::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 8px;
+    width: 2px;
+    background: #e2e8f0;
+}
+
+.audit-timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.audit-timeline-item:last-child {
+    margin-bottom: 0;
+}
+
+.audit-timeline-marker {
+    position: absolute;
+    left: -24px;
+    top: 4px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 3px solid var(--color-primary);
+    box-shadow: 0 0 0 2px #ffffff;
+}
+
+.audit-timeline-marker.marker-success {
+    border-color: #10b981;
+}
+
+.audit-timeline-marker.marker-rejected {
+    border-color: #ef4444;
+}
+
+.audit-timeline-marker.marker-amber {
+    border-color: #f59e0b;
+}
+
+.audit-timeline-content {
+    background: #ffffff;
+    border: 1px solid var(--color-border-light);
+    border-radius: 8px;
+    padding: 12px 16px;
+    box-shadow: var(--shadow-sm);
+}
+
+.audit-timeline-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.audit-timeline-action {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.audit-timeline-meta {
+    font-size: 11px;
+    color: #64748b;
+}
+
+.audit-transition-row {
+    font-size: 12px;
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px dashed #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    color: #475569;
+}
+
+.audit-remarks-box {
+    font-size: 12px;
+    color: #334155;
+    background: #f8fafc;
+    padding: 6px 10px;
+    border-radius: 4px;
+    margin-top: 6px;
+    border-left: 3px solid var(--color-primary);
+}
+
+/* Modal Overlay for Supplier Workflows */
+.sup-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(3px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.sup-modal-card {
+    background: #ffffff;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xl);
+    width: 100%;
+    max-width: 650px;
+    overflow: hidden;
+    animation: modalSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sup-modal-card.modal-lg {
+    max-width: 900px;
+}
+
+.sup-modal-card.modal-xl {
+    max-width: 1100px;
+}
+
+.sup-modal-header {
+    padding: 16px 20px;
+    background: #f8fafc;
+    border-bottom: 1px solid var(--color-border-light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sup-modal-header h3 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--color-text-main);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sup-modal-body {
+    padding: 20px;
+    max-height: 75vh;
+    overflow-y: auto;
+}
+
+.sup-modal-footer {
+    padding: 14px 20px;
+    background: #f8fafc;
+    border-top: 1px solid var(--color-border-light);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+/* ============================================================= */
+/* CUSTOMER WORKFLOW STYLES (ERP-MD-004)                        */
+/* ============================================================= */
+
+/* Customer Role Simulation Bar */
+.cust-role-bar {
+    background: linear-gradient(90deg, #0f172a 0%, #1e293b 100%);
+    border: 1px solid #334155;
+    border-radius: var(--radius-md);
+    padding: 10px 18px;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    color: #f8fafc;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.cust-role-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #e2e8f0;
+}
+
+.cust-role-pills {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    padding: 4px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cust-role-btn {
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.cust-role-btn:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.cust-role-btn.active {
+    background: var(--color-primary);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.4);
+}
+
+.cust-role-btn.role-finance.active {
+    background: #0284c7;
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
+}
+
+.cust-role-btn.role-qa.active {
+    background: #7c3aed;
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.4);
+}
+
+.cust-role-btn.role-transport.active {
+    background: #0284c7;
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
+}
+
+.cust-role-btn.role-admin.active {
+    background: #059669;
+    box-shadow: 0 2px 8px rgba(5, 150, 105, 0.4);
+}
+
+/* Status variants for Customer Workflow */
+.status-pending-transport {
+    background-color: #f0f9ff;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+}
+
+.status-transport-review {
+    background-color: #e0f2fe;
+    color: #0284c7;
+    border: 1px solid #7dd3fc;
+}
+
+.status-pending-qa-activation {
+    background-color: #ecfeff;
+    color: #0891b2;
+    border: 1px solid #a5f3fc;
+}
+
+/* Sub-status variants */
+.substatus-awaiting-qa-verification {
+    background: #faf5ff;
+    color: #7e22ce;
+    border-color: #e9d5ff;
+}
+
+.substatus-awaiting-route-id {
+    background: #f0f9ff;
+    color: #0369a1;
+    border-color: #bae6fd;
+    font-weight: 600;
+}
+
+.substatus-route-id-in-progress {
+    background: #e0f2fe;
+    color: #0284c7;
+    border-color: #7dd3fc;
+    font-weight: 600;
+}
+
+.substatus-customer-active {
+    background: #ecfdf5;
+    color: #059669;
+    border-color: #a7f3d0;
+    font-weight: 700;
+}
+
+.substatus-customer-inactive {
+    background: #fef2f2;
+    color: #b91c1c;
+    border-color: #fecaca;
+}
+
+.substatus-correction-required {
+    background: #fff1f2;
+    color: #be123c;
+    border-color: #fecdd3;
+    font-weight: 700;
+}
+
+/* Owner Pill for Transport */
+.owner-pill.owner-transport {
+    background-color: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+}
+
+/* Filter components for Customer Module */
+.cust-filter-container {
+    background: #ffffff;
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-md);
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow-sm);
+}
+
+.cust-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+}
+
+.cust-multiselect-container {
+    position: relative;
+}
+
+.cust-multiselect-trigger {
+    height: 36px;
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-sm);
+    padding: 0 10px;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+    font-size: 12px;
+    transition: all 0.2s ease;
+}
+
+.cust-multiselect-trigger:hover {
+    border-color: var(--color-primary);
+}
+
+.cust-multiselect-trigger .chips-box {
+    display: flex;
+    gap: 4px;
+    overflow-x: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    flex: 1;
+}
+
+.cust-multiselect-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    z-index: 999;
+    padding: 8px 0;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.cust-multiselect-item {
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    margin: 0;
+}
+
+.cust-multiselect-item:hover {
+    background: #f1f5f9;
+}
+
+.cust-multiselect-item input[type="checkbox"] {
+    cursor: pointer;
+    margin: 0;
+}
+
+/* Customer Modals Overlay & Card */
+.cust-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: 20px;
+}
+
+.cust-modal-card {
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+    width: 100%;
+    max-width: 650px;
+    overflow: hidden;
+    animation: modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    flex-direction: column;
+}
+
+.cust-modal-card.modal-lg {
+    max-width: 900px;
+}
+
+.cust-modal-card.modal-xl {
+    max-width: 1150px;
+}
+
+.cust-modal-header {
+    padding: 16px 22px;
+    background: #f8fafc;
+    border-bottom: 1px solid var(--color-border-light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.cust-modal-header h3 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--color-text-main);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cust-modal-body {
+    padding: 20px;
+    max-height: 75vh;
+    overflow-y: auto;
+}
+
+.cust-modal-footer {
+    padding: 14px 20px;
+    background: #f8fafc;
+    border-top: 1px solid var(--color-border-light);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.cust-view-tabs-header {
+    display: flex;
+    gap: 4px;
+    border-bottom: 2px solid #e2e8f0;
+    margin-bottom: 16px;
+}
+
+.cust-view-tab-btn {
+    padding: 8px 16px;
+    border: none;
+    background: transparent;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.2s ease;
+}
+
+.cust-view-tab-btn:hover {
+    color: var(--color-primary);
+}
+
+.cust-view-tab-btn.active {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+    font-weight: 700;
+}
+
+
+

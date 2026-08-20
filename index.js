@@ -988,10 +988,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (btnSave) btnSave.style.display = 'none';
                 if (btnCancel) btnCancel.style.display = 'none';
 
-                // Initialize list view
-                renderCustomerList();
+                // Initialize workflow list view
+                if (window.CustomerWorkflowModule && typeof window.CustomerWorkflowModule.showListView === 'function') {
+                    window.CustomerWorkflowModule.showListView();
+                    window.CustomerWorkflowModule.renderList();
+                } else {
+                    renderCustomerList();
+                }
 
-                showToast("Switched to Customer Creation setup.", "success");
+                showToast("Switched to Customer Creation & Governance Setup.", "success");
             });
         }
 
@@ -5338,7 +5343,7 @@ SyriMed Healthcare`
         const nameInput = document.getElementById('cust-form-name');
         if (nameInput) nameInput.value = '';
         
-        const typeSelect = document.getElementById('cust-form-company-type-gen') || document.getElementById('cust-form-type');
+        const typeSelect = document.getElementById('cust-form-customer-type') || document.getElementById('cust-form-company-type-gen') || document.getElementById('cust-form-type');
         if (typeSelect) typeSelect.value = '';
         
         const postcodeVal = document.getElementById('cust-form-postcode');
@@ -5677,8 +5682,9 @@ SyriMed Healthcare`
             document.getElementById('cust-form-account-id').disabled = true;
         }
         if (document.getElementById('cust-form-name')) document.getElementById('cust-form-name').value = c.customerName;
-        if (document.getElementById('cust-form-company-type-gen')) document.getElementById('cust-form-company-type-gen').value = c.customerType || '';
-        if (document.getElementById('cust-form-type')) document.getElementById('cust-form-type').value = c.customerType || '';
+        if (document.getElementById('cust-form-customer-type')) document.getElementById('cust-form-customer-type').value = c.customerType || 'Pharmacy';
+        if (document.getElementById('cust-form-company-type-gen')) document.getElementById('cust-form-company-type-gen').value = c.customerType || 'Pharmacy';
+        if (document.getElementById('cust-form-type')) document.getElementById('cust-form-type').value = c.customerType || 'Pharmacy';
         const loadVal = (id, val) => {
             const el = document.getElementById(id);
             if (el) {
@@ -5917,8 +5923,8 @@ SyriMed Healthcare`
         const taxCode = primaryAddr.taxCode || 'Standard Tax (20%)';
         const gowrieAccount = document.getElementById('cust-form-gowrie-acct') ? document.getElementById('cust-form-gowrie-acct').checked : false;
         const gowrieCustomerGroup = document.getElementById('cust-form-gowrie-group') ? document.getElementById('cust-form-gowrie-group').value : '';
-        const typeEl = document.getElementById('cust-form-company-type-gen') || document.getElementById('cust-form-type');
-        const type = typeEl ? typeEl.value : '';
+        const typeEl = document.getElementById('cust-form-customer-type') || document.getElementById('cust-form-company-type-gen') || document.getElementById('cust-form-type');
+        const type = typeEl && typeEl.value ? typeEl.value : 'Pharmacy';
         
         const generalEmail = document.getElementById('cust-form-email') ? document.getElementById('cust-form-email').value.trim() : `${acctId.toLowerCase() || 'cust'}@example.com`;
         const gphcNo = document.getElementById('cust-form-gphc-no') ? document.getElementById('cust-form-gphc-no').value.trim() : `GPHC-${acctId || '12345'}`;
@@ -6148,6 +6154,12 @@ SyriMed Healthcare`
         return true;
     }
 
+    // Expose helpers for CustomerWorkflowModule integration
+    window.legacyLoadCustomerIntoForm = loadCustomerIntoForm;
+    window.legacyGetCustomerFormData = getCustomerFormData;
+    window.legacyResetCustomerForm = resetCustomerForm;
+    window.legacyValidateCustomerForm = validateCustomerForm;
+
     function initCustomerSetup() {
         const btnCustTabList = document.getElementById('btn-cust-tab-list');
         const btnCustTabForm = document.getElementById('btn-cust-tab-form');
@@ -6248,8 +6260,9 @@ SyriMed Healthcare`
                         URL.revokeObjectURL(url);
                         showToast('Download started', 'success');
                     } else if (action.includes('log detail')) {
-                        if (logModal) {
-                            if (logTimeLabel) logTimeLabel.textContent = new Date().toLocaleString();
+                        if (typeof window.openLogDetailModal === 'function') {
+                            window.openLogDetailModal();
+                        } else if (logModal) {
                             logModal.classList.remove('hidden');
                         }
                     } else if (action.includes('save')) {
@@ -6380,6 +6393,12 @@ SyriMed Healthcare`
         const btnCustCopy = document.getElementById('btn-cust-copy');
         const btnCustUpdate = document.getElementById('btn-cust-update');
         const btnCustCancel = document.getElementById('btn-cust-cancel');
+        if (btnCustCancel) {
+            btnCustCancel.addEventListener('click', (e) => {
+                e.preventDefault();
+                showCustomerListView();
+            });
+        }
 
         // Sub-tabs switching
         const subTabBtns = [
@@ -6912,1821 +6931,53 @@ SyriMed Healthcare`
     }
 
     // =============================================================
-    // SUPPLIER SETUP MODULE PERSISTENCE & LOGIC
+    // SUPPLIER SETUP & WORKFLOW DELEGATION (ERP-MD-005)
     // =============================================================
-    const SUPPLIER_STORAGE_KEY = 'ANTIGRAVITY_ERP_SUPPLIER_DATA';
-
-    const defaultSuppliers = [
-        {
-            supplierId: "ACC007",
-            supplierName: "ACCENT WIRE TIE",
-            company: "LAXMI01",
-            assocNo: "",
-            supplierGroup: "40 O/H Suppliers",
-            taxLiability: "TAX Taxable",
-            identifierRef: "Yes",
-            currency: "GBP",
-            freeTaxCode: "Select Free Tax Code",
-            creationDate: "2018-04-17",
-            paymentTerm: "0 Due Immediately",
-            taxCode: "SUK-11 20",
-            statGroup: "OH Overheads",
-            buyerId: "*",
-            categoryCode: "",
-            companyRegNo: "",
-            gdpGmpCertNo: "UK GDP 48291/001",
-            expiryDate: "2028-12-31",
-            riskScore: "Select...",
-            questionnaire: false,
-            techApprovedDate: "",
-            techRenewalDate: "",
-            reviewDate: "",
-            licenceStatus: "Active",
-            licenceNote: "Inactivated due to communication method changed in General tab.",
-            status: "Active",
-            contacts: [
-                { selected: false, name: "", description: "", commMethod: "Phone", value: "01274 693159", docReceiver: false, docType: "" },
-                { selected: false, name: "Adrian Helliwell", description: "Other", commMethod: "E-Mail", value: "ahelliwell@accentwire.c", docReceiver: false, docType: "" }
-            ],
-            addresses: [
-                {
-                    addressId: "01",
-                    addressTypes: ["Delivery", "Invoice", "Pay"],
-                    addressType: "Delivery + Invoice + Pay",
-                    deliveryDefault: true,
-                    invoiceDefault: true,
-                    payDefault: true,
-                    addr1: "UNITS 2A -2D EUROWAY TRADING EST",
-                    addr2: "WHARFEDALE ROAD",
-                    city: "BRADFORD",
-                    postcode: "BD4 6SG",
-                    county: "",
-                    state: "",
-                    country: "GB UNITED KINGDOM",
-                    validFrom: "",
-                    validTo: ""
-                }
-            ],
-            paymentMethods: [
-                { method: "BACS", description: "Automated Bank Transfer", isDefault: true },
-                { method: "CHEQUE", description: "Standard UK Cheque", isDefault: false }
-            ],
-            paymentAddresses: [
-                {
-                    seqId: "01",
-                    method: "BACS",
-                    description: "Settlement Account",
-                    bankAccount: "GB29NWBK60161331926819",
-                    isDefault: true,
-                    sortCode: "60-16-13",
-                    accountName: "Accent Wire Tie Ltd",
-                    bldgRef: "REF-001",
-                    status: "Active"
-                }
-            ],
-            dispatchAddresses: [
-                {
-                    addressId: "01",
-                    addr1: "UNITS 2A -2D EUROWAY TRADING EST",
-                    addr2: "WHARFEDALE ROAD",
-                    city: "BRADFORD",
-                    postcode: "BD4 6SG",
-                    county: "Bradford",
-                    state: "West Yorkshire",
-                    country: "GB UNITED KINGDOM",
-                    validFrom: "",
-                    validTo: "",
-                    isDefault: true
-                }
-            ],
-            files: [
-                { id: 1, name: "Supplier_Ac_Opening_Form.pdf", otherType: "SUPPLIER CREATION FORM", licenceType: "", uploadedBy: "Vilas Vaidya", date: "18-04-2018 05:03:15 PM" },
-                { id: 2, name: "Supplier_Ac_Opening_Form.pdf", otherType: "SUPPLIER CREATION FORM", licenceType: "", uploadedBy: "Vilas Vaidya", date: "18-04-2018 05:03:15 PM" },
-                { id: 3, name: "INVOICE_COPY_ACCENT.pdf", otherType: "INVOICE COPY", licenceType: "", uploadedBy: "Vilas Vaidya", date: "18-04-2018 05:03:32 PM" },
-                { id: 4, name: "INVOICE_COPY_ACCENT.pdf", otherType: "INVOICE COPY", licenceType: "", uploadedBy: "Vilas Vaidya", date: "18-04-2018 05:03:32 PM" }
-            ]
-        },
-        {
-            supplierId: "ACC001",
-            supplierName: "AAH PHARMACEUTICALS LTD",
-            company: "LAXMI01",
-            supplierGroup: "10 Trade Suppliers",
-            currency: "GBP",
-            taxLiability: "TAX Taxable",
-            licenceType: "WDA Holder",
-            gdpGmpCertNo: "UK WDA 19382/001",
-            expiryDate: "2029-06-30",
-            status: "Active"
-        },
-        {
-            supplierId: "ACC002",
-            supplierName: "ALLIANCE HEALTHCARE (GB) LTD",
-            company: "LAXMI01",
-            supplierGroup: "10 Trade Suppliers",
-            currency: "GBP",
-            taxLiability: "TAX Taxable",
-            licenceType: "WDA Holder",
-            gdpGmpCertNo: "UK WDA 22094/002",
-            expiryDate: "2029-11-15",
-            status: "Active"
-        }
-    ];
-
-    let suppliers = [];
-    let editingSupplierNo = null;
-    let currentSupplierContacts = [];
-    let currentSupplierAddresses = [];
-    let currentSupplierFiles = [];
-    let currentSupplierPaymentMethods = [];
-    let currentSupplierPaymentAddresses = [];
-    let currentSupplierDispatchAddresses = [];
-    let editingSupplierAddressIndex = null;
-    let editingPaymentMethodIndex = null;
-    let editingPaymentAddressIndex = null;
-    let editingDispatchAddressIndex = null;
-
-    function loadSavedSupplierConfig() {
-        const raw = localStorage.getItem(SUPPLIER_STORAGE_KEY);
-        if (!raw) {
-            suppliers = [...defaultSuppliers];
-            saveSuppliersState();
+    function showSupplierListView() {
+        if (window.SupplierWorkflowModule && typeof window.SupplierWorkflowModule.showListView === 'function') {
+            window.SupplierWorkflowModule.showListView();
         } else {
-            try {
-                const parsed = JSON.parse(raw);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                    suppliers = parsed.filter(s => s && s.supplierId);
-                } else {
-                    suppliers = [...defaultSuppliers];
-                }
-            } catch (e) {
-                console.error("Error parsing supplier state from local storage", e);
-                suppliers = [...defaultSuppliers];
+            const panelList = document.getElementById('panel-sup-list');
+            const panelForm = document.getElementById('panel-sup-form');
+            if (panelForm) panelForm.classList.add('hidden');
+            if (panelList) panelList.classList.remove('hidden');
+            if (window.SupplierWorkflowModule && typeof window.SupplierWorkflowModule.renderList === 'function') {
+                window.SupplierWorkflowModule.renderList();
             }
         }
-    }
-
-    function saveSuppliersState() {
-        try {
-            localStorage.setItem(SUPPLIER_STORAGE_KEY, JSON.stringify(suppliers));
-        } catch (e) {
-            console.error("Error saving supplier state to local storage", e);
-        }
-    }
-
-    function showSupplierListView() {
-        const panelSupList = document.getElementById('panel-sup-list');
-        const panelSupForm = document.getElementById('panel-sup-form');
-        if (panelSupForm) panelSupForm.classList.add('hidden');
-        if (panelSupList) panelSupList.classList.remove('hidden');
-        renderSupplierList();
     }
 
     function showSupplierFormView() {
-        const panelSupList = document.getElementById('panel-sup-list');
-        const panelSupForm = document.getElementById('panel-sup-form');
-        if (panelSupList) panelSupList.classList.add('hidden');
-        if (panelSupForm) panelSupForm.classList.remove('hidden');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (window.SupplierWorkflowModule && typeof window.SupplierWorkflowModule.showFormView === 'function') {
+            window.SupplierWorkflowModule.showFormView();
+        } else {
+            const panelList = document.getElementById('panel-sup-list');
+            const panelForm = document.getElementById('panel-sup-form');
+            if (panelList) panelList.classList.add('hidden');
+            if (panelForm) panelForm.classList.remove('hidden');
+        }
     }
 
-    function isUserApprover() {
-        const rbacRole = document.getElementById('rbac-role-selector') ? document.getElementById('rbac-role-selector').value : '';
-        const simManager = document.getElementById('sim-manager-role')?.checked || false;
-        return rbacRole === 'QA' || rbacRole === 'Manager' || rbacRole === 'Admin' || simManager;
+    function loadSavedSupplierConfig() {
+        if (window.SupplierWorkflowModule && typeof window.SupplierWorkflowModule.init === 'function') {
+            window.SupplierWorkflowModule.init();
+        }
     }
 
     function renderSupplierList() {
-        const body = document.getElementById('supplier-list-body') || document.getElementById('sup-list-table-body');
-        if (!body) return;
-        body.innerHTML = '';
-
-        const searchId = document.getElementById('sup-search-id') ? document.getElementById('sup-search-id').value.toLowerCase().trim() : '';
-        const searchName = document.getElementById('sup-search-name') ? document.getElementById('sup-search-name').value.toLowerCase().trim() : '';
-
-        const filtered = suppliers.filter(s => {
-            if (!s) return false;
-            const matchId = !searchId || (s.supplierId && s.supplierId.toLowerCase().includes(searchId));
-            const matchName = !searchName || (s.supplierName && s.supplierName.toLowerCase().includes(searchName));
-            return matchId && matchName;
-        });
-
-        if (filtered.length === 0) {
-            body.innerHTML = `<tr><td colspan="9" class="text-center" style="color: var(--color-text-muted); padding: 20px;">No suppliers found matching the criteria.</td></tr>`;
-            return;
+        if (window.SupplierWorkflowModule && typeof window.SupplierWorkflowModule.renderList === 'function') {
+            window.SupplierWorkflowModule.renderList();
         }
-
-        filtered.forEach(s => {
-            const tr = document.createElement('tr');
-            const hasPendingPaymentAddress = Array.isArray(s.paymentAddresses) && s.paymentAddresses.some(a => (a.status || '').toLowerCase().includes('pending'));
-            const isPendingApproval = hasPendingPaymentAddress || (s.status || '').toLowerCase().includes('pending');
-            const isInactive = !isPendingApproval && s.status === 'Inactive';
-            const isActive = !isPendingApproval && !isInactive;
-
-            let statusBadge = '';
-            if (isPendingApproval) {
-                statusBadge = `<span class="badge" style="background-color: #fef3c7; color: #b45309; border: 1px solid #fde68a; padding: 3px 8px; border-radius: 12px; font-weight:600; font-size:11px;">Pending for Approval</span>`;
-            } else if (isActive) {
-                statusBadge = `<span class="badge badge-success" style="background-color: var(--color-success-light); color: var(--color-success); padding: 3px 8px; border-radius: 12px; font-weight:600; font-size:11px;">Active</span>`;
-            } else {
-                statusBadge = `<span class="badge badge-danger" style="background-color: var(--color-danger-light); color: var(--color-danger); padding: 3px 8px; border-radius: 12px; font-weight:600; font-size:11px;">Inactive</span>`;
-            }
-
-            const isApprover = isUserApprover();
-            const approveBtn = ((isPendingApproval || isInactive) && isApprover)
-                ? `<button class="btn btn-primary btn-sup-approve" data-id="${s.supplierId}" style="padding: 2px 6px; font-size:11px; background-color: var(--color-success); border-color: var(--color-success);" title="Approve QA">Approve</button>`
-                : '';
-
-            const deactivateBtn = isActive
-                ? `<button class="btn btn-secondary btn-sup-deactivate" data-id="${s.supplierId}" style="padding: 2px 6px; font-size:11px; background-color: var(--color-danger); color: white; border-color: var(--color-danger);" title="Deactivate">Deactivate</button>`
-                : '';
-
-            tr.innerHTML = `
-                <td><strong>${escapeHtml(s.supplierId || '')}</strong></td>
-                <td>${escapeHtml(s.supplierName || '')}</td>
-                <td>${escapeHtml(s.company || 'LAXMI01')}</td>
-                <td>${escapeHtml(s.supplierGroup || '40 O/H Suppliers')}</td>
-                <td>${escapeHtml(s.currency || 'GBP')}</td>
-                <td>${escapeHtml(s.taxLiability || 'TAX Taxable')}</td>
-                <td>${escapeHtml(s.licenceType || 'Non WDA Holder')}</td>
-                <td>${statusBadge}</td>
-                <td style="text-align: center;">
-                    <div style="display: flex; gap: 4px; justify-content: center;">
-                        <button class="btn btn-secondary btn-sup-edit" data-id="${s.supplierId}" style="padding: 2px 6px; font-size:11px; background-color: var(--color-primary); color: white; border: none;" title="Edit Supplier">Edit</button>
-                        ${approveBtn}
-                        ${deactivateBtn}
-                    </div>
-                </td>
-            `;
-            body.appendChild(tr);
-        });
-
-        // Edit handlers
-        body.querySelectorAll('.btn-sup-edit').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const id = btn.getAttribute('data-id');
-                if (!id) return;
-                const s = suppliers.find(item => item && item.supplierId && item.supplierId.trim().toUpperCase() === id.trim().toUpperCase());
-                if (s) {
-                    loadSupplierIntoForm(s);
-                }
-            });
-        });
-
-        // Approve handlers
-        body.querySelectorAll('.btn-sup-approve').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const id = btn.getAttribute('data-id');
-                if (!id) return;
-                const idx = suppliers.findIndex(item => item && item.supplierId && item.supplierId.trim().toUpperCase() === id.trim().toUpperCase());
-                if (idx !== -1) {
-                    suppliers[idx].status = 'Active';
-                    if (Array.isArray(suppliers[idx].paymentAddresses)) {
-                        suppliers[idx].paymentAddresses.forEach(a => {
-                            if ((a.status || '').toLowerCase().includes('pending')) {
-                                a.status = 'Active';
-                            }
-                        });
-                    }
-                    saveSuppliersState();
-                    renderSupplierList();
-                    showToast(`Supplier account '${suppliers[idx].supplierName}' and payment addresses QA Approved!`, "success");
-                }
-            });
-        });
-
-        // Deactivate handlers
-        body.querySelectorAll('.btn-sup-deactivate').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const id = btn.getAttribute('data-id');
-                if (!id) return;
-                const idx = suppliers.findIndex(item => item && item.supplierId && item.supplierId.trim().toUpperCase() === id.trim().toUpperCase());
-                if (idx !== -1) {
-                    suppliers[idx].status = 'Inactive';
-                    saveSuppliersState();
-                    renderSupplierList();
-                    showToast(`Supplier account '${suppliers[idx].supplierName}' deactivated.`, "warning");
-                }
-            });
-        });
     }
 
-    function renderSupplierContactsList() {
-        const body = document.getElementById('sup-contacts-table-body');
-        if (!body) return;
-        body.innerHTML = '';
-
-        if (currentSupplierContacts.length === 0) {
-            body.innerHTML = `<tr><td colspan="7" class="text-center" style="color: var(--color-text-muted); padding: 15px;">No contacts entered. Click '+ Add Contact Row' to add a contact.</td></tr>`;
-            return;
-        }
-
-        currentSupplierContacts.forEach((c, idx) => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td style="text-align: center; vertical-align: middle;">
-                    <input type="checkbox" class="chk-sup-contact-row-select" data-index="${idx}" ${c.selected ? 'checked' : ''}>
-                </td>
-                <td>
-                    <input type="text" class="sup-contact-name" data-index="${idx}" value="${escapeHtml(c.name || '')}" placeholder="Name" style="width: 100%; border: 1px solid var(--color-border); border-radius: 4px; padding: 4px 8px; font-size: 13px;">
-                </td>
-                <td>
-                    <input type="text" class="sup-contact-desc" data-index="${idx}" value="${escapeHtml(c.description || '')}" placeholder="Description" style="width: 100%; border: 1px solid var(--color-border); border-radius: 4px; padding: 4px 8px; font-size: 13px;">
-                </td>
-                <td>
-                    <select class="sup-contact-method" data-index="${idx}" style="width: 100%; border: 1px solid var(--color-border); border-radius: 4px; padding: 4px 8px; font-size: 13px;">
-                        <option value="Phone" ${c.commMethod === 'Phone' ? 'selected' : ''}>Phone</option>
-                        <option value="E-Mail" ${c.commMethod === 'E-Mail' ? 'selected' : ''}>E-Mail</option>
-                        <option value="Mobile" ${c.commMethod === 'Mobile' ? 'selected' : ''}>Mobile</option>
-                        <option value="Fax" ${c.commMethod === 'Fax' ? 'selected' : ''}>Fax</option>
-                    </select>
-                </td>
-                <td>
-                    <input type="text" class="sup-contact-val" data-index="${idx}" value="${escapeHtml(c.value || '')}" placeholder="Value" style="width: 100%; border: 1px solid var(--color-border); border-radius: 4px; padding: 4px 8px; font-size: 13px;">
-                </td>
-                <td style="text-align: center; vertical-align: middle;">
-                    <input type="checkbox" class="sup-contact-receiver" data-index="${idx}" ${c.docReceiver ? 'checked' : ''}>
-                </td>
-                <td>
-                    <input type="text" class="sup-contact-doc-type" data-index="${idx}" value="${escapeHtml(c.docType || '')}" placeholder="Doc Type" style="width: 100%; border: 1px solid var(--color-border); border-radius: 4px; padding: 4px 8px; font-size: 13px;">
-                </td>
-            `;
-
-            tr.querySelector('.chk-sup-contact-row-select').addEventListener('change', (e) => { currentSupplierContacts[idx].selected = e.target.checked; });
-            tr.querySelector('.sup-contact-name').addEventListener('input', (e) => { currentSupplierContacts[idx].name = e.target.value; });
-            tr.querySelector('.sup-contact-desc').addEventListener('input', (e) => { currentSupplierContacts[idx].description = e.target.value; });
-            tr.querySelector('.sup-contact-method').addEventListener('change', (e) => { currentSupplierContacts[idx].commMethod = e.target.value; });
-            tr.querySelector('.sup-contact-val').addEventListener('input', (e) => { currentSupplierContacts[idx].value = e.target.value; });
-            tr.querySelector('.sup-contact-receiver').addEventListener('change', (e) => { currentSupplierContacts[idx].docReceiver = e.target.checked; });
-            tr.querySelector('.sup-contact-doc-type').addEventListener('input', (e) => { currentSupplierContacts[idx].docType = e.target.value; });
-
-            body.appendChild(tr);
-        });
-    }
-
-    // 1. INVOICE ADDRESS HELPERS & LIST RENDERING
-    function getNextSupplierAddressId() {
-        if (currentSupplierAddresses.length === 0) return "01";
-        const numericIds = currentSupplierAddresses
-            .map(a => parseInt(a.addressId, 10))
-            .filter(n => !isNaN(n) && n > 0);
-        if (numericIds.length === 0) return String(currentSupplierAddresses.length + 1).padStart(2, '0');
-        const maxId = Math.max(...numericIds);
-        return String(maxId + 1).padStart(2, '0');
-    }
-
-    function getSelectedInvoiceAddressTypes() {
-        const checkboxes = document.querySelectorAll('#sup-inv-addr-type-dropdown .chk-sup-addr-type:checked');
-        const types = [];
-        checkboxes.forEach(cb => types.push(cb.value));
-        return types;
-    }
-
-    function updateDefaultOptionsVisibility(types = []) {
-        const lblDeliv = document.getElementById('lbl-sup-inv-def-deliv');
-        const lblInvo = document.getElementById('lbl-sup-inv-def-invo');
-        const lblPay = document.getElementById('lbl-sup-inv-def-pay');
-        const chkDeliv = document.getElementById('chk-sup-inv-def-deliv');
-        const chkInvo = document.getElementById('chk-sup-inv-def-invo');
-        const chkPay = document.getElementById('chk-sup-inv-def-pay');
-
-        if (lblDeliv) lblDeliv.style.display = types.includes('Delivery') ? 'flex' : 'none';
-        if (chkDeliv && !types.includes('Delivery')) chkDeliv.checked = false;
-
-        if (lblInvo) lblInvo.style.display = types.includes('Invoice') ? 'flex' : 'none';
-        if (chkInvo && !types.includes('Invoice')) chkInvo.checked = false;
-
-        if (lblPay) lblPay.style.display = types.includes('Pay') ? 'flex' : 'none';
-        if (chkPay && !types.includes('Pay')) chkPay.checked = false;
-    }
-
-    function renderInvoiceAddressTypeChips(types = []) {
-        const container = document.getElementById('sup-inv-addr-type-chips');
-        if (!container) return;
-        container.innerHTML = '';
-
-        if (types.length === 0) {
-            container.innerHTML = `<span class="multiselect-placeholder" style="color: var(--color-text-muted); font-size: 12.5px;">Select Address Type(s)...</span>`;
-            updateDefaultOptionsVisibility([]);
-            return;
-        }
-
-        const typeColorMap = {
-            'Delivery': { bg: '#dbeafe', color: '#1e40af', border: '#bfdbfe' },
-            'Invoice': { bg: '#ede9fe', color: '#6d28d9', border: '#ddd6fe' },
-            'Pay': { bg: '#d1fae5', color: '#065f46', border: '#a7f3d0' }
-        };
-
-        types.forEach(t => {
-            const style = typeColorMap[t] || { bg: '#f1f5f9', color: '#334155', border: '#cbd5e1' };
-            const chip = document.createElement('span');
-            chip.className = 'addr-type-chip';
-            chip.style.cssText = `background: ${style.bg}; color: ${style.color}; border: 1px solid ${style.border}; font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 4px; display: inline-flex; align-items: center; gap: 5px;`;
-            chip.innerHTML = `<span>${t}</span><span class="btn-remove-addr-type-chip" data-type="${t}" style="cursor: pointer; font-size: 13px; font-weight: bold; line-height: 1; opacity: 0.75;" title="Remove ${t}">×</span>`;
-
-            chip.querySelector('.btn-remove-addr-type-chip').addEventListener('click', (e) => {
-                e.stopPropagation();
-                const targetType = e.currentTarget.getAttribute('data-type');
-                const cb = document.querySelector(`#sup-inv-addr-type-dropdown .chk-sup-addr-type[value="${targetType}"]`);
-                if (cb) {
-                    cb.checked = false;
-                    const updated = getSelectedInvoiceAddressTypes();
-                    renderInvoiceAddressTypeChips(updated);
-                    updateDefaultOptionsVisibility(updated);
-                }
-            });
-
-            container.appendChild(chip);
-        });
-
-        updateDefaultOptionsVisibility(types);
-    }
-
-    function setSelectedInvoiceAddressTypes(types = []) {
-        const checkboxes = document.querySelectorAll('#sup-inv-addr-type-dropdown .chk-sup-addr-type');
-        checkboxes.forEach(cb => {
-            cb.checked = types.includes(cb.value);
-        });
-        renderInvoiceAddressTypeChips(types);
-        updateDefaultOptionsVisibility(types);
-    }
-
-    function renderSupplierAddressList() {
-        const body = document.getElementById('sup-inv-addr-table-body');
-        if (!body) return;
-        body.innerHTML = '';
-
-        if (currentSupplierAddresses.length === 0) {
-            body.innerHTML = `<tr><td colspan="12" class="text-center" style="color: var(--color-text-muted); padding: 15px;">No addresses entered. Fill the form above and click 'Add / Update Address Line'.</td></tr>`;
-            return;
-        }
-
-        currentSupplierAddresses.forEach((a, idx) => {
-            const tr = document.createElement('tr');
-            
-            let types = [];
-            if (Array.isArray(a.addressTypes) && a.addressTypes.length > 0) {
-                types = a.addressTypes;
-            } else if (typeof a.addressType === 'string' && a.addressType.trim()) {
-                types = a.addressType.split(/[\+,]/).map(s => s.trim()).filter(s => ['Delivery', 'Invoice', 'Pay'].includes(s));
-            }
-            if (types.length === 0) {
-                if (a.deliveryDefault || a.delivery) types.push('Delivery');
-                if (a.invoiceDefault || a.invoice) types.push('Invoice');
-                if (a.payDefault || a.pay) types.push('Pay');
-            }
-            if (types.length === 0) types = ['Invoice'];
-
-            const badgesHtml = types.map(t => {
-                if (t === 'Delivery') {
-                    const isDef = !!a.deliveryDefault;
-                    return `<span style="background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px; display: inline-flex; align-items: center; gap: 3px;">Delivery${isDef ? ' <span style="background: #fef08a; color: #854d0e; padding: 1px 4px; border-radius: 2px; font-size: 9px;">★ Default</span>' : ''}</span>`;
-                }
-                if (t === 'Invoice') {
-                    const isDef = !!a.invoiceDefault;
-                    return `<span style="background: #ede9fe; color: #6d28d9; border: 1px solid #ddd6fe; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px; display: inline-flex; align-items: center; gap: 3px;">Invoice${isDef ? ' <span style="background: #fef08a; color: #854d0e; padding: 1px 4px; border-radius: 2px; font-size: 9px;">★ Default</span>' : ''}</span>`;
-                }
-                if (t === 'Pay') {
-                    const isDef = !!a.payDefault;
-                    return `<span style="background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px; display: inline-flex; align-items: center; gap: 3px;">Pay${isDef ? ' <span style="background: #fef08a; color: #854d0e; padding: 1px 4px; border-radius: 2px; font-size: 9px;">★ Default</span>' : ''}</span>`;
-                }
-                return `<span style="background: #f1f5f9; color: #334155; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px;">${escapeHtml(t)}</span>`;
-            }).join(' ');
-
-            tr.innerHTML = `
-                <td><strong>${escapeHtml(a.addressId || `0${idx + 1}`)}</strong></td>
-                <td><div style="display: flex; gap: 4px; flex-wrap: wrap;">${badgesHtml}</div></td>
-                <td>${escapeHtml(a.addr1 || '')}</td>
-                <td>${escapeHtml(a.addr2 || '')}</td>
-                <td>${escapeHtml(a.city || '')}</td>
-                <td>${escapeHtml(a.postcode || '')}</td>
-                <td>${escapeHtml(a.state || '-')}</td>
-                <td>${escapeHtml(a.county || '-')}</td>
-                <td>${escapeHtml(a.country || 'GB UNITED KINGDOM')}</td>
-                <td>${escapeHtml(a.validFrom || '-')}</td>
-                <td>${escapeHtml(a.validTo || '-')}</td>
-                <td style="text-align: center;">
-                    <div style="display: flex; gap: 4px; justify-content: center;">
-                        <button type="button" class="btn btn-secondary btn-sm btn-edit-sup-inv-addr" data-index="${idx}" style="padding: 2px 6px; font-size: 11px; background: #3b82f6; color: white; border: none; border-radius: 3px; cursor: pointer;">Edit</button>
-                        <button type="button" class="btn btn-secondary btn-sm btn-del-sup-inv-addr" data-index="${idx}" style="padding: 2px 6px; font-size: 11px; background: var(--color-danger); color: white; border: none; border-radius: 3px; cursor: pointer;">Delete</button>
-                    </div>
-                </td>
-            `;
-
-            tr.querySelector('.btn-edit-sup-inv-addr').addEventListener('click', () => {
-                editingSupplierAddressIndex = idx;
-                const item = currentSupplierAddresses[idx];
-                const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
-                const setChk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
-
-                let rowTypes = [];
-                if (Array.isArray(item.addressTypes) && item.addressTypes.length > 0) {
-                    rowTypes = item.addressTypes;
-                } else if (typeof item.addressType === 'string' && item.addressType.trim()) {
-                    rowTypes = item.addressType.split(/[\+,]/).map(s => s.trim()).filter(s => ['Delivery', 'Invoice', 'Pay'].includes(s));
-                }
-                if (rowTypes.length === 0) {
-                    if (item.deliveryDefault || item.delivery) rowTypes.push('Delivery');
-                    if (item.invoiceDefault || item.invoice) rowTypes.push('Invoice');
-                    if (item.payDefault || item.pay) rowTypes.push('Pay');
-                }
-                if (rowTypes.length === 0) rowTypes = ['Delivery', 'Invoice', 'Pay'];
-
-                setSelectedInvoiceAddressTypes(rowTypes);
-
-                setChk('chk-sup-inv-def-deliv', item.deliveryDefault);
-                setChk('chk-sup-inv-def-invo', item.invoiceDefault);
-                setChk('chk-sup-inv-def-pay', item.payDefault);
-
-                setVal('sup-inv-addr1', item.addr1 || '');
-                setVal('sup-inv-addr2', item.addr2 || '');
-                setVal('sup-inv-city', item.city || '');
-                setVal('sup-inv-postcode', item.postcode || '');
-                setVal('sup-inv-county', item.county || '');
-                setVal('sup-inv-state', item.state || '');
-                setVal('sup-inv-country', item.country || 'GB UNITED KINGDOM');
-                setVal('sup-inv-valid-from', item.validFrom || '');
-                setVal('sup-inv-valid-to', item.validTo || '');
-
-                showToast(`Loaded Address ID '${item.addressId || `0${idx + 1}`}' into form for editing.`, "info");
-            });
-
-            tr.querySelector('.btn-del-sup-inv-addr').addEventListener('click', () => {
-                currentSupplierAddresses.splice(idx, 1);
-                if (editingSupplierAddressIndex === idx) editingSupplierAddressIndex = null;
-                renderSupplierAddressList();
-                showToast("Invoice address line removed.", "warning");
-            });
-
-            body.appendChild(tr);
-        });
-    }
-
-    // 2. PAYMENT METHODS LIST RENDERING
-    function renderSupplierPaymentMethodsList() {
-        const body = document.getElementById('sup-pay-methods-body');
-        const countSpan = document.getElementById('sup-pay-methods-count');
-        if (!body) return;
-        body.innerHTML = '';
-
-        if (countSpan) {
-            countSpan.textContent = `${currentSupplierPaymentMethods.length} record${currentSupplierPaymentMethods.length === 1 ? '' : 's'}`;
-        }
-
-        if (currentSupplierPaymentMethods.length === 0) {
-            body.innerHTML = `<tr><td colspan="4" class="text-center" style="color: var(--color-text-muted); padding: 16px;">No payment methods. Click '➕ Add' to configure.</td></tr>`;
-            return;
-        }
-
-        currentSupplierPaymentMethods.forEach((m, idx) => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><strong>${escapeHtml(m.method || '')}</strong></td>
-                <td>${escapeHtml(m.description || '')}</td>
-                <td style="text-align: center;">
-                    ${m.isDefault ? '<span style="background: #dcfce7; color: #15803d; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 3px; border: 1px solid #bbf7d0;">YES</span>' : '<span style="color: #94a3b8; font-size: 10px; font-weight: 600;">NO</span>'}
-                </td>
-                <td style="text-align: center;">
-                    <div style="display: flex; gap: 4px; justify-content: center;">
-                        <button type="button" class="btn btn-secondary btn-sm btn-edit-pay-method" data-index="${idx}" style="padding: 2px 6px; font-size: 11px; background-color: #3b82f6; color: white; border: none; border-radius: 3px; cursor: pointer;">Edit</button>
-                        <button type="button" class="btn btn-secondary btn-sm btn-del-pay-method" data-index="${idx}" style="padding: 2px 6px; font-size: 11px; background-color: var(--color-danger); color: white; border: none; border-radius: 3px; cursor: pointer;">Delete</button>
-                    </div>
-                </td>
-            `;
-
-            tr.querySelector('.btn-edit-pay-method').addEventListener('click', () => {
-                editingPaymentMethodIndex = idx;
-                const method = currentSupplierPaymentMethods[idx];
-                const codeInput = document.getElementById('modal-pay-method-code');
-                const descInput = document.getElementById('modal-pay-method-desc');
-                const defChk = document.getElementById('modal-pay-method-default');
-                const title = document.getElementById('sup-pay-method-modal-title');
-                const modal = document.getElementById('sup-pay-method-modal');
-
-                if (codeInput) codeInput.value = method.method || '';
-                if (descInput) descInput.value = method.description || '';
-                if (defChk) defChk.checked = !!method.isDefault;
-                if (title) title.textContent = 'Edit Payment Method';
-                if (modal) modal.classList.remove('hidden');
-            });
-
-            tr.querySelector('.btn-del-pay-method').addEventListener('click', () => {
-                currentSupplierPaymentMethods.splice(idx, 1);
-                renderSupplierPaymentMethodsList();
-                showToast("Payment method removed.", "warning");
-            });
-
-            body.appendChild(tr);
-        });
-    }
-
-    // 3. PAYMENT ADDRESSES LIST RENDERING
     function renderSupplierPaymentAddressesList() {
-        const body = document.getElementById('sup-pay-addresses-body');
-        const countSpan = document.getElementById('sup-pay-addresses-count');
-        const isApprover = isUserApprover();
-        if (!body) return;
-        body.innerHTML = '';
-
-        if (countSpan) {
-            countSpan.textContent = `${currentSupplierPaymentAddresses.length} record${currentSupplierPaymentAddresses.length === 1 ? '' : 's'}`;
-        }
-
-        if (currentSupplierPaymentAddresses.length === 0) {
-            body.innerHTML = `<tr><td colspan="10" class="text-center" style="color: var(--color-text-muted); padding: 16px;">No payment addresses. Click '➕ Add' to configure.</td></tr>`;
-            return;
-        }
-
-        currentSupplierPaymentAddresses.forEach((a, idx) => {
-            const tr = document.createElement('tr');
-            const isApproved = a.status === 'Active' || a.status === 'Approved';
-            const statusBadge = isApproved
-                ? `<span style="background: #dcfce7; color: #15803d; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px; border: 1px solid #bbf7d0;">Active</span>`
-                : (a.status === 'Inactive'
-                    ? `<span style="background: #fee2e2; color: #dc2626; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px; border: 1px solid #fca5a5;">Inactive</span>`
-                    : `<span style="background: #fef3c7; color: #b45309; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px; border: 1px solid #fde68a;">Pending</span>`);
-
-            const approveBtn = (!isApproved && isApprover)
-                ? `<button type="button" class="btn btn-secondary btn-sm btn-approve-pay-addr" data-index="${idx}" style="padding: 2px 6px; font-size: 11px; background-color: #10b981; color: white; border: none; border-radius: 3px; cursor: pointer;">Approve</button>`
-                : '';
-
-            tr.innerHTML = `
-                <td><strong>${escapeHtml(a.seqId || `0${idx + 1}`)}</strong></td>
-                <td><span style="background: #e0f2fe; color: #0369a1; font-weight: 600; padding: 2px 6px; border-radius: 3px; font-size: 11px;">${escapeHtml(a.method || '')}</span></td>
-                <td>${escapeHtml(a.description || '')}</td>
-                <td style="font-family: monospace; font-size: 12px;">${escapeHtml(a.bankAccount || '')}</td>
-                <td style="text-align: center;">
-                    ${a.isDefault ? '<span style="background: #dcfce7; color: #15803d; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 3px; border: 1px solid #bbf7d0;">YES</span>' : '<span style="color: #94a3b8; font-size: 10px; font-weight: 600;">NO</span>'}
-                </td>
-                <td>${escapeHtml(a.sortCode || '-')}</td>
-                <td>${escapeHtml(a.accountName || '-')}</td>
-                <td>${escapeHtml(a.bldgRef || '-')}</td>
-                <td style="text-align: center;">${statusBadge}</td>
-                <td style="text-align: center;">
-                    <div style="display: flex; gap: 4px; justify-content: center; flex-wrap: wrap;">
-                        <button type="button" class="btn btn-secondary btn-sm btn-edit-pay-addr" data-index="${idx}" style="padding: 2px 6px; font-size: 11px; background-color: #3b82f6; color: white; border: none; border-radius: 3px; cursor: pointer;">Edit</button>
-                        ${approveBtn}
-                        <button type="button" class="btn btn-secondary btn-sm btn-del-pay-addr" data-index="${idx}" style="padding: 2px 6px; font-size: 11px; background-color: var(--color-danger); color: white; border: none; border-radius: 3px; cursor: pointer;">Delete</button>
-                    </div>
-                </td>
-            `;
-
-            tr.querySelector('.btn-edit-pay-addr').addEventListener('click', () => {
-                editingPaymentAddressIndex = idx;
-                const addr = currentSupplierPaymentAddresses[idx];
-                const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
-                const setChk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
-
-                setVal('modal-pay-addr-seq', addr.seqId || `0${idx + 1}`);
-                setVal('modal-pay-addr-method', addr.method || '');
-                setVal('modal-pay-addr-desc', addr.description || '');
-                setVal('modal-pay-addr-bank-acc', addr.bankAccount || '');
-                setVal('modal-pay-addr-sort-code', addr.sortCode || '');
-                setVal('modal-pay-addr-name', addr.accountName || '');
-                setVal('modal-pay-addr-bldg-ref', addr.bldgRef || '');
-                setVal('modal-pay-addr-status', addr.status || 'Approval Pending');
-                setChk('modal-pay-addr-default', addr.isDefault);
-
-                const title = document.getElementById('sup-pay-addr-modal-title');
-                if (title) title.textContent = 'Edit Payment Address';
-                const modal = document.getElementById('sup-pay-addr-modal');
-                if (modal) modal.classList.remove('hidden');
-            });
-
-            const approveBtnEl = tr.querySelector('.btn-approve-pay-addr');
-            if (approveBtnEl) {
-                approveBtnEl.addEventListener('click', () => {
-                    currentSupplierPaymentAddresses[idx].status = 'Active';
-                    renderSupplierPaymentAddressesList();
-                    showToast(`Payment address '${currentSupplierPaymentAddresses[idx].seqId}' approved.`, "success");
-                });
-            }
-
-            tr.querySelector('.btn-del-pay-addr').addEventListener('click', () => {
-                currentSupplierPaymentAddresses.splice(idx, 1);
-                renderSupplierPaymentAddressesList();
-                showToast("Payment address removed.", "warning");
-            });
-
-            body.appendChild(tr);
-        });
-    }
-
-    // 4. DISPATCH ADDRESSES LIST RENDERING
-    function renderSupplierDispatchAddressList() {
-        const body = document.getElementById('sup-disp-addr-body');
-        if (!body) return;
-        body.innerHTML = '';
-
-        if (currentSupplierDispatchAddresses.length === 0) {
-            body.innerHTML = `<tr><td colspan="10" class="text-center" style="color: var(--color-text-muted); padding: 20px;">No dispatch addresses configured. Fill details above and click '➕ Add Address'.</td></tr>`;
-            return;
-        }
-
-        currentSupplierDispatchAddresses.forEach((d, idx) => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><strong>${escapeHtml(d.addressId || `0${idx + 1}`)}</strong></td>
-                <td>${escapeHtml(d.addr1 || '')}</td>
-                <td>${escapeHtml(d.addr2 || '')}</td>
-                <td>${escapeHtml(d.city || '')}</td>
-                <td>${escapeHtml(d.postcode || '')}</td>
-                <td>${escapeHtml(d.state || '-')}</td>
-                <td>${escapeHtml(d.county || '-')}</td>
-                <td>${escapeHtml(d.country || 'GB UNITED KINGDOM')}</td>
-                <td style="text-align: center;">
-                    ${d.isDefault ? '<span style="background: #dcfce7; color: #15803d; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px;">YES</span>' : '<span style="color: #94a3b8; font-size: 10px;">NO</span>'}
-                </td>
-                <td style="text-align: center;">
-                    <div style="display: flex; gap: 4px; justify-content: center;">
-                        <button type="button" class="btn btn-secondary btn-sm btn-edit-disp-addr" data-index="${idx}" style="padding: 2px 6px; font-size: 11px; background: #3b82f6; color: white; border: none; border-radius: 3px; cursor: pointer;">Edit</button>
-                        <button type="button" class="btn btn-secondary btn-sm btn-del-disp-addr" data-index="${idx}" style="padding: 2px 6px; font-size: 11px; background: var(--color-danger); color: white; border: none; border-radius: 3px; cursor: pointer;">Delete</button>
-                    </div>
-                </td>
-            `;
-
-            tr.querySelector('.btn-edit-disp-addr').addEventListener('click', () => {
-                editingDispatchAddressIndex = idx;
-                const item = currentSupplierDispatchAddresses[idx];
-                const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
-                const setChk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
-
-                setVal('sup-disp-typing-addrid', item.addressId || `0${idx + 1}`);
-                setVal('sup-disp-typing-addr1', item.addr1 || '');
-                setVal('sup-disp-typing-addr2', item.addr2 || '');
-                setVal('sup-disp-typing-city', item.city || '');
-                setVal('sup-disp-typing-postcode', item.postcode || '');
-                setVal('sup-disp-typing-county', item.county || '');
-                setVal('sup-disp-typing-state', item.state || '');
-                setVal('sup-disp-typing-country', item.country || 'GB UNITED KINGDOM');
-                setVal('sup-disp-typing-valid-from', item.validFrom || '');
-                setVal('sup-disp-typing-valid-to', item.validTo || '');
-                setChk('sup-disp-typing-default', item.isDefault);
-
-                showToast(`Loaded Dispatch Address ID '${item.addressId || `0${idx + 1}`}' into form for editing.`, "info");
-            });
-
-            tr.querySelector('.btn-del-disp-addr').addEventListener('click', () => {
-                currentSupplierDispatchAddresses.splice(idx, 1);
-                if (editingDispatchAddressIndex === idx) editingDispatchAddressIndex = null;
-                renderSupplierDispatchAddressList();
-                showToast("Dispatch address removed.", "warning");
-            });
-
-            body.appendChild(tr);
-        });
-    }
-
-    // 5. LICENCE EXPIRY DATE VALIDATION & FEEDBACK
-    function updateCompanyRegExpiryFeedback(dateVal) {
-        const feedbackEl = document.getElementById('sup-lic-company-reg-expiry-feedback');
-        if (!feedbackEl) return;
-
-        if (!dateVal) {
-            feedbackEl.style.display = 'none';
-            feedbackEl.textContent = '';
-            return;
-        }
-
-        const expDate = new Date(dateVal);
-        if (isNaN(expDate.getTime())) {
-            feedbackEl.style.display = 'block';
-            feedbackEl.style.color = 'var(--color-danger)';
-            feedbackEl.textContent = '❌ Invalid date format.';
-            return;
-        }
-
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        expDate.setHours(0, 0, 0, 0);
-
-        const diffTime = expDate.getTime() - today.getTime();
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-        feedbackEl.style.display = 'block';
-        if (diffDays < 0) {
-            feedbackEl.style.color = 'var(--color-danger)';
-            feedbackEl.textContent = `⚠️ Company Reg has expired (${Math.abs(diffDays)} days ago)`;
-        } else if (diffDays <= 30) {
-            feedbackEl.style.color = '#d97706';
-            feedbackEl.textContent = `⚠️ Company Reg expires soon (${diffDays} days remaining)`;
-        } else {
-            feedbackEl.style.color = '#10b981';
-            feedbackEl.textContent = `✅ Company Reg valid until ${dateVal} (${diffDays} days remaining)`;
-        }
-    }
-
-    function updateLicenceExpiryFeedback(dateVal) {
-        const feedbackEl = document.getElementById('sup-lic-expiry-feedback');
-        if (!feedbackEl) return;
-
-        if (!dateVal) {
-            feedbackEl.style.display = 'none';
-            feedbackEl.textContent = '';
-            return;
-        }
-
-        const expDate = new Date(dateVal);
-        if (isNaN(expDate.getTime())) {
-            feedbackEl.style.display = 'block';
-            feedbackEl.style.color = 'var(--color-danger)';
-            feedbackEl.textContent = '❌ Invalid date format.';
-            return;
-        }
-
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        expDate.setHours(0, 0, 0, 0);
-
-        const diffTime = expDate.getTime() - today.getTime();
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-        feedbackEl.style.display = 'block';
-        if (diffDays < 0) {
-            feedbackEl.style.color = 'var(--color-danger)';
-            feedbackEl.textContent = `⚠️ Certificate has expired (${Math.abs(diffDays)} days ago)`;
-        } else if (diffDays <= 30) {
-            feedbackEl.style.color = '#d97706';
-            feedbackEl.textContent = `⚠️ Certificate expires soon (${diffDays} days remaining)`;
-        } else {
-            feedbackEl.style.color = '#10b981';
-            feedbackEl.textContent = `✅ Certificate valid until ${dateVal} (${diffDays} days remaining)`;
-        }
-    }
-
-    function renderSupplierFileList() {
-        const body = document.getElementById('sup-file-table-body');
-        if (!body) return;
-        body.innerHTML = '';
-
-        if (currentSupplierFiles.length === 0) {
-            body.innerHTML = `<tr><td colspan="8" class="text-center" style="color: var(--color-text-muted); padding: 15px;">No uploaded documents found.</td></tr>`;
-            return;
-        }
-
-        currentSupplierFiles.forEach((f, idx) => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${idx + 1}</td>
-                <td><strong>${escapeHtml(f.name || '')}</strong></td>
-                <td>${escapeHtml(f.otherType || '')}</td>
-                <td>${escapeHtml(f.licenceType || '-')}</td>
-                <td>${escapeHtml(f.uploadedBy || 'Vilas Vaidya')}</td>
-                <td>${escapeHtml(f.date || '18-04-2018 05:03:15 PM')}</td>
-                <td style="text-align: center;"><button type="button" class="btn btn-secondary btn-sm btn-sup-file-del" data-index="${idx}" style="padding: 2px 6px; font-size: 11px; background-color: var(--color-danger); color: #fff; border: none; border-radius: 4px;">❌</button></td>
-                <td style="text-align: center;"><button type="button" class="btn btn-secondary btn-sm" style="padding: 2px 6px; font-size: 11px; background-color: var(--color-primary); color: #fff; border: none; border-radius: 4px;">📥</button></td>
-            `;
-
-            tr.querySelector('.btn-sup-file-del').addEventListener('click', () => {
-                currentSupplierFiles.splice(idx, 1);
-                renderSupplierFileList();
-                showToast("Document deleted.", "warning");
-            });
-
-            body.appendChild(tr);
-        });
-    }
-
-    function resetSupplierForm() {
-        const setVal = (id, val = '') => { const el = document.getElementById(id); if (el) el.value = val; };
-        const setChk = (id, val = false) => { const el = document.getElementById(id); if (el) el.checked = val; };
-
-        setVal('sup-form-id', '');
-        setVal('sup-form-name', '');
-        setVal('sup-form-company', 'LAXMI01');
-
-        setVal('sup-gen-assoc-no', '');
-        setVal('sup-gen-group', '40 O/H Suppliers');
-        setVal('sup-gen-tax-liability', 'TAX Taxable');
-        setVal('sup-gen-identifier-ref', 'Yes');
-        setVal('sup-gen-currency', 'GBP');
-        setVal('sup-gen-free-tax-code', 'Select Free Tax Code');
-        setVal('sup-gen-creation-date', '2018-04-17');
-        setVal('sup-gen-payment-term', '0 Due Immediately');
-        setVal('sup-gen-tax-code', 'SUK-11 20');
-        setVal('sup-gen-stat-group', 'OH Overheads');
-        setVal('sup-gen-buyer-id', '*');
-        setVal('sup-gen-category-code', '');
-
-        // Invoice Address Info
-        setSelectedInvoiceAddressTypes(['Delivery', 'Invoice', 'Pay']);
-        const hasDelivDef = currentSupplierAddresses.some(a => a.deliveryDefault);
-        const hasInvoDef = currentSupplierAddresses.some(a => a.invoiceDefault);
-        const hasPayDef = currentSupplierAddresses.some(a => a.payDefault);
-        setChk('chk-sup-inv-def-deliv', !hasDelivDef);
-        setChk('chk-sup-inv-def-invo', !hasInvoDef);
-        setChk('chk-sup-inv-def-pay', !hasPayDef);
-
-        setVal('sup-inv-addr1', '');
-        setVal('sup-inv-addr2', '');
-        setVal('sup-inv-city', '');
-        setVal('sup-inv-postcode', '');
-        setVal('sup-inv-county', '');
-        setVal('sup-inv-state', '');
-        setVal('sup-inv-country', 'GB UNITED KINGDOM');
-        setVal('sup-inv-valid-from', '');
-        setVal('sup-inv-valid-to', '');
-
-        // Payment Info
-        setVal('sup-pay-invoicing-supplier', '');
-        setVal('sup-pay-authorizer', 'PRICHA');
-        setChk('sup-pay-netting', false);
-        setVal('sup-pay-invoice-recipient', '*');
-        setChk('sup-pay-blocked', false);
-
-        // Licence Info
-        setVal('sup-lic-type', 'Non WDA Holder');
-        setVal('sup-lic-supplier-for', 'Select...');
-        setVal('sup-lic-company-reg', '');
-        setVal('sup-lic-company-reg-expiry', '');
-        setVal('sup-lic-gdp-gmp-cert-no', '');
-        setVal('sup-lic-expiry-date', '');
-        setVal('sup-lic-risk-score', 'Select...');
-        setChk('sup-lic-questionnaire', false);
-        setVal('sup-lic-tech-approved-date', '');
-        setVal('sup-lic-tech-renewal-date', '');
-        setVal('sup-lic-review-date', '');
-        const rActive = document.getElementById('sup-lic-active');
-        if (rActive) rActive.checked = true;
-        setVal('sup-lic-note', 'Inactivated due to communication method changed in General tab.');
-        updateCompanyRegExpiryFeedback('');
-        updateLicenceExpiryFeedback('');
-
-        // Dispatch Personnel & Address
-        setVal('sup-disp-supname', '');
-        setVal('sup-disp-ship-via', '');
-        setVal('sup-disp-resp-person', '');
-        setVal('sup-disp-qual-person', '');
-        setVal('sup-disp-typing-addrid', '01');
-        setVal('sup-disp-typing-addr1', '');
-        setVal('sup-disp-typing-addr2', '');
-        setVal('sup-disp-typing-city', '');
-        setVal('sup-disp-typing-postcode', '');
-        setVal('sup-disp-typing-county', '');
-        setVal('sup-disp-typing-state', '');
-        setVal('sup-disp-typing-country', 'GB UNITED KINGDOM');
-        setVal('sup-disp-typing-valid-from', '');
-        setVal('sup-disp-typing-valid-to', '');
-        setChk('sup-disp-typing-default', false);
-
-        setVal('sup-disp-copy-addrid', '');
-        setVal('sup-disp-copy-addr1', '');
-        setVal('sup-disp-copy-addr2', '');
-        setVal('sup-disp-copy-city', '');
-        setVal('sup-disp-copy-postcode', '');
-        setVal('sup-disp-copy-county', '');
-        setVal('sup-disp-copy-state', '');
-        setVal('sup-disp-copy-country', 'GB UNITED KINGDOM');
-        setVal('sup-disp-copy-valid-from', '');
-        setVal('sup-disp-copy-valid-to', '');
-
-        editingSupplierNo = null;
-        editingSupplierAddressIndex = null;
-        editingPaymentMethodIndex = null;
-        editingPaymentAddressIndex = null;
-        editingDispatchAddressIndex = null;
-
-        currentSupplierContacts = [];
-        currentSupplierAddresses = [];
-        currentSupplierFiles = [];
-        currentSupplierPaymentMethods = [];
-        currentSupplierPaymentAddresses = [];
-        currentSupplierDispatchAddresses = [];
-
-        renderSupplierContactsList();
-        renderSupplierAddressList();
-        renderSupplierPaymentMethodsList();
-        renderSupplierPaymentAddressesList();
-        renderSupplierDispatchAddressList();
-        renderSupplierFileList();
-
-        const formTitle = document.getElementById('sup-form-title');
-        if (formTitle) formTitle.textContent = 'Supplier Update Form';
-        const badge = document.getElementById('sup-edit-status-badge');
-        if (badge) badge.style.display = 'none';
-
-        // Switch back to General subtab
-        const btnGenSubtab = document.getElementById('btn-sup-subtab-general');
-        if (btnGenSubtab) btnGenSubtab.click();
-    }
-
-    function loadSupplierIntoForm(s) {
-        const setVal = (id, val) => {
-            const el = document.getElementById(id);
-            if (el) el.value = val !== undefined && val !== null ? val : '';
-        };
-        const setChk = (id, val) => {
-            const el = document.getElementById(id);
-            if (el) el.checked = !!val;
-        };
-
-        editingSupplierNo = s.supplierId;
-        editingSupplierAddressIndex = null;
-        editingPaymentMethodIndex = null;
-        editingPaymentAddressIndex = null;
-        editingDispatchAddressIndex = null;
-
-        setVal('sup-form-id', s.supplierId);
-        setVal('sup-form-name', s.supplierName);
-        setVal('sup-form-company', s.company || 'LAXMI01');
-
-        setVal('sup-gen-assoc-no', s.assocNo);
-        setVal('sup-gen-group', s.supplierGroup || '40 O/H Suppliers');
-        setVal('sup-gen-tax-liability', s.taxLiability || 'TAX Taxable');
-        setVal('sup-gen-identifier-ref', s.identifierRef || 'Yes');
-        setVal('sup-gen-currency', s.currency || 'GBP');
-        setVal('sup-gen-free-tax-code', s.freeTaxCode || 'Select Free Tax Code');
-        setVal('sup-gen-creation-date', s.creationDate || '2018-04-17');
-        setVal('sup-gen-payment-term', s.paymentTerm || '0 Due Immediately');
-        setVal('sup-gen-tax-code', s.taxCode || 'SUK-11 20');
-        setVal('sup-gen-stat-group', s.statGroup || 'OH Overheads');
-        setVal('sup-gen-buyer-id', s.buyerId || '*');
-        setVal('sup-gen-category-code', s.categoryCode);
-
-        // Payment Info
-        setVal('sup-pay-invoicing-supplier', s.invoicingSupplier || s.supplierId);
-        setVal('sup-pay-authorizer', s.paymentAuthorizer || 'PRICHA');
-        setChk('sup-pay-netting', s.nettingAllowed);
-        setVal('sup-pay-invoice-recipient', s.invoiceRecipient || '*');
-        setChk('sup-pay-blocked', s.blockedForPayment);
-
-        // Licence Info
-        setVal('sup-lic-type', s.licenceType || 'Non WDA Holder');
-        setVal('sup-lic-supplier-for', s.supplierFor || 'Select...');
-        setVal('sup-lic-company-reg', s.companyRegNo || '');
-        setVal('sup-lic-company-reg-expiry', s.companyRegExpiry || '');
-        setVal('sup-lic-gdp-gmp-cert-no', s.gdpGmpCertNo || '');
-        setVal('sup-lic-expiry-date', s.expiryDate || s.gdpGmpExpiry || '');
-        setVal('sup-lic-risk-score', s.riskScore || 'Select...');
-        setChk('sup-lic-questionnaire', s.questionnaire);
-        setVal('sup-lic-tech-approved-date', s.techApprovedDate || '');
-        setVal('sup-lic-tech-renewal-date', s.techRenewalDate || '');
-        setVal('sup-lic-review-date', s.reviewDate || '');
-        if (s.licenceStatus === 'Inactive') {
-            const rInactive = document.getElementById('sup-lic-inactive');
-            if (rInactive) rInactive.checked = true;
-        } else {
-            const rActive = document.getElementById('sup-lic-active');
-            if (rActive) rActive.checked = true;
-        }
-        setVal('sup-lic-note', s.licenceNote || '');
-        updateCompanyRegExpiryFeedback(s.companyRegExpiry || '');
-        updateLicenceExpiryFeedback(s.expiryDate || s.gdpGmpExpiry || '');
-
-        // Dispatch Personnel
-        setVal('sup-disp-supname', s.dispSupName || s.supplierName || '');
-        setVal('sup-disp-ship-via', s.dispShipVia || '');
-        setVal('sup-disp-resp-person', s.dispRespPerson || '');
-        setVal('sup-disp-qual-person', s.dispQualPerson || '');
-
-        currentSupplierContacts = s.contacts ? JSON.parse(JSON.stringify(s.contacts)) : [];
-        currentSupplierAddresses = s.addresses ? JSON.parse(JSON.stringify(s.addresses)) : [];
-        currentSupplierFiles = s.files ? JSON.parse(JSON.stringify(s.files)) : [];
-        currentSupplierPaymentMethods = s.paymentMethods ? JSON.parse(JSON.stringify(s.paymentMethods)) : [];
-        currentSupplierPaymentAddresses = s.paymentAddresses ? JSON.parse(JSON.stringify(s.paymentAddresses)) : [];
-        currentSupplierDispatchAddresses = s.dispatchAddresses ? JSON.parse(JSON.stringify(s.dispatchAddresses)) : [];
-
-        renderSupplierContactsList();
-        renderSupplierAddressList();
-        renderSupplierPaymentMethodsList();
-        renderSupplierPaymentAddressesList();
-        renderSupplierDispatchAddressList();
-        renderSupplierFileList();
-
-        const formTitle = document.getElementById('sup-form-title');
-        if (formTitle) formTitle.textContent = `Supplier Update Form: ${s.supplierName}`;
-        const badge = document.getElementById('sup-edit-status-badge');
-        if (badge) badge.style.display = 'inline-block';
-
-        showSupplierFormView();
-    }
-
-    function getSupplierFormData() {
-        const getVal = id => document.getElementById(id) ? document.getElementById(id).value.trim() : '';
-        const getChk = id => document.getElementById(id) ? document.getElementById(id).checked : false;
-
-        const licStatus = document.getElementById('sup-lic-inactive')?.checked ? 'Inactive' : 'Active';
-
-        const hasPendingPayAddr = currentSupplierPaymentAddresses.some(a => (a.status || '').toLowerCase().includes('pending'));
-        let supplierStatus = 'Active';
-        if (hasPendingPayAddr) {
-            supplierStatus = 'Pending for Approval';
-        } else if (editingSupplierNo) {
-            const existing = suppliers.find(s => s && s.supplierId && s.supplierId.toUpperCase() === editingSupplierNo.toUpperCase());
-            if (existing && existing.status === 'Inactive') {
-                supplierStatus = 'Inactive';
-            }
-        }
-
-        return {
-            supplierId: getVal('sup-form-id'),
-            supplierName: getVal('sup-form-name'),
-            company: getVal('sup-form-company') || 'LAXMI01',
-            assocNo: getVal('sup-gen-assoc-no'),
-            supplierGroup: getVal('sup-gen-group'),
-            taxLiability: getVal('sup-gen-tax-liability'),
-            identifierRef: getVal('sup-gen-identifier-ref'),
-            currency: getVal('sup-gen-currency'),
-            freeTaxCode: getVal('sup-gen-free-tax-code'),
-            creationDate: getVal('sup-gen-creation-date'),
-            paymentTerm: getVal('sup-gen-payment-term'),
-            taxCode: getVal('sup-gen-tax-code'),
-            statGroup: getVal('sup-gen-stat-group'),
-            buyerId: getVal('sup-gen-buyer-id'),
-            categoryCode: getVal('sup-gen-category-code'),
-            invoicingSupplier: getVal('sup-pay-invoicing-supplier'),
-            paymentAuthorizer: getVal('sup-pay-authorizer'),
-            nettingAllowed: getChk('sup-pay-netting'),
-            invoiceRecipient: getVal('sup-pay-invoice-recipient'),
-            blockedForPayment: getChk('sup-pay-blocked'),
-            licenceType: getVal('sup-lic-type'),
-            supplierFor: getVal('sup-lic-supplier-for'),
-            companyRegNo: getVal('sup-lic-company-reg'),
-            companyRegExpiry: getVal('sup-lic-company-reg-expiry'),
-            gdpGmpCertNo: getVal('sup-lic-gdp-gmp-cert-no'),
-            expiryDate: getVal('sup-lic-expiry-date'),
-            gdpGmpExpiry: getVal('sup-lic-expiry-date'),
-            riskScore: getVal('sup-lic-risk-score'),
-            questionnaire: getChk('sup-lic-questionnaire'),
-            techApprovedDate: getVal('sup-lic-tech-approved-date'),
-            techRenewalDate: getVal('sup-lic-tech-renewal-date'),
-            reviewDate: getVal('sup-lic-review-date'),
-            licenceStatus: licStatus,
-            licenceNote: getVal('sup-lic-note'),
-            dispSupName: getVal('sup-disp-supname'),
-            dispShipVia: getVal('sup-disp-ship-via'),
-            dispRespPerson: getVal('sup-disp-resp-person'),
-            dispQualPerson: getVal('sup-disp-qual-person'),
-            status: supplierStatus,
-            contacts: currentSupplierContacts,
-            addresses: currentSupplierAddresses,
-            paymentMethods: currentSupplierPaymentMethods,
-            paymentAddresses: currentSupplierPaymentAddresses,
-            dispatchAddresses: currentSupplierDispatchAddresses,
-            files: currentSupplierFiles
-        };
-    }
-
-    function validateSupplierForm(data) {
-        if (!data.supplierId) {
-            showToast("Error: Supplier ID is required.", "danger");
-            return false;
-        }
-        if (!data.supplierName) {
-            showToast("Error: Supplier Name is required.", "danger");
-            return false;
-        }
-        if (data.companyRegExpiry) {
-            const exp = new Date(data.companyRegExpiry);
-            if (isNaN(exp.getTime())) {
-                showToast("Error: Company Reg Expiry Date is not a valid date.", "danger");
-                return false;
-            }
-        }
-        if (data.expiryDate) {
-            const exp = new Date(data.expiryDate);
-            if (isNaN(exp.getTime())) {
-                showToast("Error: GDP/GMP Certificate Expiry Date is not a valid date.", "danger");
-                return false;
-            }
-        }
-        return true;
+        // Managed inside supplier_workflow.js
     }
 
     function initSupplierSetup() {
-        const btnNavSupplierSub = document.getElementById('nav-supplier-setup-sub');
-        const supplierWorkspace = document.getElementById('supplier-creation-workspace');
-        
-        if (btnNavSupplierSub) {
-            btnNavSupplierSub.addEventListener('click', (e) => {
-                e.preventDefault();
-                // Deactivate other nav items
-                document.querySelectorAll('.sub-item').forEach(el => el.classList.remove('active'));
-                btnNavSupplierSub.classList.add('active');
-
-                // Switch workspace module view
-                switchModule('supplier-setup');
-
-                // Hide other specific workspaces
-                const custWorkspace = document.getElementById('customer-creation-workspace');
-                const compWorkspace = document.getElementById('company-setup-workspace');
-                if (custWorkspace) custWorkspace.classList.add('hidden');
-                if (compWorkspace) compWorkspace.classList.add('hidden');
-                if (supplierWorkspace) supplierWorkspace.classList.remove('hidden');
-
-                // Sub-tab reset & render
-                showSupplierListView();
-                showToast("Switched to Supplier Setup profile.", "success");
-            });
+        if (window.SupplierWorkflowModule && typeof window.SupplierWorkflowModule.init === 'function') {
+            window.SupplierWorkflowModule.init();
         }
-
-        // Sub-tabs in Supplier Form
-        const supplierSubTabs = [
-            { btnId: 'btn-sup-subtab-general', panelId: 'panel-sup-subtab-general' },
-            { btnId: 'btn-sup-subtab-invoice-addr', panelId: 'panel-sup-subtab-invoice-addr' },
-            { btnId: 'btn-sup-subtab-payment', panelId: 'panel-sup-subtab-payment' },
-            { btnId: 'btn-sup-subtab-licence', panelId: 'panel-sup-subtab-licence' },
-            { btnId: 'btn-sup-subtab-file', panelId: 'panel-sup-subtab-file' },
-            { btnId: 'btn-sup-subtab-dispatch-addr', panelId: 'panel-sup-subtab-dispatch-addr' }
-        ];
-
-        supplierSubTabs.forEach(st => {
-            const btn = document.getElementById(st.btnId);
-            if (btn) {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    supplierSubTabs.forEach(t => {
-                        const b = document.getElementById(t.btnId);
-                        const p = document.getElementById(t.panelId);
-                        if (b) b.classList.remove('active');
-                        if (p) p.classList.add('hidden');
-                    });
-                    btn.classList.add('active');
-                    const targetPanel = document.getElementById(st.panelId);
-                    if (targetPanel) targetPanel.classList.remove('hidden');
-                });
-            }
-        });
-
-        // Add Contact Row Button
-        const btnAddContact = document.getElementById('btn-sup-contact-add-row') || document.getElementById('btn-sup-add-contact');
-        if (btnAddContact) {
-            btnAddContact.addEventListener('click', () => {
-                currentSupplierContacts.push({
-                    selected: false,
-                    name: "",
-                    description: "",
-                    commMethod: "Phone",
-                    value: "",
-                    docReceiver: false,
-                    docType: ""
-                });
-                renderSupplierContactsList();
-                showToast("Supplier contact row added.", "success");
-            });
-        }
-
-        // Delete Contact Rows Button
-        const btnContactDeleteSelected = document.getElementById('btn-sup-contact-delete-selected') || document.getElementById('btn-sup-contact-del-selected');
-        if (btnContactDeleteSelected) {
-            btnContactDeleteSelected.addEventListener('click', () => {
-                const initLen = currentSupplierContacts.length;
-                currentSupplierContacts = currentSupplierContacts.filter(c => !c.selected);
-                if (currentSupplierContacts.length < initLen) {
-                    renderSupplierContactsList();
-                    showToast("Selected contact rows deleted.", "warning");
-                }
-            });
-        }
-
-        // Toggle All Contacts Checkbox
-        const chkContactsAll = document.getElementById('chk-sup-contacts-all-toggle');
-        if (chkContactsAll) {
-            chkContactsAll.addEventListener('change', (e) => {
-                const checked = e.target.checked;
-                currentSupplierContacts.forEach(c => c.selected = checked);
-                renderSupplierContactsList();
-            });
-        }
-
-        // View Directory Header Button
-        const btnSupViewDir = document.getElementById('btn-sup-view-directory');
-        if (btnSupViewDir) {
-            btnSupViewDir.addEventListener('click', () => {
-                showSupplierListView();
-            });
-        }
-
-        // 1. INVOICE ADDRESS INFO: Multi-Select, Per-Type Defaults & Add/Update
-        const triggerBox = document.getElementById('sup-inv-addr-type-trigger');
-        const dropdownMenu = document.getElementById('sup-inv-addr-type-dropdown');
-
-        if (triggerBox && dropdownMenu) {
-            triggerBox.addEventListener('click', (e) => {
-                e.stopPropagation();
-                dropdownMenu.classList.toggle('hidden');
-            });
-
-            document.querySelectorAll('#sup-inv-addr-type-dropdown .chk-sup-addr-type').forEach(cb => {
-                cb.addEventListener('change', () => {
-                    const current = getSelectedInvoiceAddressTypes();
-                    renderInvoiceAddressTypeChips(current);
-                    updateDefaultOptionsVisibility(current);
-                });
-            });
-
-            document.addEventListener('click', (e) => {
-                if (!triggerBox.contains(e.target) && !dropdownMenu.contains(e.target)) {
-                    dropdownMenu.classList.add('hidden');
-                }
-            });
-
-            renderInvoiceAddressTypeChips(getSelectedInvoiceAddressTypes());
-        }
-
-        const btnInvAddUpdate = document.getElementById('btn-sup-inv-add-update');
-        const btnInvReset = document.getElementById('btn-sup-inv-reset');
-        
-        if (btnInvAddUpdate) {
-            btnInvAddUpdate.addEventListener('click', () => {
-                const selectedTypes = getSelectedInvoiceAddressTypes();
-                const addr1 = document.getElementById('sup-inv-addr1') ? document.getElementById('sup-inv-addr1').value.trim() : '';
-                const addr2 = document.getElementById('sup-inv-addr2') ? document.getElementById('sup-inv-addr2').value.trim() : '';
-                const city = document.getElementById('sup-inv-city') ? document.getElementById('sup-inv-city').value.trim() : '';
-                const postcode = document.getElementById('sup-inv-postcode') ? document.getElementById('sup-inv-postcode').value.trim() : '';
-                const county = document.getElementById('sup-inv-county') ? document.getElementById('sup-inv-county').value.trim() : '';
-                const state = document.getElementById('sup-inv-state') ? document.getElementById('sup-inv-state').value.trim() : '';
-                const country = document.getElementById('sup-inv-country') ? document.getElementById('sup-inv-country').value : 'GB UNITED KINGDOM';
-                const validFrom = document.getElementById('sup-inv-valid-from') ? document.getElementById('sup-inv-valid-from').value : '';
-                const validTo = document.getElementById('sup-inv-valid-to') ? document.getElementById('sup-inv-valid-to').value : '';
-
-                const isDefDeliv = selectedTypes.includes('Delivery') && (document.getElementById('chk-sup-inv-def-deliv')?.checked || false);
-                const isDefInvo = selectedTypes.includes('Invoice') && (document.getElementById('chk-sup-inv-def-invo')?.checked || false);
-                const isDefPay = selectedTypes.includes('Pay') && (document.getElementById('chk-sup-inv-def-pay')?.checked || false);
-
-                if (selectedTypes.length === 0) {
-                    showToast("Error: Please select at least one Address Type (Delivery, Invoice, or Pay).", "danger");
-                    return;
-                }
-
-                if (!addr1) {
-                    showToast("Error: Please enter Address 1.", "danger");
-                    return;
-                }
-
-                let addressId;
-                if (editingSupplierAddressIndex !== null && editingSupplierAddressIndex >= 0 && editingSupplierAddressIndex < currentSupplierAddresses.length) {
-                    addressId = currentSupplierAddresses[editingSupplierAddressIndex].addressId || getNextSupplierAddressId();
-                } else {
-                    addressId = getNextSupplierAddressId();
-                }
-
-                // Automatic single default replacement per type
-                const replacedDefaults = [];
-                currentSupplierAddresses.forEach((a, i) => {
-                    if (editingSupplierAddressIndex === null || i !== editingSupplierAddressIndex) {
-                        if (isDefDeliv && a.deliveryDefault) {
-                            a.deliveryDefault = false;
-                            replacedDefaults.push(`Delivery (replaced on Address ${a.addressId})`);
-                        }
-                        if (isDefInvo && a.invoiceDefault) {
-                            a.invoiceDefault = false;
-                            replacedDefaults.push(`Invoice (replaced on Address ${a.addressId})`);
-                        }
-                        if (isDefPay && a.payDefault) {
-                            a.payDefault = false;
-                            replacedDefaults.push(`Pay (replaced on Address ${a.addressId})`);
-                        }
-                    }
-                });
-
-                const newAddr = {
-                    addressId,
-                    addressTypes: selectedTypes,
-                    addressType: selectedTypes.join(' + '),
-                    addr1, addr2, city, postcode, county, state, country,
-                    validFrom, validTo,
-                    deliveryDefault: isDefDeliv,
-                    invoiceDefault: isDefInvo,
-                    payDefault: isDefPay
-                };
-
-                if (editingSupplierAddressIndex !== null && editingSupplierAddressIndex >= 0 && editingSupplierAddressIndex < currentSupplierAddresses.length) {
-                    currentSupplierAddresses[editingSupplierAddressIndex] = newAddr;
-                    showToast(`Address '${newAddr.addressId}' updated.`, "success");
-                    editingSupplierAddressIndex = null;
-                } else {
-                    currentSupplierAddresses.push(newAddr);
-                    showToast(`Address '${newAddr.addressId}' added.`, "success");
-                }
-
-                if (replacedDefaults.length > 0) {
-                    showToast(`Default updated: ${replacedDefaults.join('; ')}`, "info");
-                }
-
-                renderSupplierAddressList();
-
-                // Clear fields
-                if (btnInvReset) btnInvReset.click();
-            });
-        }
-
-        if (btnInvReset) {
-            btnInvReset.addEventListener('click', () => {
-                editingSupplierAddressIndex = null;
-                const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
-                const setChk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
-
-                setSelectedInvoiceAddressTypes(['Delivery', 'Invoice', 'Pay']);
-                const hasDelivDef = currentSupplierAddresses.some(a => a.deliveryDefault);
-                const hasInvoDef = currentSupplierAddresses.some(a => a.invoiceDefault);
-                const hasPayDef = currentSupplierAddresses.some(a => a.payDefault);
-
-                setChk('chk-sup-inv-def-deliv', !hasDelivDef);
-                setChk('chk-sup-inv-def-invo', !hasInvoDef);
-                setChk('chk-sup-inv-def-pay', !hasPayDef);
-
-                setVal('sup-inv-addr1', '');
-                setVal('sup-inv-addr2', '');
-                setVal('sup-inv-city', '');
-                setVal('sup-inv-postcode', '');
-                setVal('sup-inv-county', '');
-                setVal('sup-inv-state', '');
-                setVal('sup-inv-country', 'GB UNITED KINGDOM');
-                setVal('sup-inv-valid-from', '');
-                setVal('sup-inv-valid-to', '');
-            });
-        }
-
-        // 2. PAYMENT METHODS: Add Modal & Handlers
-        const btnPayMethodAdd = document.getElementById('btn-sup-pay-method-add');
-        const modalPayMethod = document.getElementById('sup-pay-method-modal');
-        const btnClosePayMethod = document.getElementById('btn-close-pay-method-modal');
-        const btnCancelPayMethod = document.getElementById('btn-cancel-pay-method-modal');
-        const btnSavePayMethod = document.getElementById('btn-save-pay-method-modal');
-
-        if (btnPayMethodAdd) {
-            btnPayMethodAdd.addEventListener('click', () => {
-                editingPaymentMethodIndex = null;
-                const codeInput = document.getElementById('modal-pay-method-code');
-                const descInput = document.getElementById('modal-pay-method-desc');
-                const defChk = document.getElementById('modal-pay-method-default');
-                const title = document.getElementById('sup-pay-method-modal-title');
-
-                if (codeInput) codeInput.value = '';
-                if (descInput) descInput.value = '';
-                if (defChk) defChk.checked = currentSupplierPaymentMethods.length === 0;
-                if (title) title.textContent = 'Add Payment Method';
-                if (modalPayMethod) modalPayMethod.classList.remove('hidden');
-            });
-        }
-
-        [btnClosePayMethod, btnCancelPayMethod].forEach(btn => {
-            if (btn) {
-                btn.addEventListener('click', () => {
-                    if (modalPayMethod) modalPayMethod.classList.add('hidden');
-                    editingPaymentMethodIndex = null;
-                });
-            }
-        });
-
-        if (btnSavePayMethod) {
-            btnSavePayMethod.addEventListener('click', () => {
-                const code = document.getElementById('modal-pay-method-code')?.value.trim() || '';
-                const desc = document.getElementById('modal-pay-method-desc')?.value.trim() || '';
-                const isDefault = document.getElementById('modal-pay-method-default')?.checked || false;
-
-                if (!code) {
-                    showToast("Error: Payment Method Code/Name is required.", "danger");
-                    return;
-                }
-                if (!desc) {
-                    showToast("Error: Payment Method Description is required.", "danger");
-                    return;
-                }
-
-                if (isDefault) {
-                    currentSupplierPaymentMethods.forEach(m => m.isDefault = false);
-                }
-
-                const item = { method: code.toUpperCase(), description: desc, isDefault };
-
-                if (editingPaymentMethodIndex !== null && editingPaymentMethodIndex >= 0 && editingPaymentMethodIndex < currentSupplierPaymentMethods.length) {
-                    currentSupplierPaymentMethods[editingPaymentMethodIndex] = item;
-                    showToast(`Payment method '${item.method}' updated.`, "success");
-                } else {
-                    currentSupplierPaymentMethods.push(item);
-                    showToast(`Payment method '${item.method}' added.`, "success");
-                }
-
-                if (modalPayMethod) modalPayMethod.classList.add('hidden');
-                editingPaymentMethodIndex = null;
-                renderSupplierPaymentMethodsList();
-            });
-        }
-
-        // 3. PAYMENT ADDRESSES: Add Modal & Handlers
-        const btnPayAddrAdd = document.getElementById('btn-sup-pay-addr-add');
-        const modalPayAddr = document.getElementById('sup-pay-addr-modal');
-        const btnClosePayAddr = document.getElementById('btn-close-pay-addr-modal');
-        const btnCancelPayAddr = document.getElementById('btn-cancel-pay-addr-modal');
-        const btnSavePayAddr = document.getElementById('btn-save-pay-addr-modal');
-
-        if (btnPayAddrAdd) {
-            btnPayAddrAdd.addEventListener('click', () => {
-                editingPaymentAddressIndex = null;
-                const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
-                const setChk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
-
-                setVal('modal-pay-addr-seq', `0${currentSupplierPaymentAddresses.length + 1}`);
-                setVal('modal-pay-addr-method', currentSupplierPaymentMethods.length > 0 ? currentSupplierPaymentMethods[0].method : 'BACS');
-                setVal('modal-pay-addr-desc', 'Settlement Account');
-                setVal('modal-pay-addr-bank-acc', '');
-                setVal('modal-pay-addr-sort-code', '');
-                setVal('modal-pay-addr-name', document.getElementById('sup-form-name')?.value || '');
-                setVal('modal-pay-addr-bldg-ref', '');
-                setVal('modal-pay-addr-status', 'Approval Pending');
-                setChk('modal-pay-addr-default', currentSupplierPaymentAddresses.length === 0);
-
-                const title = document.getElementById('sup-pay-addr-modal-title');
-                if (title) title.textContent = 'Add Payment Address';
-                if (modalPayAddr) modalPayAddr.classList.remove('hidden');
-            });
-        }
-
-        [btnClosePayAddr, btnCancelPayAddr].forEach(btn => {
-            if (btn) {
-                btn.addEventListener('click', () => {
-                    if (modalPayAddr) modalPayAddr.classList.add('hidden');
-                    editingPaymentAddressIndex = null;
-                });
-            }
-        });
-
-        if (btnSavePayAddr) {
-            btnSavePayAddr.addEventListener('click', () => {
-                const getVal = id => document.getElementById(id) ? document.getElementById(id).value.trim() : '';
-                const seqId = getVal('modal-pay-addr-seq') || `0${currentSupplierPaymentAddresses.length + 1}`;
-                const method = getVal('modal-pay-addr-method');
-                const desc = getVal('modal-pay-addr-desc');
-                const bankAccount = getVal('modal-pay-addr-bank-acc');
-                const sortCode = getVal('modal-pay-addr-sort-code');
-                const accountName = getVal('modal-pay-addr-name');
-                const bldgRef = getVal('modal-pay-addr-bldg-ref');
-                const status = getVal('modal-pay-addr-status') || 'Approval Pending';
-                const isDefault = document.getElementById('modal-pay-addr-default')?.checked || false;
-
-                if (!method) {
-                    showToast("Error: Payment Method is required.", "danger");
-                    return;
-                }
-                if (!bankAccount) {
-                    showToast("Error: Bank Account / IBAN is required.", "danger");
-                    return;
-                }
-
-                if (isDefault) {
-                    currentSupplierPaymentAddresses.forEach(a => a.isDefault = false);
-                }
-
-                const item = {
-                    seqId,
-                    method,
-                    description: desc,
-                    bankAccount,
-                    sortCode,
-                    accountName,
-                    bldgRef,
-                    status,
-                    isDefault
-                };
-
-                if (editingPaymentAddressIndex !== null && editingPaymentAddressIndex >= 0 && editingPaymentAddressIndex < currentSupplierPaymentAddresses.length) {
-                    currentSupplierPaymentAddresses[editingPaymentAddressIndex] = item;
-                    showToast(`Payment address '${item.seqId}' updated.`, "success");
-                } else {
-                    currentSupplierPaymentAddresses.push(item);
-                    showToast(`Payment address '${item.seqId}' added.`, "success");
-                }
-
-                if (modalPayAddr) modalPayAddr.classList.add('hidden');
-                editingPaymentAddressIndex = null;
-                renderSupplierPaymentAddressesList();
-            });
-        }
-
-        // Manager Role simulation toggle
-        const simManagerRole = document.getElementById('sim-manager-role');
-        if (simManagerRole) {
-            simManagerRole.addEventListener('change', () => {
-                renderSupplierPaymentAddressesList();
-            });
-        }
-
-        // 4. LICENCE INFO: Expiry Date Event Listeners
-        const compRegExpiryInput = document.getElementById('sup-lic-company-reg-expiry');
-        if (compRegExpiryInput) {
-            compRegExpiryInput.addEventListener('input', (e) => {
-                updateCompanyRegExpiryFeedback(e.target.value);
-            });
-            compRegExpiryInput.addEventListener('change', (e) => {
-                updateCompanyRegExpiryFeedback(e.target.value);
-            });
-        }
-
-        const licExpiryInput = document.getElementById('sup-lic-expiry-date');
-        if (licExpiryInput) {
-            licExpiryInput.addEventListener('input', (e) => {
-                updateLicenceExpiryFeedback(e.target.value);
-            });
-            licExpiryInput.addEventListener('change', (e) => {
-                updateLicenceExpiryFeedback(e.target.value);
-            });
-        }
-
-        // 5. DISPATCH ADDRESS INFO: Add Address & Reset
-        const btnDispAddAddr = document.getElementById('btn-sup-disp-add-addr');
-        const btnDispReset = document.getElementById('btn-sup-disp-reset');
-
-        if (btnDispAddAddr) {
-            btnDispAddAddr.addEventListener('click', () => {
-                const getVal = id => document.getElementById(id) ? document.getElementById(id).value.trim() : '';
-                const addrId = getVal('sup-disp-typing-addrid');
-                const addr1 = getVal('sup-disp-typing-addr1');
-                const addr2 = getVal('sup-disp-typing-addr2');
-                const city = getVal('sup-disp-typing-city');
-                const postcode = getVal('sup-disp-typing-postcode');
-                const county = getVal('sup-disp-typing-county');
-                const state = getVal('sup-disp-typing-state');
-                const country = getVal('sup-disp-typing-country') || 'GB UNITED KINGDOM';
-                const validFrom = getVal('sup-disp-typing-valid-from');
-                const validTo = getVal('sup-disp-typing-valid-to');
-                const isDefault = document.getElementById('sup-disp-typing-default')?.checked || false;
-
-                if (!addr1 && !addrId) {
-                    showToast("Error: Please provide Address ID or Address 1.", "danger");
-                    return;
-                }
-
-                if (isDefault) {
-                    currentSupplierDispatchAddresses.forEach(d => d.isDefault = false);
-                }
-
-                const item = {
-                    addressId: addrId || `0${currentSupplierDispatchAddresses.length + 1}`,
-                    addr1,
-                    addr2,
-                    city,
-                    postcode,
-                    county,
-                    state,
-                    country,
-                    validFrom,
-                    validTo,
-                    isDefault
-                };
-
-                if (editingDispatchAddressIndex !== null && editingDispatchAddressIndex >= 0 && editingDispatchAddressIndex < currentSupplierDispatchAddresses.length) {
-                    currentSupplierDispatchAddresses[editingDispatchAddressIndex] = item;
-                    showToast(`Dispatch address '${item.addressId}' updated.`, "success");
-                    editingDispatchAddressIndex = null;
-                } else {
-                    currentSupplierDispatchAddresses.push(item);
-                    showToast(`Dispatch address '${item.addressId}' added.`, "success");
-                }
-
-                renderSupplierDispatchAddressList();
-                if (btnDispReset) btnDispReset.click();
-            });
-        }
-
-        if (btnDispReset) {
-            btnDispReset.addEventListener('click', () => {
-                editingDispatchAddressIndex = null;
-                const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
-                const setChk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
-
-                setVal('sup-disp-typing-addrid', `0${currentSupplierDispatchAddresses.length + 1}`);
-                setVal('sup-disp-typing-addr1', '');
-                setVal('sup-disp-typing-addr2', '');
-                setVal('sup-disp-typing-city', '');
-                setVal('sup-disp-typing-postcode', '');
-                setVal('sup-disp-typing-county', '');
-                setVal('sup-disp-typing-state', '');
-                setVal('sup-disp-typing-country', 'GB UNITED KINGDOM');
-                setVal('sup-disp-typing-valid-from', '');
-                setVal('sup-disp-typing-valid-to', '');
-                setChk('sup-disp-typing-default', false);
-
-                setVal('sup-disp-copy-addrid', '');
-                setVal('sup-disp-copy-addr1', '');
-                setVal('sup-disp-copy-addr2', '');
-                setVal('sup-disp-copy-city', '');
-                setVal('sup-disp-copy-postcode', '');
-                setVal('sup-disp-copy-county', '');
-                setVal('sup-disp-copy-state', '');
-                setVal('sup-disp-copy-country', 'GB UNITED KINGDOM');
-                setVal('sup-disp-copy-valid-from', '');
-                setVal('sup-disp-copy-valid-to', '');
-            });
-        }
-
-        // File Upload Button
-        const btnFileUpload = document.getElementById('btn-sup-file-upload');
-        if (btnFileUpload) {
-            btnFileUpload.addEventListener('click', () => {
-                const titleInput = document.getElementById('sup-file-name');
-                const categorySelect = document.getElementById('sup-file-type');
-                const title = titleInput ? titleInput.value.trim() : '';
-                const cat = categorySelect ? categorySelect.value : 'SUPPLIER CREATION FORM';
-
-                if (!title) {
-                    showToast("Enter a document title first.", "warning");
-                    return;
-                }
-
-                currentSupplierFiles.push({
-                    id: currentSupplierFiles.length + 1,
-                    name: title,
-                    otherType: cat,
-                    licenceType: "",
-                    uploadedBy: "Vilas Vaidya",
-                    date: new Date().toLocaleString()
-                });
-                if (titleInput) titleInput.value = '';
-                renderSupplierFileList();
-                showToast(`File '${title}' uploaded successfully.`, "success");
-            });
-        }
-
-        // Quick Create New Supplier Button
-        const btnCreateSupplierQuick = document.getElementById('btn-create-supplier-quick');
-        if (btnCreateSupplierQuick) {
-            btnCreateSupplierQuick.addEventListener('click', () => {
-                resetSupplierForm();
-                showSupplierFormView();
-            });
-        }
-
-        // Action Buttons
-        const btnSupSave = document.getElementById('btn-sup-save');
-        const btnSupCopy = document.getElementById('btn-sup-copy');
-        const btnSupUpdate = document.getElementById('btn-sup-update');
-        const btnSupCancel = document.getElementById('btn-sup-cancel');
-
-        if (btnSupCancel) {
-            btnSupCancel.addEventListener('click', () => {
-                resetSupplierForm();
-                showSupplierListView();
-            });
-        }
-
-        if (btnSupSave) {
-            btnSupSave.addEventListener('click', () => {
-                const data = getSupplierFormData();
-                if (!validateSupplierForm(data)) return;
-
-                const exists = suppliers.some(s => s && s.supplierId && s.supplierId.toUpperCase() === data.supplierId.toUpperCase());
-                if (exists) {
-                    showToast("Error: Supplier ID already exists. Use a unique ID.", "danger");
-                    return;
-                }
-
-                suppliers.push(data);
-                saveSuppliersState();
-                showToast(`Supplier '${data.supplierName}' created successfully.`, "success");
-                resetSupplierForm();
-                showSupplierListView();
-            });
-        }
-
-        if (btnSupCopy) {
-            btnSupCopy.addEventListener('click', () => {
-                const idInput = document.getElementById('sup-form-id');
-                if (idInput) {
-                    idInput.value = '';
-                    idInput.focus();
-                }
-                editingSupplierNo = null;
-                showToast("Supplier details copied. Enter a new Supplier ID and click 'Create Supplier'.", "info");
-            });
-        }
-
-        if (btnSupUpdate) {
-            btnSupUpdate.addEventListener('click', () => {
-                if (!editingSupplierNo) {
-                    showToast("Error: No supplier loaded to update.", "danger");
-                    return;
-                }
-                const data = getSupplierFormData();
-                if (!validateSupplierForm(data)) return;
-
-                const idx = suppliers.findIndex(s => s && s.supplierId && s.supplierId.toUpperCase() === editingSupplierNo.toUpperCase());
-                if (idx !== -1) {
-                    suppliers[idx] = data;
-                    saveSuppliersState();
-                    showToast(`Supplier '${data.supplierName}' updated successfully.`, "success");
-                    resetSupplierForm();
-                    showSupplierListView();
-                } else {
-                    showToast(`Error: Supplier '${editingSupplierNo}' not found.`, "danger");
-                }
-            });
-        }
-
-        // Simulate Manager Role change
-        const simManagerRoleChk = document.getElementById('sim-manager-role');
-        if (simManagerRoleChk) {
-            simManagerRoleChk.addEventListener('change', () => {
-                renderSupplierPaymentAddressesList();
-                renderSupplierList();
-            });
-        }
-
-        // Search Filters
-        const searchId = document.getElementById('sup-search-id');
-        const searchName = document.getElementById('sup-search-name');
-        if (searchId) searchId.addEventListener('input', renderSupplierList);
-        if (searchName) searchName.addEventListener('input', renderSupplierList);
     }
 
     function initFinanceSetup() {
@@ -8809,6 +7060,9 @@ SyriMed Healthcare`
         const chkRead = document.getElementById('rbac-perm-read');
         const chkWrite = document.getElementById('rbac-perm-write');
         const chkDelete = document.getElementById('rbac-perm-delete');
+        const roleDescBox = document.getElementById('rbac-role-desc');
+        const roleDescTitle = document.getElementById('rbac-role-desc-title');
+        const roleDescText = document.getElementById('rbac-role-desc-text');
 
         if (!profileContainer || !rbacDropdown) return;
 
@@ -8827,45 +7081,112 @@ SyriMed Healthcare`
             }
         });
 
-        // Handle Role change
+        const roleMetadata = {
+            'Admin': {
+                display: 'ERP Administrator',
+                title: 'ERP Administrator:',
+                desc: 'Full administrative and supervisory rights across all ERP master workflows.',
+                read: true, write: true, delete: true,
+                color: '#059669', border: '#10b981'
+            },
+            'Finance': {
+                display: 'Finance (Creator)',
+                title: 'Finance (Commercials):',
+                desc: 'Create & edit customer/supplier drafts, enter payment details, submit to QA, rectify corrections.',
+                read: true, write: true, delete: false,
+                color: '#2563eb', border: '#3b82f6'
+            },
+            'QA': {
+                display: 'Quality Assurance (QA)',
+                title: 'Quality Assurance (QA):',
+                desc: 'Review compliance dossiers, complete Licence Info, verify checklists, submit to Transport/RP, perform final activation.',
+                read: true, write: true, delete: false,
+                color: '#7c3aed', border: '#8b5cf6'
+            },
+            'Transport': {
+                display: 'Transport & Logistics',
+                title: 'Transport & Logistics:',
+                desc: 'Review customer logistics profiles, assign mandatory Route ID codes, submit for QA activation.',
+                read: true, write: true, delete: false,
+                color: '#0284c7', border: '#0ea5e9'
+            },
+            'RP': {
+                display: 'Responsible Person (RP)',
+                title: 'Responsible Person (RP):',
+                desc: 'Approval authority: Review compliance dossiers, grant RP approval, or reject with mandatory correction reason.',
+                read: true, write: true, delete: false,
+                color: '#d97706', border: '#f59e0b'
+            },
+            'Manager': {
+                display: 'Department Manager',
+                title: 'Department Manager:',
+                desc: 'Supervisory visibility across operational records and approval queues.',
+                read: true, write: true, delete: false,
+                color: '#475569', border: '#64748b'
+            },
+            'Normal User': {
+                display: 'Standard User',
+                title: 'Standard User (Read-Only):',
+                desc: 'Read-only access to published and approved master data.',
+                read: true, write: false, delete: false,
+                color: '#64748b', border: '#94a3b8'
+            }
+        };
+
+        function applyRole(role, silent = false) {
+            const meta = roleMetadata[role] || roleMetadata['Admin'];
+
+            if (topbarActiveRole) {
+                topbarActiveRole.textContent = meta.display;
+            }
+
+            if (roleSelector && roleSelector.value !== role) {
+                roleSelector.value = role;
+            }
+
+            if (chkRead) chkRead.checked = meta.read;
+            if (chkWrite) chkWrite.checked = meta.write;
+            if (chkDelete) chkDelete.checked = meta.delete;
+
+            if (roleDescBox && roleDescTitle && roleDescText) {
+                roleDescBox.style.borderLeftColor = meta.border;
+                roleDescTitle.style.color = meta.color;
+                roleDescTitle.textContent = meta.title;
+                roleDescText.textContent = meta.desc;
+            }
+
+            // Sync with Customer Workflow Engine
+            if (window.CustomerWorkflowModule && typeof window.CustomerWorkflowModule.setRole === 'function') {
+                window.CustomerWorkflowModule.setRole(role);
+            }
+
+            // Sync with Supplier Workflow Engine
+            if (window.SupplierWorkflowModule && typeof window.SupplierWorkflowModule.setRole === 'function') {
+                window.SupplierWorkflowModule.setRole(role);
+            }
+
+            try {
+                localStorage.setItem('ANTIGRAVITY_ERP_ACTIVE_ROLE', role);
+            } catch (e) {}
+
+            if (!silent) {
+                showToast(`Switched active profile role to: ${meta.display}`, 'success');
+            }
+        }
+
+        // Handle Role change from profile dropdown
         if (roleSelector) {
             roleSelector.addEventListener('change', (e) => {
-                const role = e.target.value;
-                if (topbarActiveRole) topbarActiveRole.textContent = role === 'Admin' ? 'ERP Administrator' : role;
-                
-                // Set default permissions based on role
-                if (role === 'Normal User') {
-                    chkRead.checked = true;
-                    chkWrite.checked = false;
-                    chkDelete.checked = false;
-                } else if (role === 'Manager') {
-                    chkRead.checked = true;
-                    chkWrite.checked = true;
-                    chkDelete.checked = false;
-                } else if (role === 'QA') {
-                    chkRead.checked = true;
-                    chkWrite.checked = false;
-                    chkDelete.checked = false;
-                } else if (role === 'Admin') {
-                    chkRead.checked = true;
-                    chkWrite.checked = true;
-                    chkDelete.checked = true;
-                }
-                
-                showToast(`Switched user role to ${role}`, 'success');
-                
-                // Refresh specific module views that depend on RBAC (e.g. Customer QA Approval, Supplier QA Approval, Payment Address QA Approval)
-                if (typeof renderCustomerList === 'function') {
-                    renderCustomerList();
-                }
-                if (typeof renderSupplierList === 'function') {
-                    renderSupplierList();
-                }
-                if (typeof renderSupplierPaymentAddressesList === 'function') {
-                    renderSupplierPaymentAddressesList();
-                }
+                applyRole(e.target.value);
             });
         }
+
+        // Load saved role or default to Admin
+        let savedRole = 'Admin';
+        try {
+            savedRole = localStorage.getItem('ANTIGRAVITY_ERP_ACTIVE_ROLE') || 'Admin';
+        } catch (e) {}
+        applyRole(savedRole, true);
     }
 
     function initAwesomebar() {
@@ -8875,13 +7196,14 @@ SyriMed Healthcare`
         const topbarSearchInput = document.getElementById('topbar-search-input');
         const resultsContainer = document.getElementById('awesomebar-results-container');
 
-        const searchableItems = [
+        const baseSearchableItems = [
             { title: 'Company Setup', module: 'other', id: 'nav-company-setup-sub', type: 'Master Data', icon: '📁' },
             { title: 'Site Setup', module: 'site', id: 'nav-site-setup-sub', type: 'Master Data', icon: '🏢' },
             { title: 'User Setup', module: 'user-setup', id: 'nav-user-setup-sub', type: 'Master Data', icon: '👥' },
             { title: 'Reset Password', module: 'user-setup', id: 'nav-user-setup-sub', subtab: 'reset-password', type: 'Security', icon: '🔐' },
-            { title: 'Customer Creation', module: 'customer-creation', id: 'nav-customer-creation-sub', type: 'Master Data', icon: '🤝' },
-            { title: 'Supplier Setup', module: 'supplier-setup', id: 'nav-supplier-setup-sub', type: 'Master Data', icon: '🚚' },
+            { title: 'Customer Master Setup & Workflow', module: 'customer-creation', id: 'nav-customer-creation-sub', type: 'Master Data', icon: '🤝' },
+            { title: 'Create Customer (Finance)', module: 'customer-creation', id: 'nav-customer-creation-sub', action: 'create-customer', type: 'Customer Workflow', icon: '➕' },
+            { title: 'Supplier Setup & Governance', module: 'supplier-setup', id: 'nav-supplier-setup-sub', type: 'Master Data', icon: '🚚' },
             { title: 'Item Setup', module: 'other', id: 'nav-item-setup-sub', type: 'Master Data', icon: '📦' },
             { title: 'Dashboard', module: 'other', id: 'nav-dashboard', type: 'Module', icon: '📊' },
             { title: 'Finance / Ledger', module: 'finance', id: 'nav-finance', type: 'Module', icon: '💳' },
@@ -8895,6 +7217,68 @@ SyriMed Healthcare`
             { title: 'Stock Management', module: 'stock', type: 'Module', icon: '📦', isCard: true },
             { title: 'Master Data Setup', module: 'other', type: 'Module', icon: '📁', isCard: true }
         ];
+
+        function getFullSearchableItems() {
+            let items = [...baseSearchableItems];
+
+            // Add dynamic customer records from CustomerWorkflowModule or localStorage
+            try {
+                let custList = [];
+                if (window.CustomerWorkflowModule && window.CustomerWorkflowModule.customers && window.CustomerWorkflowModule.customers.length > 0) {
+                    custList = window.CustomerWorkflowModule.customers;
+                } else {
+                    const raw = localStorage.getItem('ANTIGRAVITY_ERP_CUSTOMER_DATA_V2');
+                    if (raw) custList = JSON.parse(raw);
+                }
+                if (Array.isArray(custList)) {
+                    custList.forEach(c => {
+                        if (c && c.accountNumber) {
+                            items.push({
+                                title: `${c.customerName || 'Customer'} (${c.accountNumber})`,
+                                type: `Customer · ${c.status || 'Draft'} · ${c.subStatus || ''}`,
+                                icon: c.status === 'Active' ? '🟢' : '🤝',
+                                isCustomer: true,
+                                customer: c,
+                                module: 'customer-creation',
+                                id: 'nav-customer-creation-sub'
+                            });
+                        }
+                    });
+                }
+            } catch (e) {
+                console.error("Error gathering customer items for search:", e);
+            }
+
+            // Add dynamic supplier records
+            try {
+                let supList = [];
+                if (window.SupplierWorkflowModule && window.SupplierWorkflowModule.suppliers && window.SupplierWorkflowModule.suppliers.length > 0) {
+                    supList = window.SupplierWorkflowModule.suppliers;
+                } else {
+                    const raw = localStorage.getItem('ANTIGRAVITY_ERP_SUPPLIER_DATA_V1');
+                    if (raw) supList = JSON.parse(raw);
+                }
+                if (Array.isArray(supList)) {
+                    supList.forEach(s => {
+                        if (s && s.supplierCode) {
+                            items.push({
+                                title: `${s.supplierName || 'Supplier'} (${s.supplierCode})`,
+                                type: `Supplier · ${s.status || 'Draft'} · ${s.subStatus || ''}`,
+                                icon: s.status === 'Active' ? '🟢' : '🚚',
+                                isSupplier: true,
+                                supplier: s,
+                                module: 'supplier-setup',
+                                id: 'nav-supplier-setup-sub'
+                            });
+                        }
+                    });
+                }
+            } catch (e) {
+                console.error("Error gathering supplier items for search:", e);
+            }
+
+            return items;
+        }
 
         let selectedIndex = -1;
         let currentResults = [];
@@ -8959,7 +7343,31 @@ SyriMed Healthcare`
         function executeSearchItem(item) {
             closeAwesomebar();
             
-            // 1. If it's a top-level module card
+            // 1. If it's a customer record
+            if (item.isCustomer && item.customer) {
+                const custNav = document.getElementById('nav-customer-creation-sub');
+                if (custNav) custNav.click();
+                setTimeout(() => {
+                    if (window.CustomerWorkflowModule && typeof window.CustomerWorkflowModule.openCustomerView === 'function') {
+                        window.CustomerWorkflowModule.openCustomerView(item.customer.accountNumber);
+                    }
+                }, 100);
+                return;
+            }
+
+            // 2. If it's a supplier record
+            if (item.isSupplier && item.supplier) {
+                const supNav = document.getElementById('nav-supplier-setup-sub');
+                if (supNav) supNav.click();
+                setTimeout(() => {
+                    if (window.SupplierWorkflowModule && typeof window.SupplierWorkflowModule.openSupplierViewModal === 'function') {
+                        window.SupplierWorkflowModule.openSupplierViewModal(item.supplier.supplierCode);
+                    }
+                }, 100);
+                return;
+            }
+
+            // 3. If it's a top-level module card
             if (item.isCard && item.module) {
                 if (item.module === 'finance') {
                     const finModal = document.getElementById('finance-modal-overlay');
@@ -8976,8 +7384,7 @@ SyriMed Healthcare`
                 return;
             }
 
-            // 2. We are navigating to a specific sub-page.
-            // Ensure main container is visible and we are in the correct module.
+            // 4. We are navigating to a specific sub-page.
             if (item.module) {
                 if (item.module === 'finance') {
                     const finModal = document.getElementById('finance-modal-overlay');
@@ -8987,7 +7394,7 @@ SyriMed Healthcare`
                 }
             }
             
-            // 3. Click the target sidebar navigation element to show the specific tab
+            // 5. Click the target sidebar navigation element to show the specific tab
             if (item.id) {
                 setTimeout(() => {
                     const el = document.getElementById(item.id);
@@ -8995,6 +7402,14 @@ SyriMed Healthcare`
                         el.click();
                     } else if (typeof showToast === 'function') {
                         showToast(`Navigating to ${item.title}...`, 'info');
+                    }
+
+                    if (item.action === 'create-customer') {
+                        setTimeout(() => {
+                            if (window.CustomerWorkflowModule && typeof window.CustomerWorkflowModule.startNewCustomerCreation === 'function') {
+                                window.CustomerWorkflowModule.startNewCustomerCreation();
+                            }
+                        }, 80);
                     }
 
                     if (item.subtab) {
@@ -9015,7 +7430,7 @@ SyriMed Healthcare`
             if (awesomebarOverlay && awesomebarInput) {
                 awesomebarOverlay.classList.remove('hidden');
                 awesomebarInput.value = '';
-                currentResults = searchableItems;
+                currentResults = getFullSearchableItems();
                 selectedIndex = -1;
                 renderResults(currentResults);
                 setTimeout(() => awesomebarInput.focus(), 50);
@@ -9031,10 +7446,11 @@ SyriMed Healthcare`
         if (awesomebarInput) {
             awesomebarInput.addEventListener('input', (e) => {
                 const query = e.target.value.toLowerCase().trim();
+                const allItems = getFullSearchableItems();
                 if (!query) {
-                    currentResults = searchableItems;
+                    currentResults = allItems;
                 } else {
-                    currentResults = searchableItems.filter(item => 
+                    currentResults = allItems.filter(item => 
                         item.title.toLowerCase().includes(query) || 
                         item.type.toLowerCase().includes(query)
                     );

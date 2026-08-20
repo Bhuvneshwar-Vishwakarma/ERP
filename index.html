@@ -176,67 +176,64 @@
                             <span class="role" id="topbar-active-role">ERP Administrator</span>
                         </div>
 
-                        <!-- RBAC Dropdown Modal -->
+                        <!-- RBAC & Role Simulation Dropdown Modal -->
                         <div id="profile-rbac-dropdown" class="card hidden"
-                            style="position: absolute; top: 115%; right: 0; width: 320px; z-index: 1000; padding: 16px; box-shadow: var(--shadow-xl); border: 1px solid var(--color-border-light); cursor: default;">
-                            <h4
-                                style="font-size: 13px; font-weight: 600; color: var(--color-text-main); margin-bottom: 12px; border-bottom: 1px solid var(--color-border-light); padding-bottom: 8px;">
-                                Role-Based Access Control</h4>
+                            style="position: absolute; top: 115%; right: 0; width: 340px; z-index: 1000; padding: 16px; box-shadow: var(--shadow-xl); border: 1px solid var(--color-border-light); cursor: default;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; border-bottom: 1px solid var(--color-border-light); padding-bottom: 8px;">
+                                <h4 style="font-size: 13px; font-weight: 700; color: var(--color-text-main); margin: 0; display: flex; align-items: center; gap: 6px;">
+                                    <span>🔐</span> Role-Based Access Control
+                                </h4>
+                                <span class="badge badge-success" style="font-size: 10px; font-weight: 600; padding: 2px 7px;">Active</span>
+                            </div>
 
-                            <div class="form-group" style="margin-bottom: 16px;">
-                                <label
-                                    style="font-size: 12px; font-weight: 600; color: var(--color-text-muted); margin-bottom: 6px; display: block;">Simulate
-                                    User Type</label>
+                            <div class="form-group" style="margin-bottom: 14px;">
+                                <label for="rbac-role-selector"
+                                    style="font-size: 12px; font-weight: 600; color: var(--color-text-muted); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                                    <span>🎭</span> Active Simulated Role
+                                </label>
                                 <select id="rbac-role-selector"
-                                    style="width: 100%; height: 32px; font-size: 13px; padding: 4px 8px; border: 1px solid var(--color-border); border-radius: 4px; cursor: pointer;">
-                                    <option value="Admin" selected>ERP Administrator</option>
-                                    <option value="Normal User">Normal User</option>
-                                    <option value="Manager">Manager</option>
-                                    <option value="QA">QA</option>
+                                    style="width: 100%; height: 36px; font-size: 12.5px; padding: 4px 10px; border: 1px solid var(--color-border); border-radius: 6px; cursor: pointer; font-weight: 600; background: #fff; color: var(--color-text-main);">
+                                    <option value="Admin" selected>⚙️ ERP Administrator (All Rights)</option>
+                                    <option value="Finance">💼 Finance (Creator / Commercials)</option>
+                                    <option value="QA">🔬 Quality Assurance (QA Verifier & Activator)</option>
+                                    <option value="Transport">🚚 Transport & Logistics (Route ID)</option>
+                                    <option value="RP">🛡️ Responsible Person (Approval Authority)</option>
+                                    <option value="Manager">👥 Department Manager</option>
+                                    <option value="Normal User">👤 Standard User (Read Only)</option>
                                 </select>
+                                <div id="rbac-role-desc"
+                                    style="font-size: 11.5px; color: var(--color-text-muted); margin-top: 8px; line-height: 1.4; padding: 8px 10px; background: var(--color-bg-base); border-radius: 6px; border-left: 3px solid #10b981;">
+                                    <strong id="rbac-role-desc-title" style="color: #059669; display: block; margin-bottom: 2px;">ERP Administrator:</strong>
+                                    <span id="rbac-role-desc-text">Full administrative and supervisory rights across all ERP master workflows.</span>
+                                </div>
                             </div>
 
                             <div
                                 style="background: var(--color-bg-base); padding: 12px; border-radius: 6px; border: 1px solid var(--color-border-light);">
                                 <label
-                                    style="font-size: 12px; font-weight: 600; color: var(--color-text-muted); margin-bottom: 10px; display: block;">Active
-                                    Permissions</label>
+                                    style="font-size: 11.5px; font-weight: 600; color: var(--color-text-muted); margin-bottom: 8px; display: block;">Effective
+                                    Permissions Matrix</label>
 
-                                <div style="display: flex; flex-direction: column; gap: 10px;">
+                                <div style="display: flex; flex-direction: column; gap: 8px;">
                                     <label
-                                        style="display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--color-text-main); cursor: pointer; margin: 0;">
+                                        style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--color-text-main); cursor: pointer; margin: 0;">
                                         <input type="checkbox" id="rbac-perm-read" checked
-                                            style="width: 16px; height: 16px; cursor: pointer; margin-top: 2px;">
-                                        <div style="display: flex; flex-direction: column;">
-                                            <span style="font-weight: 500; line-height: 1.2;">Read</span>
-                                            <span
-                                                style="font-size: 11px; color: var(--color-text-muted); margin-top: 2px;">View
-                                                records and data fields</span>
-                                        </div>
+                                            style="width: 15px; height: 15px; cursor: pointer;">
+                                        <span>Read & View Records</span>
                                     </label>
 
                                     <label
-                                        style="display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--color-text-main); cursor: pointer; margin: 0;">
+                                        style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--color-text-main); cursor: pointer; margin: 0;">
                                         <input type="checkbox" id="rbac-perm-write" checked
-                                            style="width: 16px; height: 16px; cursor: pointer; margin-top: 2px;">
-                                        <div style="display: flex; flex-direction: column;">
-                                            <span style="font-weight: 500; line-height: 1.2;">Write</span>
-                                            <span
-                                                style="font-size: 11px; color: var(--color-text-muted); margin-top: 2px;">Create
-                                                or edit existing records</span>
-                                        </div>
+                                            style="width: 15px; height: 15px; cursor: pointer;">
+                                        <span>Create / Edit Records</span>
                                     </label>
 
                                     <label
-                                        style="display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--color-text-main); cursor: pointer; margin: 0;">
+                                        style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--color-text-main); cursor: pointer; margin: 0;">
                                         <input type="checkbox" id="rbac-perm-delete" checked
-                                            style="width: 16px; height: 16px; cursor: pointer; margin-top: 2px;">
-                                        <div style="display: flex; flex-direction: column;">
-                                            <span style="font-weight: 500; line-height: 1.2;">Delete</span>
-                                            <span
-                                                style="font-size: 11px; color: var(--color-text-muted); margin-top: 2px;">Permanently
-                                                remove records</span>
-                                        </div>
+                                            style="width: 15px; height: 15px; cursor: pointer;">
+                                        <span>Delete / Permanent Archive</span>
                                     </label>
                                 </div>
                             </div>
@@ -2778,54 +2775,191 @@
                 <!-- Page Title -->
                 <div class="page-title-bar">
                     <div>
-                        <h1 class="page-title">Customer Master Setup</h1>
-                        <p class="page-subtitle">Configure customer details, credit configurations, tax profiles, and
-                            GPHC credentials.</p>
+                        <h1 class="page-title">Customer Master Setup & Workflow</h1>
+                        <p class="page-subtitle">Configure customer profiles, credit configurations, GPhC licence validation, transport route assignment, and QA activation.</p>
                     </div>
                     <span class="badge badge-success">Active Screen: ERP-MD-004</span>
                 </div>
-
-
 
                 <!-- TAB PANELS CONTAINER -->
                 <div class="tab-content-container">
 
                     <!-- TAB 1: CUSTOMER LIST & QA APPROVALS -->
                     <div class="tab-panel" id="panel-cust-list">
-                        <div class="action-bar-top-left" style="margin-bottom: 16px; display: flex; gap: 8px;">
-                            <button class="btn btn-primary" id="btn-create-customer-quick">
-                                <span>➕</span> Create New Customer
-                            </button>
-                        </div>
-                        <div class="card">
-                            <h2 class="card-title">Customer Directory & Evaluation Portal</h2>
-                            <p class="card-subtitle">Search customers and perform QA approvals on updated accounts.</p>
-
-                            <div class="form-grid"
-                                style="grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
-                                <div class="form-group">
-                                    <label for="cust-search-id">Search by Account ID:</label>
-                                    <input type="text" id="cust-search-id" placeholder="Enter BNS Account Number...">
-                                </div>
-                                <div class="form-group">
-                                    <label for="cust-search-name">Search by Name:</label>
-                                    <input type="text" id="cust-search-name" placeholder="Enter Pharmacy Name...">
+                        <!-- Top Action & KPI Cards -->
+                        <div class="kpi-grid" style="grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 20px;">
+                            <div class="kpi-card" style="padding: 12px; cursor: pointer;" id="cust-kpi-card-all">
+                                <div class="kpi-info" style="width: 100%; text-align: center;">
+                                    <span class="kpi-value" id="cust-kpi-total" style="font-size: 20px;">0</span>
+                                    <span class="kpi-label" style="font-size: 11px; margin-top: 4px;">Total Customers</span>
                                 </div>
                             </div>
+                            <div class="kpi-card" style="padding: 12px; border-left: 3px solid #3b82f6; cursor: pointer;" id="cust-kpi-card-draft">
+                                <div class="kpi-info" style="width: 100%; text-align: center;">
+                                    <span class="kpi-value" id="cust-kpi-draft" style="font-size: 20px; color: #2563eb;">0</span>
+                                    <span class="kpi-label" style="font-size: 11px; margin-top: 4px;">Finance Drafts</span>
+                                </div>
+                            </div>
+                            <div class="kpi-card" style="padding: 12px; border-left: 3px solid #8b5cf6; cursor: pointer;" id="cust-kpi-card-qa">
+                                <div class="kpi-info" style="width: 100%; text-align: center;">
+                                    <span class="kpi-value" id="cust-kpi-qa" style="font-size: 20px; color: #7c3aed;">0</span>
+                                    <span class="kpi-label" style="font-size: 11px; margin-top: 4px;">QA Verification</span>
+                                </div>
+                            </div>
+                            <div class="kpi-card" style="padding: 12px; border-left: 3px solid #0284c7; cursor: pointer;" id="cust-kpi-card-transport">
+                                <div class="kpi-info" style="width: 100%; text-align: center;">
+                                    <span class="kpi-value" id="cust-kpi-transport" style="font-size: 20px; color: #0284c7;">0</span>
+                                    <span class="kpi-label" style="font-size: 11px; margin-top: 4px;">Awaiting Route ID</span>
+                                </div>
+                            </div>
+                            <div class="kpi-card" style="padding: 12px; border-left: 3px solid #06b6d4; cursor: pointer;" id="cust-kpi-card-activation">
+                                <div class="kpi-info" style="width: 100%; text-align: center;">
+                                    <span class="kpi-value" id="cust-kpi-activation" style="font-size: 20px; color: #0891b2;">0</span>
+                                    <span class="kpi-label" style="font-size: 11px; margin-top: 4px;">Pending Activation</span>
+                                </div>
+                            </div>
+                            <div class="kpi-card" style="padding: 12px; border-left: 3px solid #10b981; cursor: pointer;" id="cust-kpi-card-active">
+                                <div class="kpi-info" style="width: 100%; text-align: center;">
+                                    <span class="kpi-value" id="cust-kpi-active" style="font-size: 20px; color: #059669;">0</span>
+                                    <span class="kpi-label" style="font-size: 11px; margin-top: 4px;">Active Customers</span>
+                                </div>
+                            </div>
+                        </div>
 
-                            <div class="table-container">
+                        <!-- Top Action Bar -->
+                        <div class="action-bar-top-left" style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-primary" id="btn-create-customer-quick">
+                                    <span>➕</span> Create New Customer (Finance)
+                                </button>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 12px; color: var(--color-text-muted);" id="cust-list-count-label">Showing all records</span>
+                            </div>
+                        </div>
+
+                        <!-- Multi-Select & Search Filter Card -->
+                        <div class="cust-filter-container">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <h3 style="font-size: 13px; font-weight: 700; color: var(--color-text-main); margin: 0; display: flex; align-items: center; gap: 6px;">
+                                    <span>🔍</span> Filter Customer Directory
+                                </h3>
+                                <button type="button" id="btn-cust-clear-filters" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 4px 10px;">
+                                    Reset Filters
+                                </button>
+                            </div>
+                            <div class="cust-filter-grid">
+                                <!-- Search by Customer Code -->
+                                <div class="form-group" style="margin: 0;">
+                                    <label for="cust-search-id" style="font-size: 11.5px; font-weight: 600; color: var(--color-text-muted);">Customer Code</label>
+                                    <input type="text" id="cust-search-id" placeholder="e.g. B9007..." style="height: 36px; font-size: 12.5px;">
+                                </div>
+
+                                <!-- Search by Customer Name -->
+                                <div class="form-group" style="margin: 0;">
+                                    <label for="cust-search-name" style="font-size: 11.5px; font-weight: 600; color: var(--color-text-muted);">Customer Name</label>
+                                    <input type="text" id="cust-search-name" placeholder="e.g. Syrimed Pharmacy..." style="height: 36px; font-size: 12.5px;">
+                                </div>
+
+                                <!-- Multi-Select: Status Filter -->
+                                <div class="form-group cust-multiselect-container" style="margin: 0;" id="cust-filter-status-container">
+                                    <label style="font-size: 11.5px; font-weight: 600; color: var(--color-text-muted);">Status (Multi-select)</label>
+                                    <div class="cust-multiselect-trigger" id="cust-filter-status-trigger">
+                                        <div class="chips-box" id="cust-filter-status-chips">
+                                            <span style="color: var(--color-text-muted);">All Statuses</span>
+                                        </div>
+                                        <span style="font-size: 10px; color: var(--color-text-muted);">▼</span>
+                                    </div>
+                                    <div class="cust-multiselect-dropdown hidden" id="cust-filter-status-dropdown">
+                                        <div style="padding: 4px 10px 8px 10px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between;">
+                                            <button type="button" class="btn-link" id="btn-cust-status-select-all" style="font-size: 11px; border: none; background: none; color: var(--color-primary); cursor: pointer; font-weight: 600;">Select All</button>
+                                            <button type="button" class="btn-link" id="btn-cust-status-clear-all" style="font-size: 11px; border: none; background: none; color: #ef4444; cursor: pointer; font-weight: 600;">Clear</button>
+                                        </div>
+                                        <label class="cust-multiselect-item"><input type="checkbox" value="Draft" class="chk-filter-cust-status"> <span>Draft</span></label>
+                                        <label class="cust-multiselect-item"><input type="checkbox" value="Pending QA" class="chk-filter-cust-status"> <span>Pending QA</span></label>
+                                        <label class="cust-multiselect-item"><input type="checkbox" value="QA Review" class="chk-filter-cust-status"> <span>QA Review</span></label>
+                                        <label class="cust-multiselect-item"><input type="checkbox" value="Pending Transport" class="chk-filter-cust-status"> <span>Pending Transport</span></label>
+                                        <label class="cust-multiselect-item"><input type="checkbox" value="Transport Review" class="chk-filter-cust-status"> <span>Transport Review</span></label>
+                                        <label class="cust-multiselect-item"><input type="checkbox" value="Pending QA Activation" class="chk-filter-cust-status"> <span>Pending QA Activation</span></label>
+                                        <label class="cust-multiselect-item"><input type="checkbox" value="Active" class="chk-filter-cust-status"> <span>Active</span></label>
+                                        <label class="cust-multiselect-item"><input type="checkbox" value="Inactive" class="chk-filter-cust-status"> <span>Inactive</span></label>
+                                    </div>
+                                </div>
+
+                                <!-- Multi-Select: Sub-Status Filter -->
+                                <div class="form-group cust-multiselect-container" style="margin: 0;" id="cust-filter-substatus-container">
+                                    <label style="font-size: 11.5px; font-weight: 600; color: var(--color-text-muted);">Sub-Status (Multi-select)</label>
+                                    <div class="cust-multiselect-trigger" id="cust-filter-substatus-trigger">
+                                        <div class="chips-box" id="cust-filter-substatus-chips">
+                                            <span style="color: var(--color-text-muted);">All Sub-Statuses</span>
+                                        </div>
+                                        <span style="font-size: 10px; color: var(--color-text-muted);">▼</span>
+                                    </div>
+                                    <div class="cust-multiselect-dropdown hidden" id="cust-filter-substatus-dropdown" style="max-height: 280px;">
+                                        <div style="padding: 4px 10px 8px 10px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between;">
+                                            <button type="button" class="btn-link" id="btn-cust-substatus-select-all" style="font-size: 11px; border: none; background: none; color: var(--color-primary); cursor: pointer; font-weight: 600;">Select All</button>
+                                            <button type="button" class="btn-link" id="btn-cust-substatus-clear-all" style="font-size: 11px; border: none; background: none; color: #ef4444; cursor: pointer; font-weight: 600;">Clear</button>
+                                        </div>
+                                        <label class="cust-multiselect-item"><input type="checkbox" value="Finance – In Progress" class="chk-filter-cust-substatus"> <span>Finance – In Progress</span></label>
+                                        <label class="cust-multiselect-item"><input type="checkbox" value="Awaiting QA Verification" class="chk-filter-cust-substatus"> <span>Awaiting QA Verification</span></label>
+                                        <label class="cust-multiselect-item"><input type="checkbox" value="Licence Info – Pending" class="chk-filter-cust-substatus"> <span>Licence Info – Pending</span></label>
+                                        <label class="cust-multiselect-item"><input type="checkbox" value="Verification In Progress" class="chk-filter-cust-substatus"> <span>Verification In Progress</span></label>
+                                        <label class="cust-multiselect-item"><input type="checkbox" value="Awaiting Route ID" class="chk-filter-cust-substatus"> <span>Awaiting Route ID</span></label>
+                                        <label class="cust-multiselect-item"><input type="checkbox" value="Route ID Entry In Progress" class="chk-filter-cust-substatus"> <span>Route ID Entry In Progress</span></label>
+                                        <label class="cust-multiselect-item"><input type="checkbox" value="Awaiting QA Activation" class="chk-filter-cust-substatus"> <span>Awaiting QA Activation</span></label>
+                                        <label class="cust-multiselect-item"><input type="checkbox" value="Customer Active" class="chk-filter-cust-substatus"> <span>Customer Active</span></label>
+                                        <label class="cust-multiselect-item"><input type="checkbox" value="Customer Inactive" class="chk-filter-cust-substatus"> <span>Customer Inactive</span></label>
+                                        <label class="cust-multiselect-item"><input type="checkbox" value="Correction Required" class="chk-filter-cust-substatus"> <span>Correction Required</span></label>
+                                    </div>
+                                </div>
+
+                                <!-- Current Owner Filter -->
+                                <div class="form-group" style="margin: 0;">
+                                    <label for="cust-filter-owner" style="font-size: 11.5px; font-weight: 600; color: var(--color-text-muted);">Current Owner</label>
+                                    <select id="cust-filter-owner" style="height: 36px; font-size: 12.5px;">
+                                        <option value="" selected>All Owners</option>
+                                        <option value="Finance">Finance</option>
+                                        <option value="QA">QA</option>
+                                        <option value="Transport">Transport</option>
+                                        <option value="—">— (Active/None)</option>
+                                    </select>
+                                </div>
+
+                                <!-- Route ID Filter -->
+                                <div class="form-group" style="margin: 0;">
+                                    <label for="cust-filter-route" style="font-size: 11.5px; font-weight: 600; color: var(--color-text-muted);">Route ID</label>
+                                    <input type="text" id="cust-filter-route" placeholder="e.g. 444 DX..." style="height: 36px; font-size: 12.5px;">
+                                </div>
+
+                                <!-- Creation Date Filter -->
+                                <div class="form-group" style="margin: 0;">
+                                    <label for="cust-filter-create-date" style="font-size: 11.5px; font-weight: 600; color: var(--color-text-muted);">Creation Date</label>
+                                    <input type="date" id="cust-filter-create-date" style="height: 36px; font-size: 12.5px;">
+                                </div>
+
+                                <!-- Last Updated Date Filter -->
+                                <div class="form-group" style="margin: 0;">
+                                    <label for="cust-filter-update-date" style="font-size: 11.5px; font-weight: 600; color: var(--color-text-muted);">Last Updated Date</label>
+                                    <input type="date" id="cust-filter-update-date" style="height: 36px; font-size: 12.5px;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Customer Directory Table (Section 9) -->
+                        <div class="card">
+                            <div class="table-container" style="overflow-x: auto;">
                                 <table class="grid-table" id="customer-list-table" style="min-width: 100%;">
                                     <thead>
                                         <tr>
-                                            <th>Account ID</th>
-                                            <th>Registered Name</th>
-                                            <th>Postcode</th>
-                                            <th>Salesman (RSM)</th>
-                                            <th>Credit Limit</th>
-                                            <th>Payment Terms</th>
-                                            <th>GPHC Expiry</th>
-                                            <th>Status</th>
-                                            <th style="width: 180px; text-align: center;">Actions</th>
+                                            <th>Customer Name</th>
+                                            <th style="width: 110px;">Customer Code</th>
+                                            <th style="width: 150px;">Status</th>
+                                            <th style="width: 190px;">Sub-Status</th>
+                                            <th style="width: 120px; text-align: center;">Current Owner</th>
+                                            <th style="width: 130px;">Route ID</th>
+                                            <th>Creation Date</th>
+                                            <th>Last Updated</th>
+                                            <th style="width: 210px; text-align: center;">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody id="customer-list-body">
@@ -2838,6 +2972,83 @@
 
                     <!-- TAB 2: CREATE / EDIT CUSTOMER FORM -->
                     <div class="tab-panel hidden" id="panel-cust-form">
+                        <!-- Visual Workflow Stepper Card -->
+                        <div class="workflow-stepper-card">
+                            <div class="workflow-stepper-title">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span style="font-size: 16px;">🔄</span>
+                                    <strong style="font-size: 13.5px; color: var(--color-text-main);">Customer Creation & Governance Workflow (ERP-MD-004)</strong>
+                                </div>
+                                <span style="font-size: 11.5px; color: var(--color-text-muted);">Regulated Lifecycle: Finance ➔ QA Licence & Verification ➔ Transport Route ID ➔ QA Activation</span>
+                            </div>
+
+                            <div class="workflow-stepper">
+                                <!-- Step 1 -->
+                                <div class="stepper-step" id="cust-step-1">
+                                    <div class="stepper-icon">1</div>
+                                    <div class="stepper-label">Finance Creation</div>
+                                    <div class="stepper-role">Finance</div>
+                                </div>
+                                <!-- Step 2 -->
+                                <div class="stepper-step" id="cust-step-2">
+                                    <div class="stepper-icon">2</div>
+                                    <div class="stepper-label">QA Licence & Review</div>
+                                    <div class="stepper-role">QA</div>
+                                </div>
+                                <!-- Step 3 -->
+                                <div class="stepper-step" id="cust-step-3">
+                                    <div class="stepper-icon">3</div>
+                                    <div class="stepper-label">Transport Route ID</div>
+                                    <div class="stepper-role">Transport</div>
+                                </div>
+                                <!-- Step 4 -->
+                                <div class="stepper-step" id="cust-step-4">
+                                    <div class="stepper-icon">4</div>
+                                    <div class="stepper-label">QA Activation</div>
+                                    <div class="stepper-role">QA</div>
+                                </div>
+                                <!-- Step 5 -->
+                                <div class="stepper-step" id="cust-step-5">
+                                    <div class="stepper-icon">5</div>
+                                    <div class="stepper-label">Active Trading</div>
+                                    <div class="stepper-role">Active</div>
+                                </div>
+                            </div>
+
+                            <!-- Workflow Status Banner -->
+                            <div class="workflow-status-banner">
+                                <div class="workflow-banner-cell">
+                                    <span style="font-size: 11px; color: var(--color-text-muted); font-weight: 600;">Current Status</span>
+                                    <div id="cust-banner-status"><span class="status-badge status-draft"><span class="dot"></span>Draft</span></div>
+                                </div>
+                                <div class="workflow-banner-cell">
+                                    <span style="font-size: 11px; color: var(--color-text-muted); font-weight: 600;">Current Sub-Status</span>
+                                    <div id="cust-banner-substatus"><span class="substatus-badge substatus-finance-in-progress">Finance – In Progress</span></div>
+                                </div>
+                                <div class="workflow-banner-cell">
+                                    <span style="font-size: 11px; color: var(--color-text-muted); font-weight: 600;">Responsible Team</span>
+                                    <div id="cust-banner-owner"><span class="owner-pill owner-finance">👤 Finance</span></div>
+                                </div>
+                                <div class="workflow-banner-cell">
+                                    <span style="font-size: 11px; color: var(--color-text-muted); font-weight: 600;">Transport Route ID</span>
+                                    <div style="font-weight: 700; font-size: 12.5px; color: #0284c7;" id="cust-banner-route">Not Assigned</div>
+                                </div>
+                                <div class="workflow-banner-cell" style="flex: 1; min-width: 200px;">
+                                    <span style="font-size: 11px; color: var(--color-text-muted); font-weight: 600;">Next Action Required</span>
+                                    <div style="font-size: 12px; font-weight: 600; color: #1e293b;" id="cust-banner-action">Finance enters customer details & submits to QA</div>
+                                </div>
+                            </div>
+
+                            <!-- Correction Alert Banner (Conditional) -->
+                            <div id="cust-banner-correction-alert" class="hidden" style="margin-top: 12px; padding: 10px 14px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; display: flex; align-items: center; gap: 10px;">
+                                <span style="font-size: 18px;">⚠️</span>
+                                <div style="flex: 1;">
+                                    <strong style="color: #b91c1c; font-size: 12.5px;">QA Correction Notice:</strong>
+                                    <div id="cust-banner-correction-reason" style="color: #991b1b; font-size: 12px; margin-top: 2px;"></div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Modern Customer Identity Card -->
                         <div class="card" style="margin-bottom: 20px;">
                             <div class="card-header-actions"
@@ -3045,22 +3256,7 @@
                                             <label for="cust-form-registered-country">Company Registered Country</label>
                                             <input type="text" id="cust-form-registered-country" placeholder="e.g. GB">
                                         </div>
-                                        <div class="form-group">
-                                            <label for="cust-form-route">Route</label>
-                                            <div style="display: flex; gap: 6px; align-items: center; width: 100%;">
-                                                <select id="cust-form-route" style="flex: 1; min-width: 0;">
-                                                    <option value="" selected>Select Route</option>
-                                                    <option value="Route 1">Route 1</option>
-                                                    <option value="Route 2">Route 2</option>
-                                                    <option value="Route 3">Route 3</option>
-                                                </select>
-                                                <button type="button"
-                                                    class="btn btn-secondary btn-sub-master-quick-edit"
-                                                    data-category="route"
-                                                    style="padding: 0 8px; height: 36px; min-width: 32px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--color-border-light);"
-                                                    title="Edit Routes List">⚙️</button>
-                                            </div>
-                                        </div>
+
 
                                         <div class="form-group">
                                             <label for="cust-form-registered-postcode">Company Registered
@@ -3074,9 +3270,19 @@
                                                 placeholder="Trading Name...">
                                         </div>
                                         <div class="form-group">
-                                            <label for="cust-form-company-status-value">Company Status</label>
-                                            <input type="text" id="cust-form-company-status-value" class="read-only"
-                                                readonly value="active">
+                                            <label for="cust-addr-tax-liability">Tax Liability</label>
+                                            <select id="cust-addr-tax-liability">
+                                                <option value="TAX Taxable" selected>TAX Taxable</option>
+                                                <option value="TAX Exempt">TAX Exempt</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="cust-addr-tax-code">Free Tax Code</label>
+                                            <select id="cust-addr-tax-code">
+                                                <option value="Select Free Tax Code" selected>Select Free Tax Code</option>
+                                                <option value="Standard Tax (20%)">Standard Tax (20%)</option>
+                                                <option value="Zero Rated (0%)">Zero Rated (0%)</option>
+                                            </select>
                                         </div>
                                     </div>
 
@@ -3259,22 +3465,6 @@
                                                         style="padding: 0 8px; height: 36px; min-width: 32px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--color-border-light);"
                                                         title="Edit Routes List">⚙️</button>
                                                 </div>
-                                            </div>
-                                            <div class="form-group">
-                                                <label for="cust-addr-tax-liability">Tax Liability</label>
-                                                <select id="cust-addr-tax-liability">
-                                                    <option value="TAX Taxable" selected>TAX Taxable</option>
-                                                    <option value="TAX Exempt">TAX Exempt</option>
-                                                </select>
-                                            </div>
-                                            <div class="form-group">
-                                                <label for="cust-addr-tax-code" class="required">Free Tax Code</label>
-                                                <select id="cust-addr-tax-code">
-                                                    <option value="Select Free Tax Code" selected>Select Free Tax Code
-                                                    </option>
-                                                    <option value="Standard Tax (20%)">Standard Tax (20%)</option>
-                                                    <option value="Zero Rated (0%)">Zero Rated (0%)</option>
-                                                </select>
                                             </div>
                                         </div>
                                         <!-- Column 3 -->
@@ -5962,17 +6152,61 @@
 
                             </div>
 
-                            <!-- ACTION BUTTONS -->
-                            <div class="btn-cust-action-container">
-                                <button class="btn btn-secondary" id="btn-cust-cancel"
-                                    style="margin-right: auto; padding: 10px 20px;">Cancel</button>
-                                <button class="btn-modern-action btn-modern-create" id="btn-cust-save">
+                            <!-- WORKFLOW ACTION BUTTONS -->
+                            <div class="btn-cust-action-container" style="display: flex; gap: 10px; align-items: center; justify-content: flex-end; margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--color-border-light); flex-wrap: wrap;">
+                                <button type="button" class="btn btn-secondary" id="btn-cust-cancel"
+                                    style="margin-right: auto; padding: 10px 20px;">
+                                    <span>⬅</span> Back to List
+                                </button>
+
+                                <!-- FINANCE ACTIONS -->
+                                <button type="button" class="btn btn-secondary" id="btn-cust-save-draft" style="font-weight: 600;">
+                                    <span>💾</span> Save Draft (Finance)
+                                </button>
+                                <button type="button" class="btn btn-primary" id="btn-cust-submit-qa" style="font-weight: 600;">
+                                    <span>📤</span> Submit to QA
+                                </button>
+
+                                <!-- QA REVIEW ACTIONS -->
+                                <button type="button" class="btn btn-primary" id="btn-cust-start-qa-review" style="background: #7c3aed; border-color: #6d28d9; font-weight: 600;">
+                                    <span>🔬</span> Start QA Review
+                                </button>
+                                <button type="button" class="btn btn-secondary" id="btn-cust-save-licence-info" style="font-weight: 600;">
+                                    <span>📋</span> Save Licence Info
+                                </button>
+                                <button type="button" class="btn btn-primary" id="btn-cust-submit-transport" style="background: #0284c7; border-color: #0369a1; font-weight: 600;">
+                                    <span>🚚</span> Submit to Transport
+                                </button>
+                                <button type="button" class="btn btn-danger" id="btn-cust-return-correction" style="background: #ef4444; border-color: #dc2626; font-weight: 600;">
+                                    <span>⚠️</span> Return for Correction
+                                </button>
+
+                                <!-- TRANSPORT ACTIONS -->
+                                <button type="button" class="btn btn-primary" id="btn-cust-assign-route-id" style="background: #0284c7; border-color: #0369a1; font-weight: 600;">
+                                    <span>🗺️</span> Assign / Edit Route ID
+                                </button>
+
+                                <!-- RESUBMIT ACTIONS -->
+                                <button type="button" class="btn btn-primary" id="btn-cust-resubmit-correction" style="font-weight: 600;">
+                                    <span>🔄</span> Resubmit to QA
+                                </button>
+
+                                <!-- QA ACTIVATION ACTIONS -->
+                                <button type="button" class="btn btn-success" id="btn-cust-activate-customer" style="background: #059669; border-color: #047857; font-weight: 700; padding: 10px 22px;">
+                                    <span>🚀</span> Activate Customer
+                                </button>
+                                <button type="button" class="btn btn-danger" id="btn-cust-deactivate-customer" style="display: none; font-weight: 600;">
+                                    <span>🚫</span> Deactivate Customer
+                                </button>
+
+                                <!-- LEGACY FORM BUTTONS (HIDDEN / COMPATIBILITY) -->
+                                <button class="btn-modern-action btn-modern-create" id="btn-cust-save" style="display: none;">
                                     <span>👤</span> Create Customer
                                 </button>
-                                <button class="btn-modern-action btn-modern-copy" id="btn-cust-copy">
+                                <button class="btn-modern-action btn-modern-copy" id="btn-cust-copy" style="display: none;">
                                     <span>📋</span> Copy Customer
                                 </button>
-                                <button class="btn-modern-action btn-modern-update" id="btn-cust-update">
+                                <button class="btn-modern-action btn-modern-update" id="btn-cust-update" style="display: none;">
                                     <span>⚙</span> Update Customer
                                 </button>
                             </div>
@@ -5985,9 +6219,8 @@
                 <!-- Page Title -->
                 <div class="page-title-bar">
                     <div>
-                        <h1 class="page-title">Supplier Master Setup</h1>
-                        <p class="page-subtitle">Configure supplier details, address profiles, payment terms, licenses,
-                            and document attachments.</p>
+                        <h1 class="page-title">Supplier Master Setup & Governance</h1>
+                        <p class="page-subtitle">Configure supplier profiles, multi-tier QA/RP verification, accreditation lifecycle, and compliance audit trail.</p>
                     </div>
                     <span class="badge badge-success">Active Screen: ERP-MD-005</span>
                 </div>
@@ -5997,43 +6230,169 @@
 
                     <!-- TAB 1: SUPPLIER DIRECTORY LIST -->
                     <div class="tab-panel" id="panel-sup-list">
-                        <div class="action-bar-top-left" style="margin-bottom: 16px; display: flex; gap: 8px;">
-                            <button class="btn btn-primary" id="btn-create-supplier-quick">
-                                <span>➕</span> Create New Supplier
-                            </button>
-                        </div>
-                        <div class="card">
-                            <h2 class="card-title">Supplier Directory & Evaluation Portal</h2>
-                            <p class="card-subtitle">Search suppliers and manage accreditation and payment
-                                configurations.</p>
-
-                            <div class="form-grid"
-                                style="grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
-                                <div class="form-group">
-                                    <label for="sup-search-id">Search by Supplier ID:</label>
-                                    <input type="text" id="sup-search-id"
-                                        placeholder="Enter Supplier ID (e.g. ACC007)...">
-                                </div>
-                                <div class="form-group">
-                                    <label for="sup-search-name">Search by Name:</label>
-                                    <input type="text" id="sup-search-name"
-                                        placeholder="Enter Supplier Name (e.g. Accent Wire Tie)...">
+                        <!-- Top Action & KPI Cards -->
+                        <div class="kpi-grid" style="grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 20px;">
+                            <div class="kpi-card" style="padding: 12px; cursor: pointer;" id="kpi-filter-all">
+                                <div class="kpi-info" style="width: 100%; text-align: center;">
+                                    <span class="kpi-value" id="sup-kpi-total" style="font-size: 20px;">0</span>
+                                    <span class="kpi-label" style="font-size: 11px; margin-top: 4px;">Total Suppliers</span>
                                 </div>
                             </div>
+                            <div class="kpi-card" style="padding: 12px; border-left: 3px solid #3b82f6; cursor: pointer;" id="kpi-filter-draft">
+                                <div class="kpi-info" style="width: 100%; text-align: center;">
+                                    <span class="kpi-value" id="sup-kpi-draft" style="font-size: 20px; color: #2563eb;">0</span>
+                                    <span class="kpi-label" style="font-size: 11px; margin-top: 4px;">Finance Drafts</span>
+                                </div>
+                            </div>
+                            <div class="kpi-card" style="padding: 12px; border-left: 3px solid #8b5cf6; cursor: pointer;" id="kpi-filter-qa">
+                                <div class="kpi-info" style="width: 100%; text-align: center;">
+                                    <span class="kpi-value" id="sup-kpi-qa" style="font-size: 20px; color: #7c3aed;">0</span>
+                                    <span class="kpi-label" style="font-size: 11px; margin-top: 4px;">QA Verification</span>
+                                </div>
+                            </div>
+                            <div class="kpi-card" style="padding: 12px; border-left: 3px solid #f59e0b; cursor: pointer;" id="kpi-filter-rp">
+                                <div class="kpi-info" style="width: 100%; text-align: center;">
+                                    <span class="kpi-value" id="sup-kpi-rp" style="font-size: 20px; color: #d97706;">0</span>
+                                    <span class="kpi-label" style="font-size: 11px; margin-top: 4px;">RP Review/Pending</span>
+                                </div>
+                            </div>
+                            <div class="kpi-card" style="padding: 12px; border-left: 3px solid #06b6d4; cursor: pointer;" id="kpi-filter-activation">
+                                <div class="kpi-info" style="width: 100%; text-align: center;">
+                                    <span class="kpi-value" id="sup-kpi-activation" style="font-size: 20px; color: #0891b2;">0</span>
+                                    <span class="kpi-label" style="font-size: 11px; margin-top: 4px;">Activation Pending</span>
+                                </div>
+                            </div>
+                            <div class="kpi-card" style="padding: 12px; border-left: 3px solid #10b981; cursor: pointer;" id="kpi-filter-active">
+                                <div class="kpi-info" style="width: 100%; text-align: center;">
+                                    <span class="kpi-value" id="sup-kpi-active" style="font-size: 20px; color: #059669;">0</span>
+                                    <span class="kpi-label" style="font-size: 11px; margin-top: 4px;">Active Suppliers</span>
+                                </div>
+                            </div>
+                        </div>
 
-                            <div class="table-container">
+                        <!-- Top Action Bar -->
+                        <div class="action-bar-top-left" style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-primary" id="btn-create-supplier-quick">
+                                    <span>➕</span> Create New Supplier (Finance)
+                                </button>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 12px; color: var(--color-text-muted);" id="sup-list-count-label">Showing all records</span>
+                            </div>
+                        </div>
+
+                        <!-- Multi-Select & Search Filter Card -->
+                        <div class="sup-filter-container">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <h3 style="font-size: 13px; font-weight: 700; color: var(--color-text-main); margin: 0; display: flex; align-items: center; gap: 6px;">
+                                    <span>🔍</span> Filter Supplier Directory
+                                </h3>
+                                <button type="button" id="btn-sup-clear-filters" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 4px 10px;">
+                                    Reset Filters
+                                </button>
+                            </div>
+                            <div class="sup-filter-grid">
+                                <!-- Search by Supplier Code -->
+                                <div class="form-group" style="margin: 0;">
+                                    <label for="sup-search-id" style="font-size: 11.5px; font-weight: 600; color: var(--color-text-muted);">Supplier Code</label>
+                                    <input type="text" id="sup-search-id" placeholder="e.g. ACC007..." style="height: 36px; font-size: 12.5px;">
+                                </div>
+
+                                <!-- Search by Name -->
+                                <div class="form-group" style="margin: 0;">
+                                    <label for="sup-search-name" style="font-size: 11.5px; font-weight: 600; color: var(--color-text-muted);">Supplier Name</label>
+                                    <input type="text" id="sup-search-name" placeholder="e.g. Accent Wire..." style="height: 36px; font-size: 12.5px;">
+                                </div>
+
+                                <!-- Multi-Select: Status Filter -->
+                                <div class="form-group sup-multiselect-container" style="margin: 0;" id="sup-filter-status-container">
+                                    <label style="font-size: 11.5px; font-weight: 600; color: var(--color-text-muted);">Status (Multi-select)</label>
+                                    <div class="sup-multiselect-trigger" id="sup-filter-status-trigger">
+                                        <div class="chips-box" id="sup-filter-status-chips">
+                                            <span style="color: var(--color-text-muted);">All Statuses</span>
+                                        </div>
+                                        <span style="font-size: 10px; color: var(--color-text-muted);">▼</span>
+                                    </div>
+                                    <div class="sup-multiselect-dropdown hidden" id="sup-filter-status-dropdown">
+                                        <div style="padding: 4px 10px 8px 10px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between;">
+                                            <button type="button" class="btn-link" id="btn-status-select-all" style="font-size: 11px; border: none; background: none; color: var(--color-primary); cursor: pointer; font-weight: 600;">Select All</button>
+                                            <button type="button" class="btn-link" id="btn-status-clear-all" style="font-size: 11px; border: none; background: none; color: #ef4444; cursor: pointer; font-weight: 600;">Clear</button>
+                                        </div>
+                                        <label class="sup-multiselect-item"><input type="checkbox" value="Draft" class="chk-filter-status"> <span>Draft</span></label>
+                                        <label class="sup-multiselect-item"><input type="checkbox" value="Pending QA" class="chk-filter-status"> <span>Pending QA</span></label>
+                                        <label class="sup-multiselect-item"><input type="checkbox" value="QA Review" class="chk-filter-status"> <span>QA Review</span></label>
+                                        <label class="sup-multiselect-item"><input type="checkbox" value="Pending RP Approval" class="chk-filter-status"> <span>Pending RP Approval</span></label>
+                                        <label class="sup-multiselect-item"><input type="checkbox" value="RP Review" class="chk-filter-status"> <span>RP Review</span></label>
+                                        <label class="sup-multiselect-item"><input type="checkbox" value="Activation Pending" class="chk-filter-status"> <span>Activation Pending</span></label>
+                                        <label class="sup-multiselect-item"><input type="checkbox" value="Active" class="chk-filter-status"> <span>Active</span></label>
+                                        <label class="sup-multiselect-item"><input type="checkbox" value="Inactive" class="chk-filter-status"> <span>Inactive</span></label>
+                                    </div>
+                                </div>
+
+                                <!-- Multi-Select: Sub-Status Filter -->
+                                <div class="form-group sup-multiselect-container" style="margin: 0;" id="sup-filter-substatus-container">
+                                    <label style="font-size: 11.5px; font-weight: 600; color: var(--color-text-muted);">Sub-Status (Multi-select)</label>
+                                    <div class="sup-multiselect-trigger" id="sup-filter-substatus-trigger">
+                                        <div class="chips-box" id="sup-filter-substatus-chips">
+                                            <span style="color: var(--color-text-muted);">All Sub-Statuses</span>
+                                        </div>
+                                        <span style="font-size: 10px; color: var(--color-text-muted);">▼</span>
+                                    </div>
+                                    <div class="sup-multiselect-dropdown hidden" id="sup-filter-substatus-dropdown" style="max-height: 280px;">
+                                        <div style="padding: 4px 10px 8px 10px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between;">
+                                            <button type="button" class="btn-link" id="btn-substatus-select-all" style="font-size: 11px; border: none; background: none; color: var(--color-primary); cursor: pointer; font-weight: 600;">Select All</button>
+                                            <button type="button" class="btn-link" id="btn-substatus-clear-all" style="font-size: 11px; border: none; background: none; color: #ef4444; cursor: pointer; font-weight: 600;">Clear</button>
+                                        </div>
+                                        <label class="sup-multiselect-item"><input type="checkbox" value="Finance – In Progress" class="chk-filter-substatus"> <span>Finance – In Progress</span></label>
+                                        <label class="sup-multiselect-item"><input type="checkbox" value="Awaiting QA Verification" class="chk-filter-substatus"> <span>Awaiting QA Verification</span></label>
+                                        <label class="sup-multiselect-item"><input type="checkbox" value="Licence Info – Pending" class="chk-filter-substatus"> <span>Licence Info – Pending</span></label>
+                                        <label class="sup-multiselect-item"><input type="checkbox" value="Verification In Progress" class="chk-filter-substatus"> <span>Verification In Progress</span></label>
+                                        <label class="sup-multiselect-item"><input type="checkbox" value="Awaiting RP Approval" class="chk-filter-substatus"> <span>Awaiting RP Approval</span></label>
+                                        <label class="sup-multiselect-item"><input type="checkbox" value="Under RP Review" class="chk-filter-substatus"> <span>Under RP Review</span></label>
+                                        <label class="sup-multiselect-item"><input type="checkbox" value="Approved – Activation Pending" class="chk-filter-substatus"> <span>Approved – Activation Pending</span></label>
+                                        <label class="sup-multiselect-item"><input type="checkbox" value="Rejected – Correction Required" class="chk-filter-substatus"> <span>Rejected – Correction Required</span></label>
+                                        <label class="sup-multiselect-item"><input type="checkbox" value="Awaiting QA Activation" class="chk-filter-substatus"> <span>Awaiting QA Activation</span></label>
+                                        <label class="sup-multiselect-item"><input type="checkbox" value="Supplier Active" class="chk-filter-substatus"> <span>Supplier Active</span></label>
+                                        <label class="sup-multiselect-item"><input type="checkbox" value="Supplier Inactive" class="chk-filter-substatus"> <span>Supplier Inactive</span></label>
+                                    </div>
+                                </div>
+
+                                <!-- Current Owner Filter -->
+                                <div class="form-group" style="margin: 0;">
+                                    <label for="sup-filter-owner" style="font-size: 11.5px; font-weight: 600; color: var(--color-text-muted);">Current Owner</label>
+                                    <select id="sup-filter-owner" style="height: 36px; font-size: 12.5px;">
+                                        <option value="" selected>All Owners</option>
+                                        <option value="Finance">Finance</option>
+                                        <option value="QA">QA</option>
+                                        <option value="RP">RP</option>
+                                        <option value="—">— (Active/None)</option>
+                                    </select>
+                                </div>
+
+                                <!-- Creation Date Filter -->
+                                <div class="form-group" style="margin: 0;">
+                                    <label for="sup-filter-create-date" style="font-size: 11.5px; font-weight: 600; color: var(--color-text-muted);">Creation Date</label>
+                                    <input type="date" id="sup-filter-create-date" style="height: 36px; font-size: 12.5px;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Supplier Directory Table -->
+                        <div class="card">
+                            <div class="table-container" style="overflow-x: auto;">
                                 <table class="grid-table" id="supplier-list-table" style="min-width: 100%;">
                                     <thead>
                                         <tr>
-                                            <th>Supplier ID</th>
+                                            <th style="width: 100px;">Supplier Code</th>
                                             <th>Supplier Name</th>
                                             <th>Company</th>
-                                            <th>Supplier Group</th>
-                                            <th>Currency</th>
-                                            <th>Tax Liability</th>
-                                            <th>Supplier Type</th>
-                                            <th>Status</th>
-                                            <th style="width: 180px; text-align: center;">Actions</th>
+                                            <th style="width: 150px;">Status</th>
+                                            <th style="width: 190px;">Sub-Status</th>
+                                            <th style="width: 120px; text-align: center;">Current Owner</th>
+                                            <th>Licence / Type</th>
+                                            <th>Last Updated</th>
+                                            <th style="width: 190px; text-align: center;">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody id="supplier-list-body">
@@ -6048,46 +6407,132 @@
                     <div class="tab-panel hidden" id="panel-sup-form">
                         <!-- Modern Header Bar for Supplier Form -->
                         <div class="card"
-                            style="margin-bottom: 20px; background: linear-gradient(135deg, #1e3a5f 0%, #00838f 100%); color: #fff; padding: 16px 20px; border-radius: 8px;">
+                            style="margin-bottom: 16px; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: #fff; padding: 16px 20px; border-radius: 8px; border: 1px solid #334155;">
                             <div
-                                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
                                 <div style="display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-size: 20px;">📊</span>
-                                    <h2 class="card-title" id="sup-form-title"
-                                        style="margin: 0; color: #fff; font-size: 16px; font-weight: 600;">Supplier
-                                        Update Form</h2>
+                                    <span style="font-size: 22px;">🏢</span>
+                                    <div>
+                                        <h2 class="card-title" id="sup-form-title"
+                                            style="margin: 0; color: #fff; font-size: 16px; font-weight: 700;">Supplier Creation Form</h2>
+                                        <span id="sup-form-mode-subtitle" style="font-size: 12px; color: #94a3b8;">Enter details and follow workflow sequence</span>
+                                    </div>
                                 </div>
                                 <div style="display: flex; gap: 8px; align-items: center;">
                                     <span class="badge" id="sup-edit-status-badge"
-                                        style="background-color: rgba(255,255,255,0.2); color: #fff; font-weight: 600; display: none;">Editing</span>
+                                        style="background-color: rgba(255,255,255,0.15); color: #fff; font-weight: 600; display: none;">Editing</span>
                                     <button type="button" class="btn btn-secondary btn-sm" id="btn-sup-view-directory"
-                                        style="background: rgba(255,255,255,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.4); font-weight: 600; cursor: pointer;">📋
-                                        View Directory</button>
+                                        style="background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.3); font-weight: 600; cursor: pointer;">📋
+                                        Back to Directory</button>
                                 </div>
                             </div>
-                            <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+                            <div class="form-grid" style="grid-template-columns: 1fr 1.5fr 1fr; gap: 16px;">
                                 <div class="form-group" style="margin: 0;">
                                     <label for="sup-form-id"
-                                        style="color: #e0f7fa; font-size: 12px; font-weight: 600;">Supplier ID</label>
+                                        style="color: #e2e8f0; font-size: 12px; font-weight: 600;">Supplier ID <span style="color: #f87171;">*</span></label>
                                     <input type="text" id="sup-form-id" placeholder="ACC007"
-                                        style="background: #fff; color: #333; font-weight: 600;">
+                                        style="background: #fff; color: #1e293b; font-weight: 700;">
                                 </div>
                                 <div class="form-group" style="margin: 0;">
                                     <label for="sup-form-name"
-                                        style="color: #e0f7fa; font-size: 12px; font-weight: 600;">Supplier Name</label>
-                                    <input type="text" id="sup-form-name" placeholder="ACCENT WIRE TIE"
-                                        style="background: #fff; color: #333; font-weight: 600;">
+                                        style="color: #e2e8f0; font-size: 12px; font-weight: 600;">Supplier Registered Name <span style="color: #f87171;">*</span></label>
+                                    <input type="text" id="sup-form-name" placeholder="ACCENT WIRE TIE LTD"
+                                        style="background: #fff; color: #1e293b; font-weight: 700;">
                                 </div>
                                 <div class="form-group" style="margin: 0;">
                                     <label for="sup-form-company"
-                                        style="color: #e0f7fa; font-size: 12px; font-weight: 600;">Company</label>
+                                        style="color: #e2e8f0; font-size: 12px; font-weight: 600;">Operating Company</label>
                                     <select id="sup-form-company"
-                                        style="background: #fff; color: #333; font-weight: 600;">
+                                        style="background: #fff; color: #1e293b; font-weight: 600;">
                                         <option value="LAXMI01" selected>LAXMI01</option>
                                         <option value="SPECIALS">SPECIALS</option>
                                         <option value="BNS01">BNS01</option>
                                     </select>
                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- Workflow Visual Stepper Card -->
+                        <div class="workflow-stepper-card" id="sup-stepper-container">
+                            <div class="workflow-stepper-title">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span style="font-size: 15px;">🔄</span>
+                                    <span style="font-size: 13px; font-weight: 700; color: var(--color-text-main);">Workflow Lifecycle Stage</span>
+                                </div>
+                                <span style="font-size: 11px; color: var(--color-text-muted); font-weight: 500;">Finance ➔ QA ➔ RP ➔ QA ➔ Active</span>
+                            </div>
+
+                            <div class="workflow-stepper">
+                                <!-- Step 1: Finance -->
+                                <div class="stepper-step active" id="step-node-1" data-step="1">
+                                    <div class="stepper-icon">1</div>
+                                    <div class="stepper-label">Finance Creation</div>
+                                    <div class="stepper-role">Finance</div>
+                                </div>
+                                <!-- Step 2: QA Verification -->
+                                <div class="stepper-step" id="step-node-2" data-step="2">
+                                    <div class="stepper-icon">2</div>
+                                    <div class="stepper-label">QA Verification</div>
+                                    <div class="stepper-role">QA</div>
+                                </div>
+                                <!-- Step 3: RP Approval -->
+                                <div class="stepper-step" id="step-node-3" data-step="3">
+                                    <div class="stepper-icon">3</div>
+                                    <div class="stepper-label">RP Approval</div>
+                                    <div class="stepper-role">RP</div>
+                                </div>
+                                <!-- Step 4: QA Activation -->
+                                <div class="stepper-step" id="step-node-4" data-step="4">
+                                    <div class="stepper-icon">4</div>
+                                    <div class="stepper-label">QA Activation</div>
+                                    <div class="stepper-role">QA</div>
+                                </div>
+                                <!-- Step 5: Active -->
+                                <div class="stepper-step" id="step-node-5" data-step="5">
+                                    <div class="stepper-icon">5</div>
+                                    <div class="stepper-label">Active Master</div>
+                                    <div class="stepper-role">ERP</div>
+                                </div>
+                            </div>
+
+                            <!-- Live Workflow Status Banner -->
+                            <div class="workflow-status-banner" id="sup-form-workflow-banner">
+                                <div class="workflow-banner-cell">
+                                    <span class="workflow-banner-label">Current Status</span>
+                                    <div class="workflow-banner-val" id="sup-banner-status">
+                                        <span class="status-badge status-draft"><span class="dot"></span> Draft</span>
+                                    </div>
+                                </div>
+                                <div class="workflow-banner-cell">
+                                    <span class="workflow-banner-label">Current Sub-Status</span>
+                                    <div class="workflow-banner-val" id="sup-banner-substatus">
+                                        <span class="substatus-badge substatus-finance-in-progress">Finance – In Progress</span>
+                                    </div>
+                                </div>
+                                <div class="workflow-banner-cell">
+                                    <span class="workflow-banner-label">Current Owner</span>
+                                    <div class="workflow-banner-val" id="sup-banner-owner">
+                                        <span class="owner-pill owner-finance">Finance</span>
+                                    </div>
+                                </div>
+                                <div class="workflow-banner-cell" style="flex: 1; min-width: 200px;">
+                                    <span class="workflow-banner-label">Next Required Action</span>
+                                    <div class="workflow-banner-val" id="sup-banner-action-required" style="font-weight: 600; color: #1e40af;">
+                                        Complete details & submit to QA for verification
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Rejection Notice Banner (Shown only when in Rejected state) -->
+                        <div class="rejection-alert-box hidden" id="sup-form-rejection-box">
+                            <div class="rejection-alert-title">
+                                <span>⚠️</span>
+                                <span>Supplier Returned by RP for Correction</span>
+                            </div>
+                            <p style="font-size: 12px; margin: 0;">The Responsible Person (RP) reviewed this supplier and requested the following corrections before approval can proceed:</p>
+                            <div class="rejection-alert-reason" id="sup-rejection-reason-text">
+                                No correction comments recorded.
                             </div>
                         </div>
 
@@ -6098,21 +6543,21 @@
                                 id="btn-sup-subtab-general" data-sup-tab="general"
                                 style="border-radius: 6px 6px 0 0; font-weight: 600; padding: 8px 16px;">General</button>
                             <button type="button" class="btn btn-secondary sub-tab-btn" id="btn-sup-subtab-invoice-addr" data-sup-tab="invoice-addr"
-                                style="border-radius: 6px 6px 0 0; font-weight: 600; padding: 8px 16px;">Invoice Address
-                                Info</button>
+                                style="border-radius: 6px 6px 0 0; font-weight: 600; padding: 8px 16px;">Invoice Address Info</button>
                             <button type="button" class="btn btn-secondary sub-tab-btn" id="btn-sup-subtab-payment" data-sup-tab="payment"
-                                style="border-radius: 6px 6px 0 0; font-weight: 600; padding: 8px 16px;">Payment
-                                Info</button>
+                                style="border-radius: 6px 6px 0 0; font-weight: 600; padding: 8px 16px;">Payment Info</button>
                             <button type="button" class="btn btn-secondary sub-tab-btn" id="btn-sup-subtab-licence" data-sup-tab="licence"
-                                style="border-radius: 6px 6px 0 0; font-weight: 600; padding: 8px 16px;">Licence
-                                Info</button>
+                                style="border-radius: 6px 6px 0 0; font-weight: 600; padding: 8px 16px;">Licence Info <span class="badge badge-warning" id="sup-lic-tab-badge" style="font-size: 9px; padding: 1px 5px; margin-left: 4px;">QA</span></button>
                             <button type="button" class="btn btn-secondary sub-tab-btn" id="btn-sup-subtab-file" data-sup-tab="file"
-                                style="border-radius: 6px 6px 0 0; font-weight: 600; padding: 8px 16px;">File
-                                Info</button>
+                                style="border-radius: 6px 6px 0 0; font-weight: 600; padding: 8px 16px;">File Info</button>
                             <button type="button" class="btn btn-secondary sub-tab-btn"
                                 id="btn-sup-subtab-dispatch-addr" data-sup-tab="dispatch-addr"
-                                style="border-radius: 6px 6px 0 0; font-weight: 600; padding: 8px 16px;">Dispatch
-                                Address Info</button>
+                                style="border-radius: 6px 6px 0 0; font-weight: 600; padding: 8px 16px;">Dispatch Address Info</button>
+                            <button type="button" class="btn btn-secondary sub-tab-btn"
+                                id="btn-sup-subtab-history" data-sup-tab="history"
+                                style="border-radius: 6px 6px 0 0; font-weight: 600; padding: 8px 16px; background: #fdf2f8; color: #9d174d; border-color: #fbcfe8;">
+                                📜 Workflow History & Audit Trail
+                            </button>
                         </div>
 
                         <!-- SUB-TAB 1: GENERAL -->
@@ -6162,7 +6607,7 @@
                                     </div>
                                     <div class="form-group">
                                         <label for="sup-gen-creation-date">Creation Date</label>
-                                        <input type="date" id="sup-gen-creation-date" value="2018-04-17">
+                                        <input type="date" id="sup-gen-creation-date" value="2026-08-19">
                                     </div>
                                     <div class="form-group">
                                         <label for="sup-gen-payment-term">Payment Term</label>
@@ -6383,9 +6828,6 @@
                                     <h3 class="card-title"
                                         style="font-size: 14px; margin: 0; border-left: 3px solid var(--color-primary); padding-left: 8px;">
                                         Payment Configuration</h3>
-                                    <label style="font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; color: var(--color-text-muted);">
-                                        <input type="checkbox" id="sim-manager-role" style="accent-color: var(--color-primary); width: 14px; height: 14px;"> Simulate Manager Role
-                                    </label>
                                 </div>
                                 <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
                                     <div class="form-group">
@@ -6488,64 +6930,96 @@
                         <!-- SUB-TAB 4: LICENCE INFO -->
                         <div class="sub-tab-panel hidden" id="panel-sup-subtab-licence">
                             <div class="card" style="margin-bottom: 20px;">
-                                <div
-                                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--color-border-light); padding-bottom: 10px;">
-                                    <h3 class="card-title"
-                                        style="font-size: 14px; margin: 0; border-left: 3px solid var(--color-primary); padding-left: 8px;">
-                                        Accreditation & Licence Controls</h3>
-                                    <button type="button" class="btn btn-secondary btn-sm" id="btn-sup-lic-log-detail"
-                                        style="background: var(--color-primary); color: #fff; border: none; font-size: 11px; padding: 4px 10px;">Log
-                                        Detail</button>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--color-border-light); padding-bottom: 10px;">
+                                    <div>
+                                        <h3 class="card-title" style="font-size: 14px; margin: 0; border-left: 3px solid var(--color-primary); padding-left: 8px;">
+                                            Accreditation & Licence Controls (QA Mandatory Area)</h3>
+                                        <p style="font-size: 11px; color: var(--color-text-muted); margin: 4px 0 0 11px;">QA must verify and complete this section before submitting the supplier for RP approval.</p>
+                                    </div>
+                                    <button type="button" class="btn btn-secondary btn-sm" id="btn-sup-lic-log-detail" style="font-size: 11px; padding: 4px 12px; font-weight: 600;">Log Detail</button>
                                 </div>
+
                                 <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap: 16px;">
+                                    <!-- Supplier Type -->
                                     <div class="form-group">
-                                        <label for="sup-lic-type">Supplier Type</label>
+                                        <label for="sup-lic-type">Supplier Type <span style="color: var(--color-danger); font-size: 11px;">* (QA)</span></label>
                                         <select id="sup-lic-type">
-                                            <option value="Non WDA Holder" selected>Non WDA Holder</option>
-                                            <option value="WDA Holder">WDA Holder</option>
+                                            <option value="Wholesaler" selected>Wholesaler</option>
                                             <option value="Manufacturer">Manufacturer</option>
+                                            <option value="Non WDA Holder">Non WDA Holder</option>
+                                            <option value="Vendor for Specials">Vendor for Specials</option>
+                                            <option value="Vendor for Licence">Vendor for Licence</option>
+                                            <option value="Non Pharmaceutical Service Provider">Non Pharmaceutical Service Provider</option>
                                         </select>
                                     </div>
+
+                                    <!-- Supplier For -->
                                     <div class="form-group">
-                                        <label for="sup-lic-supplier-for">Supplier For</label>
+                                        <label for="sup-lic-supplier-for">Supplier For <span style="color: var(--color-danger); font-size: 11px;">* (QA)</span></label>
                                         <select id="sup-lic-supplier-for">
                                             <option value="Select..." selected>Select...</option>
                                             <option value="Wholesale">Wholesale</option>
                                             <option value="Services">Services</option>
+                                            <option value="Goods">Goods</option>
                                         </select>
                                     </div>
+
+                                    <!-- Company Registration No -->
                                     <div class="form-group">
-                                        <label for="sup-lic-company-reg">Company Registration No</label>
-                                        <input type="text" id="sup-lic-company-reg" placeholder="Reg No...">
+                                        <label for="sup-lic-company-reg">Registration No</label>
+                                        <input type="text" id="sup-lic-company-reg" placeholder="Registration No...">
                                     </div>
+
+                                    <!-- Company Registration Expiry Date -->
                                     <div class="form-group">
-                                        <label for="sup-lic-company-reg-expiry">Company Registration Expiry Date</label>
+                                        <label for="sup-lic-company-reg-expiry">Expiry Date</label>
                                         <div style="display: flex; gap: 6px;">
                                             <input type="date" id="sup-lic-company-reg-expiry" style="flex: 1;">
-                                            <button type="button" class="btn btn-secondary btn-sm"
-                                                style="padding: 0 8px;">📥</button>
-                                            <button type="button" class="btn btn-secondary btn-sm"
-                                                style="padding: 0 8px;">📤</button>
+                                            <button type="button" class="btn btn-outline-primary btn-sm" style="padding: 0 10px;" title="Upload Document">📥</button>
+                                            <button type="button" class="btn btn-outline-success btn-sm" style="padding: 0 10px;" title="View Document">📤</button>
                                         </div>
                                         <div id="sup-lic-company-reg-expiry-feedback" style="font-size: 11px; margin-top: 4px; display: none;"></div>
                                     </div>
-                                    <div class="form-group">
+
+                                    <!-- GDP/GMP Certificate No -->
+                                    <div class="form-group" id="sup-lic-gdp-gmp-cert-no-group">
                                         <label for="sup-lic-gdp-gmp-cert-no">GDP/GMP Certificate No</label>
-                                        <input type="text" id="sup-lic-gdp-gmp-cert-no" placeholder="e.g. UK GDP 48291/001 or GMP-2026-UK">
+                                        <input type="text" id="sup-lic-gdp-gmp-cert-no" placeholder="e.g. UK WDA 48291/001 or GMP-2026-UK">
                                     </div>
-                                    <div class="form-group">
-                                        <label for="sup-lic-expiry-date">GDP/GMP Certificate Expiry Date</label>
+
+                                    <!-- GDP/GMP Certificate Expiry Date -->
+                                    <div class="form-group" id="sup-lic-expiry-date-group">
+                                        <label for="sup-lic-expiry-date">Expiry Date</label>
                                         <div style="display: flex; gap: 6px;">
                                             <input type="date" id="sup-lic-expiry-date" style="flex: 1;">
-                                            <button type="button" class="btn btn-secondary btn-sm"
-                                                style="padding: 0 8px;">📥</button>
-                                            <button type="button" class="btn btn-secondary btn-sm"
-                                                style="padding: 0 8px;">📤</button>
+                                            <button type="button" class="btn btn-outline-primary btn-sm" style="padding: 0 10px;" title="Upload Document">📥</button>
+                                            <button type="button" class="btn btn-outline-success btn-sm" style="padding: 0 10px;" title="View Document">📤</button>
                                         </div>
                                         <div id="sup-lic-expiry-feedback" style="font-size: 11px; margin-top: 4px; display: none;"></div>
                                     </div>
-                                    <div class="form-group">
-                                        <label for="sup-lic-risk-score">Risk Assessment Score</label>
+
+                                    <!-- Dynamic Product Type Group (Wholesaler / Manufacturer) -->
+                                    <div class="form-group wholesaler-only-field" id="sup-lic-wholesaler-product-type-group" style="grid-column: span 2; margin: 4px 0;">
+                                        <label style="font-weight: 600; color: var(--color-text-main); margin-bottom: 8px; display: block;" id="sup-lic-product-type-label">Wholesaler Product Type</label>
+                                        <div style="background: var(--color-bg-light, #f8f9fa); border: 1px solid var(--color-border-light, #e0e0e0); border-radius: 6px; padding: 14px 20px; display: flex; gap: 32px; align-items: center;">
+                                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; cursor: pointer; margin: 0;">
+                                                <input type="checkbox" id="sup-lic-wholesaler-specials" style="width: 16px; height: 16px; accent-color: var(--color-primary);">
+                                                <span>Specials</span>
+                                            </label>
+                                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; cursor: pointer; margin: 0;">
+                                                <input type="checkbox" id="sup-lic-wholesaler-control-drugs" style="width: 16px; height: 16px; accent-color: var(--color-primary);">
+                                                <span>Control Drugs</span>
+                                            </label>
+                                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; cursor: pointer; margin: 0;">
+                                                <input type="checkbox" id="sup-lic-wholesaler-cold-chain" style="width: 16px; height: 16px; accent-color: var(--color-primary);">
+                                                <span>Cold Chain</span>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <!-- Risk Assessment Score -->
+                                    <div class="form-group" id="sup-lic-risk-score-group">
+                                        <label for="sup-lic-risk-score">Risk Assessment Score <span style="color: var(--color-danger); font-size: 11px;">* (QA)</span></label>
                                         <select id="sup-lic-risk-score">
                                             <option value="Select..." selected>Select...</option>
                                             <option value="Low">Low Risk</option>
@@ -6553,55 +7027,45 @@
                                             <option value="High">High Risk</option>
                                         </select>
                                     </div>
-                                    <div class="form-group">
+
+                                    <!-- Questionnaire -->
+                                    <div class="form-group" id="sup-lic-questionnaire-group">
                                         <label for="sup-lic-questionnaire">Questionnaire</label>
                                         <div style="display: flex; gap: 10px; align-items: center; height: 38px;">
-                                            <input type="checkbox" id="sup-lic-questionnaire">
-                                            <button type="button" class="btn btn-secondary btn-sm"
-                                                style="padding: 0 8px;">📥</button>
-                                            <button type="button" class="btn btn-secondary btn-sm"
-                                                style="padding: 0 8px;">📤</button>
+                                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; flex: 1; margin: 0;">
+                                                <input type="checkbox" id="sup-lic-questionnaire" style="width: 16px; height: 16px; accent-color: var(--color-primary);">
+                                                <span style="color: var(--color-text-muted);">Questionnaire Received & Checked</span>
+                                            </label>
+                                            <button type="button" class="btn btn-outline-primary btn-sm" style="padding: 0 10px;" title="Upload Document">📥</button>
+                                            <button type="button" class="btn btn-outline-success btn-sm" style="padding: 0 10px;" title="View Document">📤</button>
                                         </div>
                                     </div>
-                                    <div class="form-group">
-                                        <label for="sup-lic-tech-approved-date">Technical Agreement Approved Date</label>
-                                        <input type="date" id="sup-lic-tech-approved-date">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="sup-lic-tech-renewal-date">Technical Agreement Renewal Date</label>
-                                        <div style="display: flex; gap: 6px;">
-                                            <input type="date" id="sup-lic-tech-renewal-date" style="flex: 1;">
-                                            <button type="button" class="btn btn-secondary btn-sm"
-                                                style="padding: 0 8px;">📥</button>
-                                            <button type="button" class="btn btn-secondary btn-sm"
-                                                style="padding: 0 8px;">📤</button>
-                                        </div>
-                                    </div>
-                                    <div class="form-group" style="grid-column: span 2;">
+
+                                    <!-- Technical Agreement Approved Date -->
+                                    <!-- Review Date -->
+                                    <div class="form-group" id="sup-lic-review-date-group" style="grid-column: span 2;">
                                         <label for="sup-lic-review-date">Review Date</label>
-                                        <input type="date" id="sup-lic-review-date" style="max-width: 300px;">
+                                        <input type="date" id="sup-lic-review-date" style="max-width: 320px;">
                                     </div>
                                 </div>
 
-                                <div style="margin-top: 20px; display: flex; gap: 20px; align-items: center;">
-                                    <div style="display: flex; gap: 8px; align-items: center;">
-                                        <input type="radio" name="sup-lic-status" id="sup-lic-active" value="Active"
-                                            checked style="width: 16px; height: 16px;">
-                                        <label for="sup-lic-active"
-                                            style="margin: 0; font-weight: 600; color: var(--color-success);">Active</label>
-                                    </div>
-                                    <div style="display: flex; gap: 8px; align-items: center;">
-                                        <input type="radio" name="sup-lic-status" id="sup-lic-inactive" value="Inactive"
-                                            style="width: 16px; height: 16px;">
-                                        <label for="sup-lic-inactive"
-                                            style="margin: 0; font-weight: 600; color: var(--color-danger);">Inactive</label>
-                                    </div>
+                                <!-- Licence Status Radios -->
+                                <div style="margin-top: 20px; display: flex; gap: 24px; align-items: center; background: var(--color-bg-light, #f8f9fa); padding: 12px 16px; border-radius: 6px;">
+                                    <span style="font-size: 13px; font-weight: 600; color: var(--color-text-main);">Licence Status:</span>
+                                    <label style="display: flex; gap: 8px; align-items: center; margin: 0; cursor: pointer;">
+                                        <input type="radio" name="sup-lic-status" id="sup-lic-active" value="Active" checked style="width: 16px; height: 16px; accent-color: var(--color-success);">
+                                        <span style="font-weight: 600; color: var(--color-success); font-size: 13px;">Active / Compliant</span>
+                                    </label>
+                                    <label style="display: flex; gap: 8px; align-items: center; margin: 0; cursor: pointer;">
+                                        <input type="radio" name="sup-lic-status" id="sup-lic-inactive" value="Inactive" style="width: 16px; height: 16px; accent-color: var(--color-danger);">
+                                        <span style="font-weight: 600; color: var(--color-danger); font-size: 13px;">Inactive / Restricted</span>
+                                    </label>
                                 </div>
 
+                                <!-- Note -->
                                 <div class="form-group" style="margin-top: 16px;">
                                     <label for="sup-lic-note">Note</label>
-                                    <textarea id="sup-lic-note" style="height: 60px; resize: none;"
-                                        placeholder="Enter licence / inactivation notes...">Inactivated due to communication method changed in General tab.</textarea>
+                                    <textarea id="sup-lic-note" style="height: 70px; resize: vertical;" placeholder="Max 1000 characters"></textarea>
                                 </div>
                             </div>
                         </div>
@@ -6625,6 +7089,8 @@
                                             <option value="SUPPLIER CREATION FORM">SUPPLIER CREATION FORM</option>
                                             <option value="INVOICE COPY">INVOICE COPY</option>
                                             <option value="LICENCE DOCUMENT">LICENCE DOCUMENT</option>
+                                            <option value="TECHNICAL AGREEMENT">TECHNICAL AGREEMENT</option>
+                                            <option value="BANK PROOF">BANK PROOF</option>
                                         </select>
                                     </div>
                                     <div class="form-group">
@@ -6643,7 +7109,7 @@
                                             <tr>
                                                 <th style="width: 40px;">#</th>
                                                 <th>File Name</th>
-                                                <th>Other File Type</th>
+                                                <th>Document Category</th>
                                                 <th>Licence File Type</th>
                                                 <th>Uploaded By</th>
                                                 <th>Date of Upload</th>
@@ -6677,12 +7143,12 @@
                                             placeholder="E.g., Courier, Freight...">
                                     </div>
                                     <div class="form-group">
-                                        <label for="sup-disp-resp-person">Responsible Person Name</label>
+                                        <label for="sup-disp-resp-person">Responsible Person (RP) Name</label>
                                         <input type="text" id="sup-disp-resp-person"
                                             placeholder="Enter responsible person...">
                                     </div>
                                     <div class="form-group">
-                                        <label for="sup-disp-qual-person">Qualified Person Name</label>
+                                        <label for="sup-disp-qual-person">Qualified Person (QP) Name</label>
                                         <input type="text" id="sup-disp-qual-person"
                                             placeholder="Enter qualified person...">
                                     </div>
@@ -6698,8 +7164,7 @@
                                     style="background: var(--color-bg-light); border: 1px solid var(--color-border-light); box-shadow: none;">
                                     <div
                                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--color-border-light); padding-bottom: 8px;">
-                                        <h3 class="card-title" style="margin: 0; font-size: 14px;">Supplier Address
-                                            (Typing)</h3>
+                                        <h3 class="card-title" style="margin: 0; font-size: 14px;">Supplier Address (Typing)</h3>
                                         <label
                                             style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--color-text-dark); cursor: pointer;">
                                             <input type="checkbox" id="sup-disp-typing-default"
@@ -6766,8 +7231,7 @@
                                     style="background: var(--color-bg-light); border: 1px solid var(--color-border-light); box-shadow: none;">
                                     <div
                                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--color-border-light); padding-bottom: 8px;">
-                                        <h3 class="card-title" style="margin: 0; font-size: 14px;">Supplier Address
-                                            (Website Copy)</h3>
+                                        <h3 class="card-title" style="margin: 0; font-size: 14px;">Supplier Address (Website Copy)</h3>
                                     </div>
                                     <div class="form-grid" style="grid-template-columns: 1fr; gap: 12px;">
                                         <div class="form-group">
@@ -6863,22 +7327,113 @@
                             </div>
                         </div>
 
-                        <!-- ACTION BUTTONS -->
-                        <div class="btn-sup-action-container"
-                            style="display: flex; gap: 12px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--color-border-light);">
+                        <!-- SUB-TAB 7: WORKFLOW HISTORY & AUDIT TRAIL -->
+                        <div class="sub-tab-panel hidden" id="panel-sup-subtab-history">
+                            <div class="card" style="margin-bottom: 20px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--color-border-light); padding-bottom: 10px;">
+                                    <div>
+                                        <h3 class="card-title" style="margin: 0; font-size: 14px; border-left: 3px solid #be185d; padding-left: 8px;">
+                                            Complete Workflow History & Audit Trail (21 CFR Part 11 Compliant)
+                                        </h3>
+                                        <p style="font-size: 11px; color: var(--color-text-muted); margin: 4px 0 0 11px;">Immutable event log capturing all state transitions, user roles, timestamps, and RP governance remarks.</p>
+                                    </div>
+                                    <span class="badge" style="background: #fdf2f8; color: #9d174d; border: 1px solid #fbcfe8; font-size: 11px;">Audit Log</span>
+                                </div>
+
+                                <!-- Audit Timeline Container -->
+                                <div class="audit-timeline" id="sup-audit-timeline-container">
+                                    <!-- Dynamic Timeline Items -->
+                                </div>
+                            </div>
+
+                            <!-- Audit Data Table -->
+                            <div class="card">
+                                <h4 style="font-size: 13px; font-weight: 700; margin-bottom: 12px; color: var(--color-text-main);">Tabular Audit Ledger</h4>
+                                <div class="table-container" style="overflow-x: auto;">
+                                    <table class="grid-table" style="min-width: 100%;">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 130px;">Date & Time</th>
+                                                <th>Performed By</th>
+                                                <th style="width: 90px;">User Role</th>
+                                                <th>Action</th>
+                                                <th>Status Transition</th>
+                                                <th>Sub-Status Transition</th>
+                                                <th>Remarks / Reason</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="sup-history-table-body">
+                                            <!-- Dynamic Rows -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ACTION BUTTONS BAR -->
+                        <div class="btn-sup-action-container" id="sup-form-action-bar"
+                            style="display: flex; gap: 10px; margin-top: 24px; padding: 18px 20px; background: #ffffff; border: 1px solid var(--color-border-light); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); align-items: center; flex-wrap: wrap;">
+                            
                             <button type="button" class="btn btn-secondary" id="btn-sup-cancel"
-                                style="margin-right: auto; padding: 10px 20px;">Cancel</button>
-                            <button type="button" class="btn-modern-action btn-modern-create" id="btn-sup-save"
-                                style="background: var(--color-primary); color: #fff; border: none; border-radius: 6px; padding: 10px 20px; font-weight: 600; cursor: pointer;">
-                                <span>👤</span> Create Supplier
+                                style="margin-right: auto; padding: 9px 18px; font-weight: 600;">
+                                ✕ Cancel / Back
                             </button>
-                            <button type="button" class="btn-modern-action btn-modern-copy" id="btn-sup-copy"
-                                style="background: #f59e0b; color: #fff; border: none; border-radius: 6px; padding: 10px 20px; font-weight: 600; cursor: pointer;">
-                                <span>📋</span> Copy Supplier
+
+                            <!-- Role-Based Action Buttons (shown/hidden dynamically) -->
+
+                            <!-- 1. Finance Actions -->
+                            <button type="button" class="btn btn-secondary" id="btn-sup-save-draft"
+                                style="background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 9px 18px; font-weight: 600;">
+                                <span>💾</span> Save Draft
                             </button>
-                            <button type="button" class="btn-modern-action btn-modern-update" id="btn-sup-update"
-                                style="background: #10b981; color: #fff; border: none; border-radius: 6px; padding: 10px 20px; font-weight: 600; cursor: pointer;">
-                                <span>⚙</span> Update Supplier
+
+                            <button type="button" class="btn btn-primary" id="btn-sup-submit-qa"
+                                style="background: #0284c7; border-color: #0284c7; color: #fff; padding: 9px 20px; font-weight: 700;">
+                                <span>📤</span> Submit to QA
+                            </button>
+
+                            <!-- 2. QA Verification Actions -->
+                            <button type="button" class="btn btn-secondary" id="btn-sup-save-verification"
+                                style="background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; padding: 9px 18px; font-weight: 600;">
+                                <span>💾</span> Save QA Progress
+                            </button>
+
+                            <button type="button" class="btn btn-primary" id="btn-sup-submit-rp"
+                                style="background: #7c3aed; border-color: #7c3aed; color: #fff; padding: 9px 20px; font-weight: 700;">
+                                <span>📨</span> Submit for RP Approval
+                            </button>
+
+                            <!-- 3. RP Review Actions -->
+                            <button type="button" class="btn btn-secondary" id="btn-sup-start-rp-review"
+                                style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; padding: 9px 18px; font-weight: 600;">
+                                <span>👁️</span> Start RP Review
+                            </button>
+
+                            <button type="button" class="btn btn-danger" id="btn-sup-reject-rp"
+                                style="background: #ef4444; border-color: #ef4444; color: #fff; padding: 9px 20px; font-weight: 700;">
+                                <span>❌</span> Reject / Correction Required
+                            </button>
+
+                            <button type="button" class="btn btn-primary" id="btn-sup-approve-rp"
+                                style="background: #d97706; border-color: #d97706; color: #fff; padding: 9px 22px; font-weight: 700;">
+                                <span>✅</span> Approve (RP)
+                            </button>
+
+                            <!-- 4. QA Final Activation Action -->
+                            <button type="button" class="btn btn-success" id="btn-sup-activate-qa"
+                                style="background: #10b981; border-color: #10b981; color: #fff; padding: 9px 24px; font-weight: 700; font-size: 13.5px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
+                                <span>⚡</span> Activate Supplier (QA)
+                            </button>
+
+                            <!-- Secondary Utility Buttons -->
+                            <button type="button" class="btn btn-secondary" id="btn-sup-copy"
+                                style="background: #f8fafc; color: #475569; border: 1px solid #cbd5e1; padding: 9px 16px; font-weight: 600;" title="Copy to new supplier">
+                                <span>📋</span> Copy
+                            </button>
+
+                            <button type="button" class="btn btn-secondary" id="btn-sup-deactivate"
+                                style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 9px 16px; font-weight: 600; display: none;">
+                                <span>🚫</span> Deactivate
                             </button>
                         </div>
                     </div>
@@ -9883,27 +10438,50 @@
 
     <!-- Log Detail Modal -->
     <div id="log-detail-modal" class="search-modal-overlay hidden"
-        style="z-index: 10500; display: flex; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); justify-content: center; align-items: center;">
+        style="z-index: 10500; display: flex; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; backdrop-filter: blur(2px);">
         <div class="search-modal-card"
-            style="width: 500px; padding: 24px; text-align: left; background: white; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
-            <div
-                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--color-border-light); padding-bottom: 12px;">
-                <h3 style="font-size: 16px; font-weight: 700; margin: 0; color: var(--color-primary);">Log Details</h3>
-                <button id="btn-close-log-modal"
-                    style="background: none; border: none; font-size: 20px; cursor: pointer; color: var(--color-text-muted);">✕</button>
+            style="width: 820px; max-width: 92vw; background: white; border-radius: 6px; box-shadow: 0 12px 35px rgba(0,0,0,0.3); overflow: hidden; border: 1px solid #1770ba;">
+            <!-- Modal Header Bar -->
+            <div style="background: linear-gradient(180deg, #1d82d2 0%, #1565c0 100%); color: white; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #0d47a1;">
+                <h3 style="font-size: 14px; font-weight: 700; margin: 0; color: white; display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 14px;">📋</span> Log Detail
+                </h3>
+                <button id="btn-close-log-modal" type="button"
+                    style="background: none; border: none; font-size: 16px; cursor: pointer; color: white; font-weight: bold; line-height: 1; padding: 0 4px;" title="Close">✖</button>
             </div>
-            <div style="font-size: 13px; color: var(--color-text);">
-                <p style="margin-bottom: 8px;"><strong>Last Updated By:</strong> Admin User</p>
-                <p style="margin-bottom: 8px;"><strong>Timestamp:</strong> <span id="log-current-time"></span></p>
-                <p style="margin-bottom: 8px;"><strong>Action:</strong> Record updated.</p>
-                <div
-                    style="margin-top: 16px; padding: 12px; background: var(--color-bg-light); border: 1px dashed var(--color-border-light); border-radius: 4px;">
-                    <p style="margin: 0; color: var(--color-text-muted);">Detailed audit trail will be populated
-                        dynamically.</p>
+
+            <!-- Modal Content Area -->
+            <div style="padding: 16px; background: #fdfdfd;">
+                <!-- Scrollable Table Container -->
+                <div style="max-height: 380px; overflow-x: auto; overflow-y: auto; border: 1px solid #bce1ed; border-radius: 4px; background: #fff;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; min-width: 720px;">
+                        <thead>
+                            <tr style="background: linear-gradient(180deg, #2b9eb3 0%, #1e8396 100%); color: white;">
+                                <th style="padding: 8px 12px; font-weight: 600; border-right: 1px solid rgba(255,255,255,0.2); width: 30%;">Description</th>
+                                <th style="padding: 8px 12px; font-weight: 600; border-right: 1px solid rgba(255,255,255,0.2); width: 18%;">Old Value</th>
+                                <th style="padding: 8px 12px; font-weight: 600; border-right: 1px solid rgba(255,255,255,0.2); width: 18%;">New Value</th>
+                                <th style="padding: 8px 12px; font-weight: 600; border-right: 1px solid rgba(255,255,255,0.2); width: 16%;">Updated By</th>
+                                <th style="padding: 8px 12px; font-weight: 600; width: 18%;">Date of Update</th>
+                            </tr>
+                        </thead>
+                        <tbody id="log-detail-tbody">
+                            <!-- Dynamically populated rows -->
+                            <tr>
+                                <td colspan="5" style="text-align: center; padding: 24px; color: var(--color-text-muted);">No log details available.</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
-            </div>
-            <div style="margin-top: 24px; text-align: right;">
-                <button id="btn-ok-log-modal" class="btn btn-primary" style="padding: 6px 20px;">Close</button>
+
+                <!-- Footer Bar with Pagination & Cancel Button -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 12px; border-top: 1px solid #e0e0e0;">
+                    <div style="font-size: 12px; color: #555; display: flex; align-items: center; gap: 8px;">
+                        <span>Page <strong id="log-current-page">1</strong> of <strong id="log-total-pages">1</strong></span>
+                        <span style="color: #ccc;">|</span>
+                        <span id="log-total-count" style="color: #666;">Total Records: 0</span>
+                    </div>
+                    <button id="btn-ok-log-modal" type="button" class="btn" style="background: linear-gradient(180deg, #d9534f 0%, #c9302c 100%); color: white; padding: 6px 20px; border: 1px solid #ac2925; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.15);">Cancel</button>
+                </div>
             </div>
         </div>
     </div>
@@ -10004,10 +10582,483 @@
         </div>
     </div>
 
+    <!-- MODAL: RP Rejection / Request Correction -->
+    <div id="sup-rejection-modal" class="sup-modal-overlay hidden">
+        <div class="sup-modal-card" style="border-top: 4px solid #ef4444;">
+            <div class="sup-modal-header" style="background: #fef2f2;">
+                <h3 style="color: #991b1b;"><span style="color: #ef4444;">❌</span> Reject Supplier / Request Correction</h3>
+                <button type="button" id="btn-close-rejection-modal" style="background: none; border: none; font-size: 18px; cursor: pointer; color: #991b1b;">✕</button>
+            </div>
+            <div class="sup-modal-body">
+                <p style="font-size: 13px; color: #475569; margin-bottom: 14px;">
+                    As the Responsible Person (RP), specify why this supplier record is rejected and what corrections are required before approval can be granted.
+                </p>
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label for="sup-reject-target-team" style="font-size: 12px; font-weight: 700; color: var(--color-text-main);">Route Correction Back To: <span style="color: #ef4444;">*</span></label>
+                    <select id="sup-reject-target-team" style="width: 100%; height: 36px;">
+                        <option value="Finance" selected>Finance Team (Commercial / Basic Info / Bank details)</option>
+                        <option value="QA">QA Team (Licence / Compliance / Quality details)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="sup-reject-reason-input" style="font-size: 12px; font-weight: 700; color: var(--color-text-main);">Mandatory Rejection / Correction Reason: <span style="color: #ef4444;">*</span></label>
+                    <textarea id="sup-reject-reason-input" rows="4" style="width: 100%; padding: 10px; border: 1px solid var(--color-border); border-radius: 6px; font-family: var(--font-sans); font-size: 13px;" placeholder="Describe precisely what information needs to be corrected or verified..."></textarea>
+                </div>
+                <div style="background: #fff1f2; border: 1px solid #fecdd3; border-radius: 6px; padding: 10px 12px; margin-top: 14px; font-size: 11.5px; color: #9f1239;">
+                    <strong>Workflow Rule:</strong> The supplier will transition to <code>RP Review / Rejected – Correction Required</code> and will require re-verification by QA before returning to RP.
+                </div>
+            </div>
+            <div class="sup-modal-footer">
+                <button type="button" id="btn-cancel-rejection-modal" class="btn btn-secondary" style="padding: 8px 16px;">Cancel</button>
+                <button type="button" id="btn-confirm-rejection" class="btn btn-danger" style="background: #ef4444; color: #fff; padding: 8px 20px; font-weight: 700;">Submit Rejection & Return</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: RP Approval Remarks -->
+    <div id="sup-approval-modal" class="sup-modal-overlay hidden">
+        <div class="sup-modal-card" style="border-top: 4px solid #d97706;">
+            <div class="sup-modal-header" style="background: #fffbeb;">
+                <h3 style="color: #92400e;"><span>🛡️</span> Responsible Person (RP) Approval</h3>
+                <button type="button" id="btn-close-approval-modal" style="background: none; border: none; font-size: 18px; cursor: pointer; color: #92400e;">✕</button>
+            </div>
+            <div class="sup-modal-body">
+                <div style="background: #ecfeff; border: 1px solid #a5f3fc; border-left: 4px solid #0891b2; border-radius: 6px; padding: 12px 14px; margin-bottom: 16px; color: #155e75; font-size: 12.5px;">
+                    <strong>⚠️ Important Separation of Duties:</strong><br>
+                    Approving this supplier satisfies RP compliance verification. The supplier will move to <strong><code>Activation Pending (Awaiting QA Activation)</code></strong>. It will <strong>NOT</strong> automatically become active until final QA activation.
+                </div>
+                <div class="form-group">
+                    <label for="sup-approval-remarks-input" style="font-size: 12px; font-weight: 700; color: var(--color-text-main);">RP Approval Notes / Governance Remarks (Optional):</label>
+                    <textarea id="sup-approval-remarks-input" rows="3" style="width: 100%; padding: 10px; border: 1px solid var(--color-border); border-radius: 6px; font-family: var(--font-sans); font-size: 13px;" placeholder="e.g. GDP Compliance verified against MHRA register. Approved for QA activation."></textarea>
+                </div>
+            </div>
+            <div class="sup-modal-footer">
+                <button type="button" id="btn-cancel-approval-modal" class="btn btn-secondary" style="padding: 8px 16px;">Cancel</button>
+                <button type="button" id="btn-confirm-rp-approval" class="btn btn-primary" style="background: #d97706; border-color: #d97706; color: #fff; padding: 8px 22px; font-weight: 700;">Confirm RP Approval</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Simulated Email Notification to RP -->
+    <div id="sup-email-notification-modal" class="sup-modal-overlay hidden">
+        <div class="sup-modal-card modal-lg" style="box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
+            <div class="email-modal-header" style="background: #0f172a; color: #ffffff; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700;">
+                    <span style="font-size: 18px;">📧</span>
+                    <span>Automated Workflow Notification</span>
+                </div>
+                <button type="button" id="btn-close-email-modal" style="background: none; border: none; font-size: 18px; color: #94a3b8; cursor: pointer;">✕</button>
+            </div>
+            <div class="sup-modal-body" style="padding: 24px; background: #f8fafc;">
+                <!-- Email Mockup Container -->
+                <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                    <div style="padding: 16px 20px; border-bottom: 1px solid #f1f5f9; background: #ffffff;">
+                        <div style="display: grid; grid-template-columns: 80px 1fr; gap: 8px; font-size: 12px; margin-bottom: 6px;">
+                            <span style="color: #64748b; font-weight: 600;">From:</span>
+                            <span style="color: #1e293b; font-weight: 500;">B&S ERP Workflow Engine &lt;erp-workflow@bns-pharma.com&gt;</span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 80px 1fr; gap: 8px; font-size: 12px; margin-bottom: 6px;">
+                            <span style="color: #64748b; font-weight: 600;">To:</span>
+                            <span style="color: #1e293b; font-weight: 500;">Responsible Person (RP) &lt;rp-approvals@bns-pharma.com&gt;</span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 80px 1fr; gap: 8px; font-size: 12px;">
+                            <span style="color: #64748b; font-weight: 600;">Subject:</span>
+                            <span style="color: #0369a1; font-weight: 700;" id="sup-email-subject">[ACTION REQUIRED] Supplier Approval Request: ACC007 - ACCENT WIRE TIE</span>
+                        </div>
+                    </div>
+                    <div style="padding: 24px 20px; font-size: 13.5px; line-height: 1.6; color: #334155;">
+                        <p style="margin-bottom: 14px;">Dear Responsible Person,</p>
+                        <p style="margin-bottom: 14px;">The QA team has completed the licence and compliance verification for the following supplier and submitted it for your regulatory approval:</p>
+                        
+                        <div style="background: #f1f5f9; border-radius: 6px; padding: 14px 18px; margin: 16px 0; border-left: 4px solid #7c3aed;">
+                            <div style="display: grid; grid-template-columns: 140px 1fr; gap: 8px; font-size: 12.5px; margin-bottom: 4px;">
+                                <strong>Supplier Code:</strong> <span id="sup-email-supplier-id" style="font-family: monospace; font-weight: 700;">ACC007</span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 140px 1fr; gap: 8px; font-size: 12.5px; margin-bottom: 4px;">
+                                <strong>Supplier Name:</strong> <span id="sup-email-supplier-name" style="font-weight: 700;">ACCENT WIRE TIE</span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 140px 1fr; gap: 8px; font-size: 12.5px; margin-bottom: 4px;">
+                                <strong>Licence / Type:</strong> <span id="sup-email-licence-type">WDA Holder (UK WDA 48291/001)</span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 140px 1fr; gap: 8px; font-size: 12.5px;">
+                                <strong>QA Verified By:</strong> <span id="sup-email-qa-user">QA Officer (Vilas Vaidya)</span>
+                            </div>
+                        </div>
+
+                        <p style="margin-bottom: 18px;">Please review the supplier's commercial, financial, and licence details to grant or reject approval.</p>
+
+                        <div style="text-align: center; margin: 20px 0;">
+                            <button type="button" id="btn-email-simulate-rp-review" class="btn btn-primary" style="background: #7c3aed; border-color: #7c3aed; color: #fff; padding: 10px 24px; font-size: 13.5px; font-weight: 700; border-radius: 6px; cursor: pointer;">
+                                🛡️ Open Supplier Record for RP Review
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="sup-modal-footer">
+                <button type="button" id="btn-dismiss-email-modal" class="btn btn-secondary" style="padding: 8px 18px;">Dismiss Notification</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Comprehensive Supplier View Profile -->
+    <div id="sup-view-modal" class="sup-modal-overlay hidden">
+        <div class="sup-modal-card modal-xl" style="max-height: 92vh; display: flex; flex-direction: column;">
+            <div class="sup-modal-header" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: #ffffff; padding: 14px 24px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="font-size: 22px;">🏢</span>
+                    <div>
+                        <h3 style="color: #ffffff; font-size: 16px; margin: 0;" id="sup-view-modal-title">Supplier Master Profile: ACC007</h3>
+                        <span id="sup-view-modal-company" style="font-size: 12px; color: #94a3b8;">LAXMI01 • Created 17-Apr-2018</span>
+                    </div>
+                </div>
+                <button type="button" id="btn-close-view-modal" style="background: none; border: none; font-size: 20px; color: #e2e8f0; cursor: pointer;">✕</button>
+            </div>
+
+            <div class="sup-modal-body" style="padding: 20px 24px; flex: 1; overflow-y: auto;">
+                <!-- Workflow Stepper Inside View -->
+                <div class="workflow-stepper-card" style="margin-bottom: 18px; padding: 14px 20px;">
+                    <div class="workflow-stepper" id="sup-view-stepper">
+                        <!-- Dynamic View Stepper -->
+                    </div>
+                    <div class="workflow-status-banner" id="sup-view-banner" style="margin-top: 12px; padding: 10px 16px;">
+                        <!-- Dynamic View Banner -->
+                    </div>
+                </div>
+
+                <!-- Rejection Alert in View if active -->
+                <div class="rejection-alert-box hidden" id="sup-view-rejection-box" style="margin-bottom: 16px;">
+                    <div class="rejection-alert-title"><span>⚠️</span> Returned by RP for Correction</div>
+                    <div class="rejection-alert-reason" id="sup-view-rejection-reason"></div>
+                </div>
+
+                <!-- View Profile Tabs Bar -->
+                <div class="sub-tab-bar" style="display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 2px solid var(--color-primary-light); flex-wrap: wrap;">
+                    <button type="button" class="btn btn-secondary sub-tab-btn active" id="btn-vtab-general" data-vtab="general" style="padding: 6px 14px; font-size: 12px;">General & Contacts</button>
+                    <button type="button" class="btn btn-secondary sub-tab-btn" id="btn-vtab-address" data-vtab="address" style="padding: 6px 14px; font-size: 12px;">Addresses</button>
+                    <button type="button" class="btn btn-secondary sub-tab-btn" id="btn-vtab-payment" data-vtab="payment" style="padding: 6px 14px; font-size: 12px;">Payment Info</button>
+                    <button type="button" class="btn btn-secondary sub-tab-btn" id="btn-vtab-licence" data-vtab="licence" style="padding: 6px 14px; font-size: 12px;">Licence & Compliance</button>
+                    <button type="button" class="btn btn-secondary sub-tab-btn" id="btn-vtab-dispatch" data-vtab="dispatch" style="padding: 6px 14px; font-size: 12px;">Dispatch</button>
+                    <button type="button" class="btn btn-secondary sub-tab-btn" id="btn-vtab-history" data-vtab="history" style="padding: 6px 14px; font-size: 12px; background: #fdf2f8; color: #9d174d; font-weight: 700;">📜 Audit Trail Log</button>
+                </div>
+
+                <!-- View Profile Tab Contents -->
+                <div id="vpanel-general" class="vpanel-content">
+                    <div class="card" style="margin-bottom: 14px;">
+                        <div class="form-grid" style="grid-template-columns: repeat(4, 1fr); gap: 12px;" id="sup-view-gen-grid">
+                            <!-- Dynamic Content -->
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h4 style="font-size: 13px; font-weight: 700; margin-bottom: 10px;">Contact Communications</h4>
+                        <div class="table-container">
+                            <table class="grid-table" style="min-width: 100%;">
+                                <thead>
+                                    <tr><th>Name</th><th>Description</th><th>Comm Method</th><th>Value</th><th>Doc Receiver</th><th>Doc Type</th></tr>
+                                </thead>
+                                <tbody id="sup-view-contacts-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="vpanel-address" class="vpanel-content hidden">
+                    <div class="card">
+                        <div class="table-container">
+                            <table class="grid-table" style="min-width: 100%;">
+                                <thead>
+                                    <tr><th>Address ID</th><th>Types & Defaults</th><th>Address 1</th><th>Address 2</th><th>City</th><th>Post Code</th><th>Country</th></tr>
+                                </thead>
+                                <tbody id="sup-view-addresses-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="vpanel-payment" class="vpanel-content hidden">
+                    <div class="card" style="margin-bottom: 14px;" id="sup-view-pay-summary"></div>
+                    <div class="card">
+                        <h4 style="font-size: 13px; font-weight: 700; margin-bottom: 10px;">Settlement Bank Accounts</h4>
+                        <div class="table-container">
+                            <table class="grid-table" style="min-width: 100%;">
+                                <thead>
+                                    <tr><th>Seq ID</th><th>Method</th><th>Bank Account / IBAN</th><th>Sort Code</th><th>Account Name</th><th>Default</th><th>Status</th></tr>
+                                </thead>
+                                <tbody id="sup-view-payment-addresses-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="vpanel-licence" class="vpanel-content hidden">
+                    <div class="card" id="sup-view-licence-card"></div>
+                </div>
+
+                <div id="vpanel-dispatch" class="vpanel-content hidden">
+                    <div class="card" style="margin-bottom: 14px;" id="sup-view-disp-personnel"></div>
+                    <div class="card">
+                        <h4 style="font-size: 13px; font-weight: 700; margin-bottom: 10px;">Dispatch Locations</h4>
+                        <div class="table-container">
+                            <table class="grid-table" style="min-width: 100%;">
+                                <thead>
+                                    <tr><th>Address ID</th><th>Address 1</th><th>City</th><th>Postcode</th><th>Country</th><th>Default</th></tr>
+                                </thead>
+                                <tbody id="sup-view-dispatch-addresses-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="vpanel-history" class="vpanel-content hidden">
+                    <div class="card" style="margin-bottom: 14px;">
+                        <h4 style="font-size: 13px; font-weight: 700; margin-bottom: 12px; color: #9d174d;">Visual Workflow Timeline</h4>
+                        <div class="audit-timeline" id="sup-view-audit-timeline"></div>
+                    </div>
+                    <div class="card">
+                        <h4 style="font-size: 13px; font-weight: 700; margin-bottom: 10px;">Immutable Transition Ledger</h4>
+                        <div class="table-container">
+                            <table class="grid-table" style="min-width: 100%;">
+                                <thead>
+                                    <tr><th>Date & Time</th><th>Actor</th><th>Role</th><th>Action</th><th>Status Change</th><th>Sub-Status Change</th><th>Remarks / Reason</th></tr>
+                                </thead>
+                                <tbody id="sup-view-history-table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sup-modal-footer" id="sup-view-modal-footer">
+                <button type="button" id="btn-close-view-modal-footer" class="btn btn-secondary" style="padding: 8px 18px;">Close</button>
+                <button type="button" id="btn-view-edit-supplier" class="btn btn-primary" style="padding: 8px 18px;">✏️ Open in Edit Mode</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================= -->
+    <!-- CUSTOMER WORKFLOW MODALS                                      -->
+    <!-- ============================================================= -->
+
+    <!-- CUSTOMER VIEW MODAL OVERLAY -->
+    <div id="cust-view-modal-overlay" class="cust-modal-overlay hidden">
+        <div class="cust-modal-card modal-xl">
+            <div class="cust-modal-header">
+                <h3 id="cust-view-modal-title">
+                    <span>👤</span> Customer Master Record & Audit View
+                </h3>
+                <button type="button" id="btn-close-cust-view-modal" class="btn-icon" style="background: none; border: none; font-size: 18px; cursor: pointer; color: #64748b;">✕</button>
+            </div>
+            <div class="cust-modal-body">
+                <!-- Navigation Tabs -->
+                <div class="cust-view-tabs-header">
+                    <button type="button" class="cust-view-tab-btn active" data-tab="cview-overview">📋 Master Overview</button>
+                    <button type="button" class="cust-view-tab-btn" data-tab="cview-general">🏢 General & Delivery</button>
+                    <button type="button" class="cust-view-tab-btn" data-tab="cview-credit">💳 Credit & Invoicing</button>
+                    <button type="button" class="cust-view-tab-btn" data-tab="cview-licence">🔬 GPhC / Licence Info</button>
+                    <button type="button" class="cust-view-tab-btn" data-tab="cview-transport">🚚 Transport & Route</button>
+                    <button type="button" class="cust-view-tab-btn" data-tab="cview-history">📜 Workflow Audit Trail</button>
+                </div>
+
+                <!-- Tab 1: Master Overview -->
+                <div id="cview-overview" class="cview-content">
+                    <div id="cust-view-overview-content"></div>
+                </div>
+
+                <!-- Tab 2: General & Delivery -->
+                <div id="cview-general" class="cview-content hidden">
+                    <div id="cust-view-general-content"></div>
+                </div>
+
+                <!-- Tab 3: Credit & Invoicing -->
+                <div id="cview-credit" class="cview-content hidden">
+                    <div id="cust-view-credit-content"></div>
+                </div>
+
+                <!-- Tab 4: Licence Info -->
+                <div id="cview-licence" class="cview-content hidden">
+                    <div id="cust-view-licence-content"></div>
+                </div>
+
+                <!-- Tab 5: Transport & Route -->
+                <div id="cview-transport" class="cview-content hidden">
+                    <div id="cust-view-transport-content"></div>
+                </div>
+
+                <!-- Tab 6: Workflow Audit Trail -->
+                <div id="cview-history" class="cview-content hidden">
+                    <div class="card" style="margin-bottom: 14px;">
+                        <h4 style="font-size: 13px; font-weight: 700; margin-bottom: 12px; color: #0369a1;">Visual Workflow Timeline</h4>
+                        <div class="audit-timeline" id="cust-view-audit-timeline"></div>
+                    </div>
+                    <div class="card">
+                        <h4 style="font-size: 13px; font-weight: 700; margin-bottom: 10px;">Immutable Transition Ledger (21 CFR Part 11 Compliant)</h4>
+                        <div class="table-container">
+                            <table class="grid-table" style="min-width: 100%;">
+                                <thead>
+                                    <tr>
+                                        <th>Date & Time</th>
+                                        <th>Actor</th>
+                                        <th>Role</th>
+                                        <th>Action</th>
+                                        <th>Status Change</th>
+                                        <th>Sub-Status Change</th>
+                                        <th>Remarks / Notes</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cust-view-history-table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="cust-modal-footer">
+                <button type="button" id="btn-close-cust-view-footer" class="btn btn-secondary" style="padding: 8px 18px;">Close</button>
+                <button type="button" id="btn-view-edit-customer" class="btn btn-primary" style="padding: 8px 18px;">✏️ Open in Workspace</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CUSTOMER ROUTE ID MODAL OVERLAY -->
+    <div id="cust-route-modal-overlay" class="cust-modal-overlay hidden">
+        <div class="cust-modal-card" style="max-width: 540px;">
+            <div class="cust-modal-header">
+                <h3><span>🚚</span> Assign Transport Route ID</h3>
+                <button type="button" id="btn-close-cust-route-modal" class="btn-icon" style="background: none; border: none; font-size: 18px; cursor: pointer; color: #64748b;">✕</button>
+            </div>
+            <div class="cust-modal-body">
+                <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px; padding: 12px; margin-bottom: 16px;">
+                    <div style="font-size: 12px; color: #0369a1; font-weight: 600;">Customer Account:</div>
+                    <div style="font-size: 14px; font-weight: 700; color: #0f172a;" id="cust-route-modal-cust-name">—</div>
+                    <div style="font-size: 11.5px; color: #475569; margin-top: 2px;" id="cust-route-modal-cust-code">—</div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label for="cust-route-select" style="font-weight: 600;">Delivery Route Code:*</label>
+                    <select id="cust-route-select" style="width: 100%; height: 38px; font-size: 13px;">
+                        <option value="">-- Select Transport Route --</option>
+                        <option value="444 DX">444 DX - London Metro East (Standard DX)</option>
+                        <option value="512 DX">512 DX - Birmingham Central Express</option>
+                        <option value="601 DX">601 DX - Manchester & North West Hub</option>
+                        <option value="720 DX">720 DX - Leeds & Yorkshire Regional</option>
+                        <option value="830 DX">830 DX - Scotland & Northern Delivery</option>
+                        <option value="910 DX">910 DX - Bristol & South West Express</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label for="cust-route-drop-no" style="font-weight: 600;">Drop Sequence Number (Optional):</label>
+                    <input type="text" id="cust-route-drop-no" placeholder="e.g. Drop #4" style="width: 100%; height: 36px;">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label for="cust-route-delivery-notes" style="font-weight: 600;">Driver Delivery Instructions:</label>
+                    <textarea id="cust-route-delivery-notes" rows="2" placeholder="e.g. Rear dispensary delivery, buzzer 2..." style="width: 100%; font-size: 12.5px;"></textarea>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="cust-route-remarks" style="font-weight: 600;">Transport Sign-off Remarks:</label>
+                    <input type="text" id="cust-route-remarks" placeholder="Route vetted and verified by Transport team" style="width: 100%; height: 36px;">
+                </div>
+            </div>
+            <div class="cust-modal-footer">
+                <button type="button" id="btn-cancel-cust-route" class="btn btn-secondary">Cancel</button>
+                <button type="button" id="btn-confirm-cust-route" class="btn btn-primary" style="background: #0284c7; border-color: #0369a1;">
+                    <span>✓</span> Save & Submit to QA Activation
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CUSTOMER CORRECTION MODAL OVERLAY -->
+    <div id="cust-correction-modal-overlay" class="cust-modal-overlay hidden">
+        <div class="cust-modal-card" style="max-width: 540px;">
+            <div class="cust-modal-header" style="background: #fef2f2; border-bottom-color: #fecdd3;">
+                <h3 style="color: #b91c1c;"><span>⚠️</span> Return Customer for Correction</h3>
+                <button type="button" id="btn-close-cust-correction-modal" class="btn-icon" style="background: none; border: none; font-size: 18px; cursor: pointer; color: #64748b;">✕</button>
+            </div>
+            <div class="cust-modal-body">
+                <div style="background: #fff1f2; border: 1px solid #fecdd3; border-radius: 6px; padding: 12px; margin-bottom: 16px;">
+                    <div style="font-size: 12px; color: #be123c; font-weight: 600;">Customer Under Review:</div>
+                    <div style="font-size: 14px; font-weight: 700; color: #881337;" id="cust-correction-modal-cust-name">—</div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label for="cust-correction-target-team" style="font-weight: 600;">Target Team for Remediation:*</label>
+                    <select id="cust-correction-target-team" style="width: 100%; height: 38px; font-size: 13px;">
+                        <option value="Finance">Finance (Customer Info / Accounts / Credit Terms)</option>
+                        <option value="Transport">Transport (Route ID / Delivery Info)</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label for="cust-correction-reason-select" style="font-weight: 600;">Correction Reason Code:*</label>
+                    <select id="cust-correction-reason-select" style="width: 100%; height: 38px; font-size: 13px;">
+                        <option value="">-- Select Reason --</option>
+                        <option value="Postcode Mismatch">Postcode does not match GPhC registry</option>
+                        <option value="GPhC Expiry Date Invalid">GPhC Licence expired or missing verification</option>
+                        <option value="Credit Limit / AP Missing">Credit limit authorization email missing</option>
+                        <option value="Direct Debit Incomplete">Direct debit mandate signature missing/unverified</option>
+                        <option value="Route ID Invalid">Invalid or unserviceable Route ID</option>
+                        <option value="Company Number Inconsistency">Company registration number inconsistency</option>
+                        <option value="Other Non-Compliance">Other Compliance Discrepancy (Specify below)</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="cust-correction-notes" style="font-weight: 600;">Detailed Correction Instructions:*</label>
+                    <textarea id="cust-correction-notes" rows="3" placeholder="Provide precise remarks on what needs to be rectified before re-submitting to QA..." style="width: 100%; font-size: 12.5px;"></textarea>
+                </div>
+            </div>
+            <div class="cust-modal-footer">
+                <button type="button" id="btn-cancel-cust-correction" class="btn btn-secondary">Cancel</button>
+                <button type="button" id="btn-confirm-cust-correction" class="btn btn-danger" style="background: #dc2626; border-color: #b91c1c;">
+                    <span>⚠️</span> Send Correction Request
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CUSTOMER ACTIVATION MODAL OVERLAY -->
+    <div id="cust-activation-modal-overlay" class="cust-modal-overlay hidden">
+        <div class="cust-modal-card" style="max-width: 600px;">
+            <div class="cust-modal-header" style="background: #ecfdf5; border-bottom-color: #a7f3d0;">
+                <h3 style="color: #047857;"><span>🚀</span> QA Final Activation Validation</h3>
+                <button type="button" id="btn-close-cust-activation-modal" class="btn-icon" style="background: none; border: none; font-size: 18px; cursor: pointer; color: #64748b;">✕</button>
+            </div>
+            <div class="cust-modal-body">
+                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 12px; margin-bottom: 16px;">
+                    <div style="font-size: 12px; color: #15803d; font-weight: 600;">Customer Ready for Activation:</div>
+                    <div style="font-size: 15px; font-weight: 700; color: #064e3b;" id="cust-activation-modal-cust-name">—</div>
+                    <div style="font-size: 12px; color: #065f46; margin-top: 2px;" id="cust-activation-modal-cust-code">—</div>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <h4 style="font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 8px;">Automated 6-Point Compliance Verification:</h4>
+                    <div id="cust-activation-checklist" style="display: flex; flex-direction: column; gap: 8px;">
+                        <!-- Dynamically filled checklist -->
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="cust-activation-remarks" style="font-weight: 600;">QA Activation Approval Sign-off Comments:</label>
+                    <textarea id="cust-activation-remarks" rows="2" placeholder="All mandatory QA verification checks passed. Customer activated for live order processing." style="width: 100%; font-size: 12.5px;">All compliance checks passed. Customer approved and activated for live operations.</textarea>
+                </div>
+            </div>
+            <div class="cust-modal-footer">
+                <button type="button" id="btn-cancel-cust-activation" class="btn btn-secondary">Cancel</button>
+                <button type="button" id="btn-confirm-cust-activation" class="btn btn-success" style="background: #059669; border-color: #047857; font-weight: 700; padding: 9px 22px;">
+                    <span>🚀</span> Confirm & Activate Customer
+                </button>
+            </div>
+        </div>
+    </div>
+
     <input type="file" id="dummy-file-upload" style="display: none;">
 
-    <script src="finance_mock.js" charset="utf-8" defer></script>
-    <script src="index.js?v=1786630000010" charset="utf-8" defer></script>
+    <script src="finance_mock.js" charset="utf-8"></script>
+    <script src="supplier_workflow.js?v=1.2" charset="utf-8"></script>
+    <script src="customer_workflow.js?v=1.0" charset="utf-8"></script>
+    <script src="index.js?v=1786630000012" charset="utf-8"></script>
 </body>
 
 </html>
