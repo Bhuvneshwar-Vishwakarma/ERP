@@ -135,6 +135,14 @@
                     <a href="#" class="sub-item" id="nav-supplier-setup-sub">Supplier Setup</a>
                     <a href="#" class="sub-item" id="nav-item-setup-sub">Item Setup</a>
                 </div>
+                <a href="#" class="nav-item" id="nav-part-creation-master">
+                    <span class="nav-icon">✨</span> Part Creation
+                    <span class="nav-arrow" style="margin-left: auto; font-size: 10px; transition: transform 0.2s;">▼</span>
+                </a>
+                <div class="sub-nav hidden" id="part-creation-sub-nav">
+                    <a href="#" class="sub-item" id="nav-pc-part-list-sub">Part List</a>
+                    <a href="#" class="sub-item" id="nav-pc-new-request-sub">New Part Request</a>
+                </div>
                 <a href="#" class="nav-item" id="nav-finance">
                     <span class="nav-icon">💳</span> Finance / Ledger
                 </a>
@@ -7966,9 +7974,15 @@
                         </div>
                     </div>
 
-                    <div style="margin-bottom: 16px; display: flex; gap: 10px;" class="action-bar-top-left">
+                    <div style="margin-bottom: 16px; display: flex; gap: 10px; flex-wrap: wrap;" class="action-bar-top-left">
                         <button class="btn btn-primary" id="btn-open-stock-entry-modal">
                             <span>📦</span> Log New Stock Entry
+                        </button>
+                        <button class="btn btn-secondary" id="btn-quick-part-creation" style="background: #0284c7; border-color: #0284c7; color: #fff;">
+                            <span>✨</span> Raise Part Creation Request
+                        </button>
+                        <button class="btn btn-outline" id="btn-quick-part-qa-list" style="border-color: #0284c7; color: #0284c7;">
+                            <span>🛡️</span> QA Approval Queue (<span id="badge-part-qa-count">1</span>)
                         </button>
                     </div>
 
@@ -7992,6 +8006,913 @@
                                     <!-- Dynamic rows -->
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DEDICATED PART CREATION & QA APPROVAL WORKSPACE PANEL -->
+            <div class="workspace-panel hidden" id="part-creation-workspace">
+                <!-- Standard B&S ERP Page Title Bar -->
+                <div class="page-title-bar">
+                    <div>
+                        <h1 class="page-title">Part Creation &amp; QA Approval</h1>
+                        <p class="page-subtitle">Warehouse team raises requests for new inventory part master entries; Quality Assurance validates parameters and grants regulatory approval.</p>
+                    </div>
+                    <span class="badge badge-success">Active Screen: ERP-INV-002</span>
+                </div>
+
+                <!-- VIEW 1: PART CREATION REQUESTS LIST VIEW -->
+                <div id="part-creation-list-view">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <div>
+                            <h2 style="font-family: var(--font-display); font-size: 16px; font-weight: 700; color: var(--color-text-main); margin: 0;">
+                                Registered Part Creation Requests
+                            </h2>
+                            <p style="font-size: 12px; color: var(--color-text-muted); margin: 2px 0 0 0;">
+                                Track, edit, and review inventory part onboarding requests across warehouse and QA teams.
+                            </p>
+                        </div>
+                        <button class="btn btn-primary" id="btn-open-part-creation-form">
+                            <span>➕</span> Raise Part Creation Request
+                        </button>
+                    </div>
+
+                    <!-- Standard KPI Stats Grid -->
+                    <div class="kpi-grid" style="grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px;">
+                        <div class="kpi-card">
+                            <div class="kpi-icon kpi-blue">📦</div>
+                            <div class="kpi-info">
+                                <span class="kpi-value" id="kpi-part-total">4</span>
+                                <span class="kpi-label">Total Part Requests</span>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-icon kpi-sky">📦</div>
+                            <div class="kpi-info">
+                                <span class="kpi-value" id="kpi-part-pending-stock" style="color: #0284c7;">1</span>
+                                <span class="kpi-label" style="color: #0284c7;">Pending Stock Control</span>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-icon kpi-amber">🛡️</div>
+                            <div class="kpi-info">
+                                <span class="kpi-value" id="kpi-part-pending-qa" style="color: #d97706;">1</span>
+                                <span class="kpi-label" style="color: #d97706;">Pending QA Review</span>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-icon kpi-green">✅</div>
+                            <div class="kpi-info">
+                                <span class="kpi-value" id="kpi-part-approved" style="color: #059669;">1</span>
+                                <span class="kpi-label" style="color: #059669;">QA Approved Parts</span>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-icon kpi-rose">🟧</div>
+                            <div class="kpi-info">
+                                <span class="kpi-value" id="kpi-part-to-edit" style="color: #ea580c;">1</span>
+                                <span class="kpi-label" style="color: #ea580c;">Revisions Required</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Standard Application Filter Bar -->
+                    <div class="list-filter-bar">
+                        <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+                            <button class="btn btn-sm btn-tab active-part-tab" data-part-filter="ALL">All Requests</button>
+                            <button class="btn btn-sm btn-tab" data-part-filter="PENDING_STOCK_CONTROL" style="color: #0284c7;">📦 Pending Stock (<span id="cnt-part-pending-stock">1</span>)</button>
+                            <button class="btn btn-sm btn-tab" data-part-filter="PENDING_QA" style="color: #d97706;">🛡️ Pending QA (<span id="cnt-part-pending-qa">1</span>)</button>
+                            <button class="btn btn-sm btn-tab" data-part-filter="DRAFT">📝 Drafts</button>
+                            <button class="btn btn-sm btn-tab" data-part-filter="APPROVED" style="color: #059669;">✅ Approved</button>
+                            <button class="btn btn-sm btn-tab" data-part-filter="TO_BE_EDITED" style="color: #ea580c;">🟧 Revisions Required</button>
+                            <button class="btn btn-sm btn-tab" data-part-filter="REJECTED" style="color: #dc2626;">❌ Rejected</button>
+                        </div>
+                        <div class="filter-field-group" style="margin-left: auto; width: 260px;">
+                            <label style="margin-right: 4px;">🔍</label>
+                            <input type="text" id="part-creation-search-input" placeholder="Search Request ID, Product, API...">
+                        </div>
+                    </div>
+
+                    <!-- Part Requests Data Table -->
+                    <div class="card" style="padding: 0; overflow: hidden; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <div class="table-container">
+                            <table class="grid-table" id="part-creation-table" style="width: 100%; border-collapse: collapse;">
+                                <thead style="background: #f8fafc;">
+                                    <tr>
+                                        <th style="padding: 12px 14px;">Request ID</th>
+                                        <th style="padding: 12px 14px;">Product Name &amp; API</th>
+                                        <th style="padding: 12px 14px;">Type &amp; Strength</th>
+                                        <th style="padding: 12px 14px;">Pack Size / Form</th>
+                                        <th style="padding: 12px 14px;">Requested By &amp; Date</th>
+                                        <th style="padding: 12px 14px;">QA Validation Status</th>
+                                        <th style="padding: 12px 14px; text-align: right;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="part-creation-tbody">
+                                    <!-- Dynamic Rows Rendered via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW 2: FULL PAGE FORM VIEW (WAREHOUSE STOCK CONTROL MULTI-STEP) -->
+                <div id="part-creation-form-view" class="hidden">
+                    <div class="page-title-bar" style="margin-bottom: 16px;">
+                        <div style="display: flex; align-items: center; gap: 14px;">
+                            <button type="button" class="btn btn-secondary" id="btn-back-to-part-list">
+                                ⬅️ Back to List
+                            </button>
+                            <div>
+                                <h1 class="page-title" style="font-size: 20px; margin: 0;" id="pc-form-main-heading">Part Creation &amp; QA Verification Form</h1>
+                                <p class="page-subtitle" style="margin-top: 2px;" id="pc-form-sub-heading">Inventory Part &gt; General Identification &amp; QA Regulatory Approval</p>
+                            </div>
+                        </div>
+                        <span class="badge badge-success" id="pc-form-mode-title">Active Mode: Part Creation &amp; QA Verification</span>
+                    </div>
+
+                    <!-- Visual Multi-Step Stepper Bar -->
+                    <div style="background: #f8fafc; padding: 10px 16px; border: 1px solid var(--color-border-light); border-radius: 8px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div class="pc-step-indicator active" id="indicator-step-1" style="display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; font-size: 11.5px; font-weight: 700; background: var(--color-primary); color: #fff; cursor: pointer;">
+                                <span>1</span> <span>Page 1: General &amp; Regulatory Identification</span>
+                            </div>
+                            <span style="color: var(--color-text-muted); font-weight: 700;">➔</span>
+                            <div class="pc-step-indicator" id="indicator-step-2" style="display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; font-size: 11.5px; font-weight: 600; background: #e2e8f0; color: var(--color-text-muted); cursor: pointer;">
+                                <span>2</span> <span>Page 2: Warehouse Stock Control &amp; Buying</span>
+                            </div>
+                        </div>
+                        <span id="pc-step-badge" class="badge" style="background: #0f172a; color: #fff; font-size: 11px; font-weight: 700;">STEP 1 OF 2</span>
+                    </div>
+
+                    <!-- STEP 1 PANEL (GENERAL PART IDENTIFICATION & REGULATORY AUTHORIZATION) -->
+                    <div id="pc-form-step-1">
+                        <!-- Container Card -->
+                        <div class="card" style="padding: 0; overflow: hidden;">
+                            <!-- Top Metadata Info Strip -->
+                            <div style="background: #f8fafc; padding: 14px 20px; border-bottom: 1px solid var(--color-border-light); display: flex; flex-wrap: wrap; gap: 16px; align-items: center; font-size: 12px;">
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span style="font-weight: 700; color: #334155;">Request ID:</span>
+                                    <input type="text" id="pc-form-req-id" readonly class="pc-input" style="background: #e2e8f0; font-weight: 700; font-family: monospace; width: 135px; color: #0f172a; text-align: center;" value="REQ-2026-0004">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span style="font-weight: 700; color: #334155;">Status:</span>
+                                    <span id="pc-form-status-badge" class="badge" style="background: #2563eb; color: #fff; padding: 4px 10px; font-size: 11px; font-weight: 700; border-radius: 12px;">DRAFT</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span style="font-weight: 700; color: #334155;">Request Date:</span>
+                                    <input type="date" id="pc-form-req-date" class="pc-input" style="width: 135px;">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span style="font-weight: 700; color: #334155;">Requested By:</span>
+                                    <input type="text" id="pc-form-req-by" class="pc-input" style="width: 170px;" value="Warehouse Op (John Doe)">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 12px; margin-left: auto;">
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <strong style="color: #334155; font-size: 11px; text-transform: uppercase;">Company:</strong>
+                                        <select id="pc-form-company" class="pc-select" style="width: 160px;">
+                                            <option value="">Select Company</option>
+                                            <option value="B&S Healthcare Ltd" selected>B&S Healthcare Ltd</option>
+                                            <option value="B&S Pharma">B&S Pharma</option>
+                                            <option value="LAXMI01">LAXMI01</option>
+                                        </select>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <strong style="color: #334155; font-size: 11px; text-transform: uppercase;">Site:</strong>
+                                        <select id="pc-form-site" class="pc-select" style="width: 170px;">
+                                            <option value="">Select Site</option>
+                                            <option value="Warehouse 1 - Ruislip" selected>Warehouse 1 - Ruislip</option>
+                                            <option value="Dispatch Depot - London">Dispatch Depot - London</option>
+                                            <option value="Site A">Site A</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Two-Column Grid Body -->
+                            <div style="padding: 24px; background: #f8fafc;">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px;">
+                                    
+                                    <!-- LEFT COLUMN: Buyer Details (Warehouse Input) -->
+                                    <div style="display: flex; flex-direction: column; gap: 24px;">
+                                        
+                                        <!-- SECTION BLOCK 01: GENERAL PART IDENTIFICATION -->
+                                        <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                                            <h4 style="font-size: 12px; font-weight: 700; color: #2563eb; text-transform: uppercase; margin: 0 0 16px 0; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; letter-spacing: 0.5px;">
+                                                01. GENERAL PART IDENTIFICATION
+                                            </h4>
+
+                                            <div class="pc-field-row" style="margin-bottom: 16px;">
+                                                <label class="pc-label required">REQUEST TYPE</label>
+                                                <div style="display: flex; gap: 16px; align-items: center;">
+                                                    <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; cursor: pointer; color: #0f172a;">
+                                                        <input type="radio" name="pc_req_type" value="NEW PRODUCT" checked> NEW PRODUCT
+                                                    </label>
+                                                    <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; cursor: pointer; color: #64748b;">
+                                                        <input type="radio" name="pc_req_type" value="EXISTING PRODUCT"> EXISTING PRODUCT
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            <div class="pc-field-row hidden" id="pc-row-search-product" style="margin-bottom: 16px;">
+                                                <label class="pc-label required">SEARCH PRODUCT</label>
+                                                <div style="position: relative; width: 100%;">
+                                                    <input type="text" id="pc-input-search-product" class="pc-input" placeholder="Type or select existing product (e.g. Paracetamol)..." style="background: #fef3c7; border-color: #f59e0b; font-weight: 600;">
+                                                    <div id="pc-search-product-dropdown" class="hidden" style="position: absolute; top: 100%; left: 0; right: 0; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 100; max-height: 200px; overflow-y: auto; margin-top: 4px;">
+                                                        <div class="pc-search-item" data-api="Paracetamol" data-name="Paracetamol 500mg Tablets" data-strength="500mg" data-pack="Pack of 100" data-form="Tablet" style="padding: 8px 12px; font-size: 12px; font-weight: 600; cursor: pointer; border-bottom: 1px solid #f1f5f9; color: #0f172a;">
+                                                            Paracetamol 500mg Tablets (Pack of 100)
+                                                        </div>
+                                                        <div class="pc-search-item" data-api="Amoxicillin" data-name="Amoxicillin 500mg Capsules" data-strength="500mg" data-pack="Pack of 28" data-form="Capsule" style="padding: 8px 12px; font-size: 12px; font-weight: 600; cursor: pointer; border-bottom: 1px solid #f1f5f9; color: #0f172a;">
+                                                            Amoxicillin 500mg Capsules (Pack of 28)
+                                                        </div>
+                                                        <div class="pc-search-item" data-api="Ibuprofen" data-name="Ibuprofen 400mg Tablets" data-strength="250mg" data-pack="Pack of 100" data-form="Tablet" style="padding: 8px 12px; font-size: 12px; font-weight: 600; cursor: pointer; border-bottom: 1px solid #f1f5f9; color: #0f172a;">
+                                                            Ibuprofen 400mg Tablets (Pack of 100)
+                                                        </div>
+                                                        <div class="pc-search-item" data-api="Omeprazole" data-name="Omeprazole 20mg Capsules" data-strength="100mg" data-pack="Pack of 28" data-form="Capsule" style="padding: 8px 12px; font-size: 12px; font-weight: 600; cursor: pointer; color: #0f172a;">
+                                                            Omeprazole 20mg Capsules (Pack of 28)
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="pc-field-row" style="margin-bottom: 16px;">
+                                                <label class="pc-label required">API</label>
+                                                <input type="text" id="pc-input-api" class="pc-input" placeholder="e.g. Paracetamol">
+                                            </div>
+
+                                            <div class="pc-field-row" style="margin-bottom: 16px;">
+                                                <label class="pc-label required">PRODUCT TYPE</label>
+                                                <div style="display: flex; gap: 16px; align-items: center;">
+                                                    <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; cursor: pointer; color: #0f172a;">
+                                                        <input type="radio" name="pc_prod_type" value="BRANDED" checked> BRANDED
+                                                    </label>
+                                                    <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; cursor: pointer; color: #64748b;">
+                                                        <input type="radio" name="pc_prod_type" value="GENERIC"> GENERIC
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            <div class="pc-field-row" style="margin-bottom: 16px;">
+                                                <label class="pc-label required">PRODUCT NAME</label>
+                                                <input type="text" id="pc-input-product-name" class="pc-input" placeholder="e.g. Paracetamol 500mg Tablets">
+                                            </div>
+
+                                            <div class="pc-field-row" style="margin-bottom: 16px;">
+                                                <label class="pc-label required">STRENGTH</label>
+                                                <select id="pc-input-strength" class="pc-select">
+                                                    <option value="">Select Pack Strength</option>
+                                                    <option value="500mg">500mg</option>
+                                                    <option value="250mg">250mg</option>
+                                                    <option value="100mg">100mg</option>
+                                                    <option value="10mg/ml">10mg/ml</option>
+                                                    <option value="5mg">5mg</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="pc-field-row" style="margin-bottom: 16px;">
+                                                <label class="pc-label required">PACK SIZE</label>
+                                                <select id="pc-input-pack-size" class="pc-select">
+                                                    <option value="">Select Pack Size</option>
+                                                    <option value="Pack of 100">Pack of 100</option>
+                                                    <option value="Pack of 28">Pack of 28</option>
+                                                    <option value="500ml Bottle">500ml Bottle</option>
+                                                    <option value="10 Ampoules">10 Ampoules</option>
+                                                    <option value="1000s">1000s Bulk</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="pc-field-row" style="margin-bottom: 0;">
+                                                <label class="pc-label required">FORM</label>
+                                                <select id="pc-input-form" class="pc-select">
+                                                    <option value="">Select Pharmaceutical Form</option>
+                                                    <option value="Tablet">Tablet</option>
+                                                    <option value="Capsule">Capsule</option>
+                                                    <option value="Injection">Injection</option>
+                                                    <option value="Solution">Solution</option>
+                                                    <option value="Syrup">Syrup</option>
+                                                    <option value="Ointment">Ointment</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <!-- SECTION BLOCK 02: REGULATORY & SAFETY AUTHORIZATION -->
+                                        <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                                            <h4 style="font-size: 12px; font-weight: 700; color: #2563eb; text-transform: uppercase; margin: 0 0 16px 0; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; letter-spacing: 0.5px;">
+                                                02. REGULATORY &amp; SAFETY AUTHORIZATION
+                                            </h4>
+
+                                            <div class="pc-field-row" style="margin-bottom: 16px;">
+                                                <label class="pc-label required">CONTROLLED DRUG</label>
+                                                <select id="pc-input-controlled-drug" class="pc-select">
+                                                    <option value="">Select Yes or No</option>
+                                                    <option value="No">No</option>
+                                                    <option value="Yes">Yes</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="pc-field-row" style="margin-bottom: 16px;">
+                                                <label class="pc-label required">CD SCHEDULE</label>
+                                                <select id="pc-input-cd-schedule" class="pc-select">
+                                                    <option value="">Select Relevant CD Schedule</option>
+                                                    <option value="N/A">N/A - Non CD</option>
+                                                    <option value="Schedule 1">Schedule 1</option>
+                                                    <option value="Schedule 2">Schedule 2</option>
+                                                    <option value="Schedule 3">Schedule 3</option>
+                                                    <option value="Schedule 4">Schedule 4</option>
+                                                    <option value="Schedule 5">Schedule 5</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="pc-field-row" style="margin-bottom: 16px;">
+                                                <label class="pc-label">CLASS</label>
+                                                <select id="pc-input-class" class="pc-select">
+                                                    <option value="">Select Class</option>
+                                                    <option value="Non-Controlled">Non-Controlled</option>
+                                                    <option value="Class A">Class A</option>
+                                                    <option value="Class B">Class B</option>
+                                                    <option value="Class C">Class C</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="pc-field-row" style="margin-bottom: 16px;">
+                                                <label class="pc-label required">COLD CHAIN</label>
+                                                <select id="pc-input-cold-chain" class="pc-select">
+                                                    <option value="">Select Yes or No</option>
+                                                    <option value="No">No (Ambient)</option>
+                                                    <option value="Yes">Yes (2-8°C Cold Chain)</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="pc-field-row" style="margin-bottom: 16px;">
+                                                <label class="pc-label required">SPECIALS</label>
+                                                <select id="pc-input-specials" class="pc-select">
+                                                    <option value="">Select Yes or No</option>
+                                                    <option value="No">No</option>
+                                                    <option value="Yes">Yes (Unlicensed Special)</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="pc-field-row" style="margin-bottom: 0;">
+                                                <label class="pc-label required">HIGH-RISK</label>
+                                                <select id="pc-input-high-risk" class="pc-select">
+                                                    <option value="">Select Yes or No</option>
+                                                    <option value="No">No</option>
+                                                    <option value="Yes">Yes</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <!-- SECTION BLOCK 03: BNF CLASSIFICATION & STORAGE -->
+                                        <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                                            <h4 style="font-size: 12px; font-weight: 700; color: #2563eb; text-transform: uppercase; margin: 0 0 16px 0; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; letter-spacing: 0.5px;">
+                                                03. BNF CLASSIFICATION &amp; STORAGE
+                                            </h4>
+
+                                            <div class="pc-field-row" style="margin-bottom: 16px;">
+                                                <label class="pc-label required">PRODUCT FAMILY</label>
+                                                <input type="text" id="pc-input-product-family" class="pc-input" placeholder="e.g. Analgesics">
+                                            </div>
+
+                                            <div class="pc-field-row" style="margin-bottom: 16px;">
+                                                <label class="pc-label required">STORAGE CONDITIONS</label>
+                                                <select id="pc-input-storage-conditions" class="pc-select">
+                                                    <option value="">Select Storage Condition</option>
+                                                    <option value="Store below 25°C">Store below 25°C</option>
+                                                    <option value="Refrigerate 2-8°C">Refrigerate 2-8°C</option>
+                                                    <option value="Do not freeze">Do not freeze</option>
+                                                    <option value="Controlled Room Temp">Controlled Room Temp</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="pc-field-row" style="margin-bottom: 16px;">
+                                                <label class="pc-label">BNF CODE</label>
+                                                <input type="text" id="pc-input-bnf-code" class="pc-input" placeholder="e.g. 04.07.01.00">
+                                            </div>
+
+                                            <div class="pc-field-row" style="margin-bottom: 16px;">
+                                                <label class="pc-label">BNF DRUG NAME</label>
+                                                <input type="text" id="pc-input-bnf-drug-name" class="pc-input">
+                                            </div>
+
+                                            <div class="pc-field-row" style="margin-bottom: 16px;">
+                                                <label class="pc-label">BNF SELECTION NAME</label>
+                                                <input type="text" id="pc-input-bnf-selection-name" class="pc-input">
+                                            </div>
+
+                                            <div class="pc-field-row" style="margin-bottom: 16px;">
+                                                <label class="pc-label">BNF CHEMICAL NAME</label>
+                                                <input type="text" id="pc-input-bnf-chemical-name" class="pc-input">
+                                            </div>
+
+                                            <div class="pc-field-row" style="margin-bottom: 0;">
+                                                <label class="pc-label">BNF PREPARATION NAME</label>
+                                                <input type="text" id="pc-input-bnf-prep-name" class="pc-input">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- RIGHT COLUMN: Validate Details (Stock Control / QA Review) -->
+                                    <div style="display: flex; flex-direction: column; gap: 24px;">
+                                        <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0;">
+                                                <h3 class="card-title" style="font-size: 13px; font-weight: 700; color: #0f172a; margin: 0; text-transform: uppercase;">
+                                                    VALIDATE DETAILS (QA CHECKLIST)
+                                                </h3>
+                                                <button type="button" id="btn-qa-check-all" class="btn btn-xs btn-outline" style="font-size: 11px; padding: 4px 12px; border-color: #2563eb; color: #2563eb; font-weight: 700;">✓ Check All QA Fields</button>
+                                            </div>
+
+                                            <div class="pc-section-header" style="margin-top: 10px !important;">
+                                                01. GENERAL PART IDENTIFICATION
+                                            </div>
+
+                                            <!-- QA Field Validation List -->
+                                            <div class="pc-qa-row">
+                                                <label class="pc-qa-check-label"><input type="checkbox" class="pc-qa-cb" data-field="pc-input-req-type"> REQUEST TYPE</label>
+                                                <select class="pc-qa-select" id="qa-val-req-type" disabled><option value="VERIFIED">Verified</option><option value="TO_EDIT">Needs Revision</option></select>
+                                            </div>
+
+                                            <div class="pc-qa-row hidden" id="qa-row-search-product">
+                                                <label class="pc-qa-check-label"><input type="checkbox" class="pc-qa-cb" data-field="pc-input-search-product"> SEARCH PRODUCT</label>
+                                                <select class="pc-qa-select" id="qa-val-search-product" disabled><option value="VERIFIED">Verified</option><option value="TO_EDIT">Needs Revision</option></select>
+                                            </div>
+
+                                            <div class="pc-qa-row">
+                                                <label class="pc-qa-check-label"><input type="checkbox" class="pc-qa-cb" data-field="pc-input-api"> API</label>
+                                                <select class="pc-qa-select" id="qa-val-api" disabled><option value="VERIFIED">Verified</option><option value="TO_EDIT">Needs Revision</option></select>
+                                            </div>
+
+                                            <div class="pc-qa-row">
+                                                <label class="pc-qa-check-label"><input type="checkbox" class="pc-qa-cb" data-field="pc-input-prod-type"> PRODUCT TYPE</label>
+                                                <select class="pc-qa-select" id="qa-val-prod-type" disabled><option value="VERIFIED">Verified</option><option value="TO_EDIT">Needs Revision</option></select>
+                                            </div>
+
+                                            <div class="pc-qa-row">
+                                                <label class="pc-qa-check-label"><input type="checkbox" class="pc-qa-cb" data-field="pc-input-product-name"> PRODUCT NAME</label>
+                                                <select class="pc-qa-select" id="qa-val-product-name" disabled><option value="VERIFIED">Verified</option><option value="TO_EDIT">Needs Revision</option></select>
+                                            </div>
+
+                                            <div class="pc-qa-row">
+                                                <label class="pc-qa-check-label"><input type="checkbox" class="pc-qa-cb" data-field="pc-input-strength"> STRENGTH</label>
+                                                <select class="pc-qa-select" id="qa-val-strength" disabled><option value="VERIFIED">Verified</option><option value="TO_EDIT">Needs Revision</option></select>
+                                            </div>
+
+                                            <div class="pc-qa-row">
+                                                <label class="pc-qa-check-label"><input type="checkbox" class="pc-qa-cb" data-field="pc-input-pack-size"> PACK SIZE</label>
+                                                <select class="pc-qa-select" id="qa-val-pack-size" disabled><option value="VERIFIED">Verified</option><option value="TO_EDIT">Needs Revision</option></select>
+                                            </div>
+
+                                            <div class="pc-qa-row">
+                                                <label class="pc-qa-check-label"><input type="checkbox" class="pc-qa-cb" data-field="pc-input-form"> FORM</label>
+                                                <select class="pc-qa-select" id="qa-val-form" disabled><option value="VERIFIED">Verified</option><option value="TO_EDIT">Needs Revision</option></select>
+                                            </div>
+
+                                            <!-- Section Header 02 -->
+                                            <div class="pc-section-header">
+                                                02. REGULATORY &amp; SAFETY AUTHORIZATION
+                                            </div>
+
+                                            <div class="pc-qa-row">
+                                                <label class="pc-qa-check-label"><input type="checkbox" class="pc-qa-cb" data-field="pc-input-controlled-drug"> CONTROLLED DRUG</label>
+                                                <select class="pc-qa-select" id="qa-val-controlled-drug" disabled><option value="VERIFIED">Verified</option><option value="TO_EDIT">Needs Revision</option></select>
+                                            </div>
+
+                                            <div class="pc-qa-row">
+                                                <label class="pc-qa-check-label"><input type="checkbox" class="pc-qa-cb" data-field="pc-input-cd-schedule"> CD SCHEDULE</label>
+                                                <select class="pc-qa-select" id="qa-val-cd-schedule" disabled><option value="VERIFIED">Verified</option><option value="TO_EDIT">Needs Revision</option></select>
+                                            </div>
+
+                                            <div class="pc-qa-row">
+                                                <label class="pc-qa-check-label"><input type="checkbox" class="pc-qa-cb" data-field="pc-input-class"> CLASS</label>
+                                                <select class="pc-qa-select" id="qa-val-class" disabled><option value="VERIFIED">Verified</option><option value="TO_EDIT">Needs Revision</option></select>
+                                            </div>
+
+                                            <div class="pc-qa-row">
+                                                <label class="pc-qa-check-label"><input type="checkbox" class="pc-qa-cb" data-field="pc-input-cold-chain"> COLD CHAIN</label>
+                                                <select class="pc-qa-select" id="qa-val-cold-chain" disabled><option value="VERIFIED">Verified</option><option value="TO_EDIT">Needs Revision</option></select>
+                                            </div>
+
+                                            <div class="pc-qa-row">
+                                                <label class="pc-qa-check-label"><input type="checkbox" class="pc-qa-cb" data-field="pc-input-specials"> SPECIALS</label>
+                                                <select class="pc-qa-select" id="qa-val-specials" disabled><option value="VERIFIED">Verified</option><option value="TO_EDIT">Needs Revision</option></select>
+                                            </div>
+
+                                            <div class="pc-qa-row">
+                                                <label class="pc-qa-check-label"><input type="checkbox" class="pc-qa-cb" data-field="pc-input-high-risk"> HIGH-RISK</label>
+                                                <select class="pc-qa-select" id="qa-val-high-risk" disabled><option value="VERIFIED">Verified</option><option value="TO_EDIT">Needs Revision</option></select>
+                                            </div>
+
+                                            <!-- Section Header 03 -->
+                                            <div class="pc-section-header">
+                                                03. BNF CLASSIFICATION &amp; STORAGE
+                                            </div>
+
+                                            <div class="pc-qa-row">
+                                                <label class="pc-qa-check-label"><input type="checkbox" class="pc-qa-cb" data-field="pc-input-product-family"> PRODUCT FAMILY</label>
+                                                <select class="pc-qa-select" id="qa-val-product-family" disabled><option value="VERIFIED">Verified</option><option value="TO_EDIT">Needs Revision</option></select>
+                                            </div>
+
+                                            <div class="pc-qa-row">
+                                                <label class="pc-qa-check-label"><input type="checkbox" class="pc-qa-cb" data-field="pc-input-storage-conditions"> STORAGE CONDITIONS</label>
+                                                <select class="pc-qa-select" id="qa-val-storage-conditions" disabled><option value="VERIFIED">Verified</option><option value="TO_EDIT">Needs Revision</option></select>
+                                            </div>
+
+                                            <div class="pc-qa-row">
+                                                <label class="pc-qa-check-label"><input type="checkbox" class="pc-qa-cb" data-field="pc-input-bnf-code"> BNF CODE</label>
+                                                <select class="pc-qa-select" id="qa-val-bnf-code" disabled><option value="VERIFIED">Verified</option><option value="TO_EDIT">Needs Revision</option></select>
+                                            </div>
+
+                                            <div class="pc-qa-row">
+                                                <label class="pc-qa-check-label"><input type="checkbox" class="pc-qa-cb" data-field="pc-input-bnf-drug-name"> BNF DRUG NAME</label>
+                                                <select class="pc-qa-select" id="qa-val-bnf-drug-name" disabled><option value="VERIFIED">Verified</option><option value="TO_EDIT">Needs Revision</option></select>
+                                            </div>
+
+                                            <div class="pc-qa-row">
+                                                <label class="pc-qa-check-label"><input type="checkbox" class="pc-qa-cb" data-field="pc-input-bnf-selection-name"> BNF SELECTION NAME</label>
+                                                <select class="pc-qa-select" id="qa-val-bnf-selection-name" disabled><option value="VERIFIED">Verified</option><option value="TO_EDIT">Needs Revision</option></select>
+                                            </div>
+
+                                            <div class="pc-qa-row">
+                                                <label class="pc-qa-check-label"><input type="checkbox" class="pc-qa-cb" data-field="pc-input-bnf-chemical-name"> BNF CHEMICAL NAME</label>
+                                                <select class="pc-qa-select" id="qa-val-bnf-chemical-name" disabled><option value="VERIFIED">Verified</option><option value="TO_EDIT">Needs Revision</option></select>
+                                            </div>
+
+                                            <div class="pc-qa-row">
+                                                <label class="pc-qa-check-label"><input type="checkbox" class="pc-qa-cb" data-field="pc-input-bnf-prep-name"> BNF PREPARATION NAME</label>
+                                                <select class="pc-qa-select" id="qa-val-bnf-prep-name" disabled><option value="VERIFIED">Verified</option><option value="TO_EDIT">Needs Revision</option></select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Form Footer Actions Bar (Step 1) -->
+                            <div style="background: #f8fafc; padding: 14px 20px; border-top: 1px solid var(--color-border-light); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                                <!-- Legend -->
+                                <div style="display: flex; align-items: center; gap: 8px; font-size: 11.5px; font-weight: 600; color: var(--color-text-muted);">
+                                    <span style="display: inline-block; width: 12px; height: 12px; background: #f97316; border-radius: 2px;"></span>
+                                    <span>TO BE EDITED : Fields highlighted in orange are to be reviewed.</span>
+                                </div>
+
+                                <!-- Action Controls -->
+                                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                                    <!-- Requester / Warehouse Controls -->
+                                    <button type="button" class="btn btn-secondary" id="btn-pc-save-draft" style="font-size: 12px; padding: 7px 14px;">📝 Save Draft</button>
+                                    <button type="button" class="btn btn-primary" id="btn-pc-submit-stock" style="font-size: 12px; padding: 7px 16px; background-color: #0284c7; border-color: #0284c7; color: #fff;">📤 Submit for Stock Control Approval</button>
+                                    
+                                    <!-- Stock Control Team Controls (Stage 1) -->
+                                    <button type="button" class="btn btn-primary" id="btn-pc-stock-approve" style="font-size: 12px; padding: 7px 16px; background-color: #0284c7; border-color: #0284c7; color: #fff;">📦 Approve &amp; Send to QA</button>
+                                    <button type="button" class="btn btn-warning" id="btn-pc-stock-request-edit" style="font-size: 12px; padding: 7px 16px; background-color: #f97316; border-color: #ea580c; color: #fff;">🟧 Request Revision</button>
+                                    <button type="button" class="btn btn-danger" id="btn-pc-stock-reject" style="font-size: 12px; padding: 7px 14px; background-color: var(--color-danger); border-color: var(--color-danger); color: #fff;">❌ Reject</button>
+
+                                    <!-- QA Officer Controls (Stage 2) -->
+                                    <button type="button" class="btn btn-success" id="btn-pc-qa-approve" style="font-size: 12px; padding: 7px 16px; background-color: var(--color-success); border-color: var(--color-success); color: #fff;">🛡️ Approve Part Creation &amp; Generate Code</button>
+                                    <button type="button" class="btn btn-warning" id="btn-pc-qa-request-edit" style="font-size: 12px; padding: 7px 16px; background-color: #f97316; border-color: #ea580c; color: #fff;">🟧 Request Revision</button>
+                                    <button type="button" class="btn btn-danger" id="btn-pc-qa-reject" style="font-size: 12px; padding: 7px 14px; background-color: var(--color-danger); border-color: var(--color-danger); color: #fff;">❌ Reject</button>
+
+                                    <!-- Utility & Step 2 Transition Button -->
+                                    <button type="button" class="btn btn-primary" id="btn-pc-save-next" style="font-size: 12px; padding: 7px 16px; background-color: #0f172a; border-color: #0f172a; color: #fff;">
+                                        💾 Save And Next ➔
+                                    </button>
+                                    <button type="button" class="btn btn-outline" id="btn-pc-clear" style="font-size: 12px; padding: 7px 14px;">
+                                        🧹 Clear
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- STEP 2 PANEL (PAGE 2: INVENTORY PART > BUYING / WAREHOUSE STOCK CONTROL - MATCHING SCREENSHOT) -->
+                    <div id="pc-form-step-2" class="hidden">
+                        <!-- Container Card -->
+                        <div class="card" style="padding: 0; overflow: hidden;">
+                            <!-- Top Metadata Info Strip -->
+                            <div style="background: #e0e7ff; padding: 14px 20px; border-bottom: 1px solid var(--color-border-light); display: flex; flex-wrap: wrap; gap: 16px; align-items: center; font-size: 12px;">
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span style="font-weight: 700; color: #3730a3;">Request ID:</span>
+                                    <input type="text" id="pc-step2-req-id" readonly class="pc-input" style="background: #c7d2fe; font-weight: 700; font-family: monospace; width: 135px; color: #1e1b4b;" value="REQ-2026-0004">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span style="font-weight: 700; color: #3730a3;">Request Status:</span>
+                                    <span id="pc-step2-status-badge" class="badge" style="background: #4f46e5; color: #fff; padding: 4px 10px; font-size: 11px; font-weight: 700;">BUYER</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span style="font-weight: 700; color: #3730a3;">Request Date:</span>
+                                    <input type="date" id="pc-step2-req-date" class="pc-input" style="width: 135px;">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span style="font-weight: 700; color: #3730a3;">Requested By:</span>
+                                    <input type="text" id="pc-step2-req-by" class="pc-input" style="width: 170px;" value="Milan Dabhi">
+                                </div>
+                            </div>
+
+                            <!-- Two-Column Grid Body for Step 2 -->
+                            <div style="padding: 24px; background: #f8fafc;">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px;">
+                                    
+                                    <!-- LEFT COLUMN: PRODUCT DETAIL & PRICE / SUPPLIER INPUTS -->
+                                    <div style="display: flex; flex-direction: column; gap: 24px;">
+                                        
+                                        <!-- SECTION BLOCK 01: PRODUCT DETAIL -->
+                                        <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                                            <h4 style="font-size: 12px; font-weight: 700; color: #2563eb; text-transform: uppercase; margin: 0 0 16px 0; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; letter-spacing: 0.5px;">
+                                                01. PRODUCT DETAIL
+                                            </h4>
+
+                                            <div class="pc-field-row" style="margin-bottom: 16px;">
+                                                <label class="pc-label required">SHELF LIFE</label>
+                                                <div style="display: flex; gap: 10px; align-items: center; width: 100%;">
+                                                    <select id="pc-input-shelf-life-unit" class="pc-select" style="width: 130px;">
+                                                        <option value="MONTH" selected>MONTH</option>
+                                                        <option value="YEAR">YEAR</option>
+                                                        <option value="DAY">DAY</option>
+                                                    </select>
+                                                    <input type="number" id="pc-input-shelf-life-val" class="pc-input" style="width: 100px;" value="36">
+                                                </div>
+                                            </div>
+
+                                            <div class="pc-field-row" style="margin-bottom: 0;">
+                                                <label class="pc-label required">VAT CODE</label>
+                                                <div style="display: flex; gap: 10px; align-items: center; width: 100%;">
+                                                    <select id="pc-input-vat-code" class="pc-select" style="flex: 1;">
+                                                        <option value="SUK-11" selected>SUK-11</option>
+                                                        <option value="Standard Tax (20%)">Standard Tax (20%)</option>
+                                                        <option value="Zero Rated (0%)">Zero Rated (0%)</option>
+                                                    </select>
+                                                    <span style="font-size: 11px; font-weight: 700; color: #334155; white-space: nowrap;">VAT(%) :</span>
+                                                    <input type="text" id="pc-input-vat-percent" class="pc-input" readonly style="width: 70px; background: #e2e8f0; font-weight: 700; text-align: center;" value="20">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- SECTION BLOCK 02: PRICE INFORMATION -->
+                                        <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                                            <h4 style="font-size: 12px; font-weight: 700; color: #2563eb; text-transform: uppercase; margin: 0 0 16px 0; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; letter-spacing: 0.5px;">
+                                                02. PRICE INFORMATION
+                                            </h4>
+
+                                            <div class="pc-field-row" style="margin-bottom: 16px;">
+                                                <label class="pc-label required">DRUG TARIFF</label>
+                                                <input type="number" step="0.01" id="pc-input-drug-tariff" class="pc-input" placeholder="e.g. 115.83" value="115.83">
+                                            </div>
+
+                                            <div class="pc-field-row" style="margin-bottom: 16px;">
+                                                <label class="pc-label required">SALES PRICE</label>
+                                                <input type="number" step="0.01" id="pc-input-sales-price" class="pc-input" placeholder="e.g. 92.66" value="92.66">
+                                            </div>
+
+                                            <div class="pc-field-row" style="margin-bottom: 16px;">
+                                                <label class="pc-label required">MIN SELLING PRICE</label>
+                                                <input type="number" step="0.01" id="pc-input-min-selling-price" class="pc-input" placeholder="e.g. 92.66" value="92.66">
+                                            </div>
+
+                                            <div class="pc-field-row" style="margin-bottom: 16px;">
+                                                <label class="pc-label required">ESTIMATED MATERIAL COST</label>
+                                                <input type="number" step="0.01" id="pc-input-est-material-cost" class="pc-input" placeholder="e.g. 115.83" value="115.83">
+                                            </div>
+
+                                            <div class="pc-field-row" style="margin-bottom: 0;">
+                                                <label class="pc-label required">SALE TYPE</label>
+                                                <div style="display: flex; gap: 16px; align-items: center;">
+                                                    <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; cursor: pointer; color: #0f172a;">
+                                                        <input type="radio" name="pc_sale_type" value="EASY" checked> EASY
+                                                    </label>
+                                                    <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; cursor: pointer; color: #64748b;">
+                                                        <input type="radio" name="pc_sale_type" value="MEDIUM"> MEDIUM
+                                                    </label>
+                                                    <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; cursor: pointer; color: #64748b;">
+                                                        <input type="radio" name="pc_sale_type" value="HARD"> HARD
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- SECTION BLOCK 03: SUPPLIER INFORMATION -->
+                                        <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                                            <h4 style="font-size: 12px; font-weight: 700; color: #2563eb; text-transform: uppercase; margin: 0 0 16px 0; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; letter-spacing: 0.5px;">
+                                                03. SUPPLIER INFORMATION
+                                            </h4>
+
+                                            <div class="pc-field-row" style="margin-bottom: 16px;">
+                                                <label class="pc-label required">SUPPLIER TYPE</label>
+                                                <div style="display: flex; gap: 20px; align-items: center;">
+                                                    <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; cursor: pointer; color: #0f172a;">
+                                                        <input type="radio" name="pc_supplier_type" value="WHOLESALER" checked> WHOLESALER
+                                                    </label>
+                                                    <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; cursor: pointer; color: #64748b;">
+                                                        <input type="radio" name="pc_supplier_type" value="MANUFACTURER"> MANUFACTURER
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            <div class="pc-field-row" style="margin-bottom: 0;">
+                                                <label class="pc-label required">COUNTRY</label>
+                                                <select id="pc-input-country" class="pc-select">
+                                                    <option value="UNITED KINGDOM" selected>UNITED KINGDOM</option>
+                                                    <option value="GERMANY">GERMANY</option>
+                                                    <option value="UNITED STATES">UNITED STATES</option>
+                                                    <option value="INDIA">INDIA</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <!-- SECTION BLOCK 04: COMMERCIAL CATEGORY -->
+                                        <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                                            <h4 style="font-size: 12px; font-weight: 700; color: #2563eb; text-transform: uppercase; margin: 0 0 16px 0; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; letter-spacing: 0.5px;">
+                                                04. COMMERCIAL CATEGORY
+                                            </h4>
+
+                                            <div class="pc-field-row" style="margin-bottom: 16px;">
+                                                <label class="pc-label required">SELECT SALES CATEGORY</label>
+                                                <input type="text" id="pc-input-sales-category" class="pc-input" value="G" style="background: #e2e8f0; font-weight: 700;">
+                                            </div>
+
+                                            <div class="pc-field-row" style="margin-bottom: 0;">
+                                                <label class="pc-label">OTHER</label>
+                                                <input type="text" id="pc-input-other-category" class="pc-input" placeholder="Enter other category info...">
+                                            </div>
+                                        </div>
+
+                                        <!-- SECTION BLOCK 05: LINK PART TO SUPPLIER -->
+                                        <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                                            <h4 style="font-size: 12px; font-weight: 700; color: #2563eb; text-transform: uppercase; margin: 0 0 16px 0; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; letter-spacing: 0.5px;">
+                                                05. LINK PART TO SUPPLIER
+                                            </h4>
+
+                                            <div class="pc-field-row" style="margin-bottom: 0;">
+                                                <label class="pc-label required">SELECT SUPPLIER(S)</label>
+                                                <input type="text" id="pc-input-supplier-name" class="pc-input" value="ALLOGA UK LIMITED" style="background: #e2e8f0; font-weight: 700;">
+                                            </div>
+                                        </div>
+
+                                        <!-- SECTION BLOCK 06: RELATED PART DESCRIPTION -->
+                                        <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                                            <h4 style="font-size: 12px; font-weight: 700; color: #2563eb; text-transform: uppercase; margin: 0 0 16px 0; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; letter-spacing: 0.5px;">
+                                                06. RELATED PART DESCRIPTION
+                                            </h4>
+
+                                            <div class="pc-field-row" style="margin-bottom: 16px;">
+                                                <label class="pc-label">SALES PART</label>
+                                                <input type="text" id="pc-input-sales-part" class="pc-input" placeholder="Sales part description...">
+                                            </div>
+
+                                            <div class="pc-field-row" style="margin-bottom: 0;">
+                                                <label class="pc-label">PURCHASE PART</label>
+                                                <input type="text" id="pc-input-purchase-part" class="pc-input" placeholder="Purchase part description...">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- RIGHT COLUMN: Validate Details(Stock Control) (QA CHECKLIST FOR STEP 2) -->
+                                    <div style="display: flex; flex-direction: column; gap: 24px;">
+                                        <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0;">
+                                                <h3 class="card-title" style="font-size: 13px; font-weight: 700; color: #0f172a; margin: 0; text-transform: uppercase;">
+                                                    VALIDATE DETAILS (STOCK CONTROL)
+                                                </h3>
+                                                <button type="button" id="btn-step2-qa-check-all" class="btn btn-xs btn-outline" style="font-size: 11px; padding: 4px 12px; border-color: #2563eb; color: #2563eb; font-weight: 700;">✓ Check All QA Fields</button>
+                                            </div>
+
+                                            <!-- Section 01: PRODUCT DETAIL -->
+                                            <div class="pc-section-header" style="margin-top: 10px !important;">
+                                                01. PRODUCT DETAIL
+                                            </div>
+
+                                            <div class="pc-qa-row">
+                                                <label class="pc-qa-check-label"><input type="checkbox" class="pc-qa-cb" data-field="pc-input-shelf-life-val"> SHELF LIFE</label>
+                                                <select class="pc-qa-select" id="qa-val-shelf-life" disabled><option value="VERIFIED">YES</option><option value="TO_EDIT">NO</option></select>
+                                            </div>
+
+                                            <div class="pc-qa-row">
+                                                <label class="pc-qa-check-label"><input type="checkbox" class="pc-qa-cb" data-field="pc-input-vat-code"> VAT CODE</label>
+                                                <select class="pc-qa-select" id="qa-val-vat-code" disabled><option value="VERIFIED">YES</option><option value="TO_EDIT">NO</option></select>
+                                            </div>
+
+                                            <!-- Section 02: PRICE INFORMATION -->
+                                            <div class="pc-section-header">
+                                                02. PRICE INFORMATION
+                                            </div>
+
+                                            <div class="pc-qa-row">
+                                                <label class="pc-qa-check-label"><input type="checkbox" class="pc-qa-cb" data-field="pc-input-drug-tariff"> DRUG TARIFF</label>
+                                                <select class="pc-qa-select" id="qa-val-drug-tariff" disabled><option value="VERIFIED">YES</option><option value="TO_EDIT">NO</option></select>
+                                            </div>
+
+                                            <div class="pc-qa-row">
+                                                <label class="pc-qa-check-label"><input type="checkbox" class="pc-qa-cb" data-field="pc-input-sales-price"> SALES PRICE</label>
+                                                <select class="pc-qa-select" id="qa-val-sales-price" disabled><option value="VERIFIED">YES</option><option value="TO_EDIT">NO</option></select>
+                                            </div>
+
+                                            <div class="pc-qa-row">
+                                                <label class="pc-qa-check-label"><input type="checkbox" class="pc-qa-cb" data-field="pc-input-min-selling-price"> MIN SELLING PRICE</label>
+                                                <select class="pc-qa-select" id="qa-val-min-selling-price" disabled><option value="VERIFIED">YES</option><option value="TO_EDIT">NO</option></select>
+                                            </div>
+
+                                            <div class="pc-qa-row">
+                                                <label class="pc-qa-check-label"><input type="checkbox" class="pc-qa-cb" data-field="pc-input-est-material-cost"> ESTIMATED MATERIAL COST</label>
+                                                <select class="pc-qa-select" id="qa-val-est-material-cost" disabled><option value="VERIFIED">YES</option><option value="TO_EDIT">NO</option></select>
+                                            </div>
+
+                                            <div class="pc-qa-row">
+                                                <label class="pc-qa-check-label"><input type="checkbox" class="pc-qa-cb" data-field="pc-input-sale-type"> SALE TYPE</label>
+                                                <select class="pc-qa-select" id="qa-val-sale-type" disabled><option value="VERIFIED">YES</option><option value="TO_EDIT">NO</option></select>
+                                            </div>
+
+                                            <!-- Section 03: SUPPLIER INFORMATION -->
+                                            <div class="pc-section-header">
+                                                03. SUPPLIER INFORMATION
+                                            </div>
+
+                                            <div class="pc-qa-row">
+                                                <label class="pc-qa-check-label"><input type="checkbox" class="pc-qa-cb" data-field="pc-input-supplier-type"> SUPPLIER TYPE</label>
+                                                <select class="pc-qa-select" id="qa-val-supplier-type" disabled><option value="VERIFIED">YES</option><option value="TO_EDIT">NO</option></select>
+                                            </div>
+
+                                            <div class="pc-qa-row">
+                                                <label class="pc-qa-check-label"><input type="checkbox" class="pc-qa-cb" data-field="pc-input-country"> COUNTRY</label>
+                                                <select class="pc-qa-select" id="qa-val-country" disabled><option value="VERIFIED">YES</option><option value="TO_EDIT">NO</option></select>
+                                            </div>
+
+                                            <!-- Section 04: COMMERCIAL CATEGORY -->
+                                            <div class="pc-section-header">
+                                                04. COMMERCIAL CATEGORY
+                                            </div>
+
+                                            <div class="pc-qa-row">
+                                                <label class="pc-qa-check-label"><input type="checkbox" class="pc-qa-cb" data-field="pc-input-sales-category"> SALES CATEGORY</label>
+                                                <select class="pc-qa-select" id="qa-val-sales-category" disabled><option value="VERIFIED">YES</option><option value="TO_EDIT">NO</option></select>
+                                            </div>
+
+                                            <div class="pc-qa-row">
+                                                <label class="pc-qa-check-label"><input type="checkbox" class="pc-qa-cb" data-field="pc-input-other-category"> OTHER</label>
+                                                <select class="pc-qa-select" id="qa-val-other-category" disabled><option value="VERIFIED">YES</option><option value="TO_EDIT">NO</option></select>
+                                            </div>
+
+                                            <!-- Section 05: LINK PART TO SUPPLIER -->
+                                            <div class="pc-section-header">
+                                                05. LINK PART TO SUPPLIER
+                                            </div>
+
+                                            <div class="pc-qa-row">
+                                                <label class="pc-qa-check-label"><input type="checkbox" class="pc-qa-cb" data-field="pc-input-supplier-name"> SUPPLIER(S)</label>
+                                                <select class="pc-qa-select" id="qa-val-supplier-name" disabled><option value="VERIFIED">YES</option><option value="TO_EDIT">NO</option></select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Step 2 Footer Actions Bar -->
+                            <div style="background: #f8fafc; padding: 14px 20px; border-top: 1px solid var(--color-border-light); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                                <!-- Legend -->
+                                <div style="display: flex; align-items: center; gap: 8px; font-size: 11.5px; font-weight: 600; color: var(--color-text-muted);">
+                                    <span style="display: inline-block; width: 12px; height: 12px; background: #f97316; border-radius: 2px;"></span>
+                                    <span>TO BE EDITED : Fields highlighted in orange are to be reviewed.</span>
+                                </div>
+
+                                <!-- Hidden File Input for Real Document Upload -->
+                                <input type="file" id="pc-hidden-file-input" style="display:none;" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.xlsx">
+
+                                <!-- Action Controls for Step 2 -->
+                                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                                    <span id="pc-attached-file-badge" class="badge hidden" style="background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; font-size: 11px; padding: 5px 12px; font-weight: 700; border-radius: 12px;"></span>
+                                    <button type="button" class="btn btn-outline" id="btn-pc-step2-clear" style="font-size: 12px; padding: 7px 14px;">
+                                        🧹 Clear
+                                    </button>
+                                    <button type="button" class="btn btn-secondary" id="btn-pc-step2-back" style="font-size: 12px; padding: 7px 16px;">
+                                        ⬅️ Back
+                                    </button>
+                                    <button type="button" class="btn btn-primary" id="btn-pc-step2-upload" style="font-size: 12px; padding: 7px 16px; background-color: #0284c7; border-color: #0284c7; color: #fff;">
+                                        🔝 Upload Document
+                                    </button>
+
+                                    <!-- Stock Control Action Controls (Step 2) -->
+                                    <button type="button" class="btn btn-primary" id="btn-pc-step2-stock-approve" style="font-size: 12px; padding: 7px 16px; background-color: #0284c7; border-color: #0284c7; color: #fff; font-weight: 700;">
+                                        📦 Approve &amp; Send to QA
+                                    </button>
+                                    <button type="button" class="btn btn-warning" id="btn-pc-step2-stock-request-edit" style="font-size: 12px; padding: 7px 16px; background-color: #f97316; border-color: #ea580c; color: #fff; font-weight: 600;">
+                                        🟧 Request Revision
+                                    </button>
+                                    <button type="button" class="btn btn-danger" id="btn-pc-step2-stock-reject" style="font-size: 12px; padding: 7px 14px; background-color: var(--color-danger); border-color: var(--color-danger); color: #fff;">
+                                        ❌ Reject
+                                    </button>
+
+                                    <!-- QA Officer Action Controls (Step 2) -->
+                                    <button type="button" class="btn btn-success" id="btn-pc-step2-qa-approve" style="font-size: 12px; padding: 7px 16px; background-color: var(--color-success); border-color: var(--color-success); color: #fff; font-weight: 700;">
+                                        🛡️ Approve Part Creation &amp; Generate Code
+                                    </button>
+                                    <button type="button" class="btn btn-warning" id="btn-pc-step2-qa-request-edit" style="font-size: 12px; padding: 7px 16px; background-color: #f97316; border-color: #ea580c; color: #fff; font-weight: 600;">
+                                        🟧 Request Revision
+                                    </button>
+                                    <button type="button" class="btn btn-danger" id="btn-pc-step2-qa-reject" style="font-size: 12px; padding: 7px 14px; background-color: var(--color-danger); border-color: var(--color-danger); color: #fff;">
+                                        ❌ Reject
+                                    </button>
+
+                                    <button type="button" class="btn btn-success" id="btn-pc-step2-submit" style="font-size: 12px; padding: 7px 18px; font-weight: 700; background-color: #0f172a; border-color: #0f172a;">
+                                        📤 Save &amp; Submit for Stock Control
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

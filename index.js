@@ -560,6 +560,8 @@ document.addEventListener('DOMContentLoaded', () => {
         purchase: document.getElementById('purchase-workspace'),
         hr: document.getElementById('hr-workspace'),
         plpi: document.getElementById('plpi-workspace'),
+        stock: document.getElementById('stock-workspace'),
+        partCreation: document.getElementById('part-creation-workspace'),
         other: document.getElementById('company-setup-workspace'),
         site: document.getElementById('site-setup-workspace'),
         user: document.getElementById('user-setup-workspace'),
@@ -649,7 +651,7 @@ document.addEventListener('DOMContentLoaded', () => {
         homeScreen.classList.add('hidden');
         mainErpContainer.classList.remove('hidden');
 
-        const activeKey = (moduleName === 'user-setup') ? 'user' : (moduleName === 'site' ? 'site' : (moduleName === 'other' ? 'other' : (moduleName === 'customer-creation' ? 'customer' : (moduleName === 'supplier-setup' ? 'supplier' : moduleName))));
+        const activeKey = (moduleName === 'user-setup') ? 'user' : (moduleName === 'site' ? 'site' : (moduleName === 'other' ? 'other' : (moduleName === 'customer-creation' ? 'customer' : (moduleName === 'supplier-setup' ? 'supplier' : (moduleName === 'part-creation' ? 'partCreation' : moduleName)))));
 
         // Hide all workspaces and show active workspace
         Object.keys(workspaces).forEach(key => {
@@ -681,6 +683,12 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (moduleName === 'supplier-setup') {
             const btnSupplier = document.getElementById('nav-supplier-setup-sub');
             if (btnSupplier) btnSupplier.click();
+        } else if (moduleName === 'part-creation') {
+            if (btnSave) btnSave.style.display = 'none';
+            if (btnCancel) btnCancel.style.display = 'none';
+        } else if (moduleName === 'stock') {
+            if (btnSave) btnSave.style.display = 'none';
+            if (btnCancel) btnCancel.style.display = 'none';
         } else {
             if (btnSave) btnSave.style.display = 'none';
             if (btnCancel) btnCancel.style.display = 'none';
@@ -695,182 +703,94 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderSidebarMenu(moduleName) {
         if (!sidebarNavMenu) return;
 
-        let html = '';
+        const isMasterActive = ['company', 'site', 'user-setup', 'customer-creation', 'supplier-setup', 'other'].includes(moduleName);
+        const isPartActive = (moduleName === 'part-creation');
+        const isStockActive = (moduleName === 'stock');
+        const isFinanceActive = (moduleName === 'finance');
+        const isSalesActive = (moduleName === 'sales');
+        const isPurchaseActive = (moduleName === 'purchase');
+        const isHrActive = (moduleName === 'hr');
+        const isPlpiActive = (moduleName === 'plpi');
 
-        if (moduleName === 'sales') {
-            html = `
-                <a href="#" class="nav-item active" data-action="mock">
-                    <span class="nav-icon">📊</span> Sales Dashboard
-                </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Quotations">
-                    <span class="nav-icon">📈</span> Quotations
-                </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Customer Orders">
-                    <span class="nav-icon">📦</span> Customer Orders
-                </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Invoices">
-                    <span class="nav-icon">💳</span> Invoices
-                </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Customers">
-                    <span class="nav-icon">👥</span> Customer Directory
-                </a>
-                <a href="#" class="nav-item btn-home-back" id="btn-sidebar-back-home" style="margin-top: auto;">
-                    <span class="nav-icon">🏠</span> Back to Home
-                </a>
-            `;
-        } else if (moduleName === 'purchase') {
-            html = `
-                <a href="#" class="nav-item active" data-action="mock">
-                    <span class="nav-icon">🛒</span> Purchasing Dashboard
-                </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Purchase Orders">
-                    <span class="nav-icon">📄</span> Purchase Orders
-                </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Supplier Agreements">
-                    <span class="nav-icon">🤝</span> Supplier Contracts
-                </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Material Receipts">
-                    <span class="nav-icon">📥</span> Inventory Receipts
-                </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Supplier Directory">
-                    <span class="nav-icon">🏢</span> Supplier Master File
-                </a>
-                <a href="#" class="nav-item btn-home-back" id="btn-sidebar-back-home" style="margin-top: auto;">
-                    <span class="nav-icon">🏠</span> Back to Home
-                </a>
-            `;
-        } else if (moduleName === 'hr') {
-            html = `
-                <a href="#" class="nav-item active" data-action="mock">
-                    <span class="nav-icon">👥</span> HR Dashboard
-                </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Employee Directory">
-                    <span class="nav-icon">👔</span> Employee Directory
-                </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Leaves & Time-off">
-                    <span class="nav-icon">🏥</span> Time & Leave
-                </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Payroll Run">
-                    <span class="nav-icon">📆</span> Payroll Run
-                </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="HR Settings">
-                    <span class="nav-icon">⚙️</span> Configurations
-                </a>
-                <a href="#" class="nav-item btn-home-back" id="btn-sidebar-back-home" style="margin-top: auto;">
-                    <span class="nav-icon">🏠</span> Back to Home
-                </a>
-            `;
-        } else if (moduleName === 'plpi') {
-            html = `
-                <a href="#" class="nav-item active" data-action="mock">
-                    <span class="nav-icon">⚙️</span> PLPI Dashboard
-                </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Bill of Materials">
-                    <span class="nav-icon">🛠️</span> Bill of Materials
-                </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Routings">
-                    <span class="nav-icon">🔄</span> Process Routings
-                </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Work Centers">
-                    <span class="nav-icon">🏭</span> Work Centers
-                </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Engineering Requests">
-                    <span class="nav-icon">📋</span> Engineering Changes
-                </a>
-                <a href="#" class="nav-item btn-home-back" id="btn-sidebar-back-home" style="margin-top: auto;">
-                    <span class="nav-icon">🏠</span> Back to Home
-                </a>
-            `;
-        } else if (moduleName === 'finance') {
-            html = `
-                <a href="#" class="nav-item active" data-action="mock">
-                    <span class="nav-icon">💳</span> Finance Dashboard
-                </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Chart of Accounts">
-                    <span class="nav-icon">📑</span> Chart of Accounts
-                </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Journal Entries">
-                    <span class="nav-icon">📝</span> Journal Entries
-                </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Bank Accounts">
-                    <span class="nav-icon">🏦</span> Bank Accounts
-                </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Tax Rules">
-                    <span class="nav-icon">⚖️</span> Tax Rules
-                </a>
-                <a href="#" class="nav-item btn-home-back" id="btn-sidebar-back-home" style="margin-top: auto;">
-                    <span class="nav-icon">🏠</span> Back to Home
-                </a>
-            `;
-        } else if (moduleName === 'stock') {
-            html = `
-                <a href="#" class="nav-item active" data-action="mock">
-                    <span class="nav-icon">📦</span> Stock Dashboard
-                </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Stock Ledger">
-                    <span class="nav-icon">📚</span> Stock Ledger
-                </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Material Transfers">
-                    <span class="nav-icon">🔄</span> Material Transfers
-                </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Warehouse Locations">
-                    <span class="nav-icon">🏢</span> Warehouse Locations
-                </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Stock Reconciliation">
-                    <span class="nav-icon">⚖️</span> Stock Reconciliation
-                </a>
-                <a href="#" class="nav-item btn-home-back" id="btn-sidebar-back-home" style="margin-top: auto;">
-                    <span class="nav-icon">🏠</span> Back to Home
-                </a>
-            `;
-        } else {
-            // Other / Company Setup / Site Setup / User Setup / Master Data Setup
-            html = `
-                <a href="#" class="nav-item" data-action="mock" data-name="Dashboard">
-                    <span class="nav-icon">📊</span> Dashboard
-                </a>
-                <a href="#" class="nav-item active" id="nav-company-setup-master">
-                    <span class="nav-icon">📁</span> Master Data Setup
-                </a>
-                <div class="sub-nav">
-                    <a href="#" class="sub-item active" id="nav-company-setup-sub">Company Setup</a>
-                    <a href="#" class="sub-item" id="nav-site-setup-sub">Site Setup</a>
-                    <a href="#" class="sub-item" id="nav-user-setup-sub">User Setup</a>
-                    <div class="sub-sub-nav hidden" id="user-setup-sub-sub-nav">
-                        <a href="#" class="sub-sub-item" data-subtab="user-list">User List</a>
-                        <a href="#" class="sub-sub-item" data-subtab="user-creation">User Creation</a>
-                        <a href="#" class="sub-sub-item" data-subtab="user-reopen">User Reopen</a>
-                        <a href="#" class="sub-sub-item" data-subtab="allocate-company-site">Allocate Company & Site</a>
-                        <a href="#" class="sub-sub-item" data-subtab="application-access">Application Access</a>
-                        <a href="#" class="sub-sub-item" data-subtab="qms-access">QMS Access</a>
-                        <a href="#" class="sub-sub-item" data-subtab="user-deletion">User Deactivation</a>
-                        <a href="#" class="sub-sub-item" data-subtab="reset-password">Reset Password</a>
-                    </div>
-                    <a href="#" class="sub-item" id="nav-customer-creation-sub">Customer Creation</a>
-                    <a href="#" class="sub-item" id="nav-supplier-setup-sub">Supplier Setup</a>
-                    <a href="#" class="sub-item" id="nav-item-setup-sub">Item Setup</a>
+        const html = `
+            <a href="#" class="nav-item ${moduleName === 'dashboard' ? 'active' : ''}" id="nav-dashboard">
+                <span class="nav-icon">📊</span> Dashboard
+            </a>
+
+            <!-- Master Data Setup -->
+            <a href="#" class="nav-item ${isMasterActive ? 'active' : ''}" id="nav-company-setup-master">
+                <span class="nav-icon">📁</span> Master Data Setup
+                <span class="nav-arrow" style="margin-left: auto; font-size: 10px; transform: ${isMasterActive ? 'rotate(180deg)' : 'rotate(0deg)'}; transition: transform 0.2s;">▼</span>
+            </a>
+            <div class="sub-nav ${isMasterActive ? '' : 'hidden'}" id="master-data-sub-nav">
+                <a href="#" class="sub-item ${moduleName === 'company' || moduleName === 'other' ? 'active' : ''}" id="nav-company-setup-sub">Company Setup</a>
+                <a href="#" class="sub-item ${moduleName === 'site' ? 'active' : ''}" id="nav-site-setup-sub">Site Setup</a>
+                <a href="#" class="sub-item ${moduleName === 'user-setup' ? 'active' : ''}" id="nav-user-setup-sub">User Setup</a>
+                <div class="sub-sub-nav ${moduleName === 'user-setup' ? '' : 'hidden'}" id="user-setup-sub-sub-nav">
+                    <a href="#" class="sub-sub-item active" data-subtab="user-list">User List</a>
+                    <a href="#" class="sub-sub-item" data-subtab="user-creation">User Creation</a>
+                    <a href="#" class="sub-sub-item" data-subtab="user-reopen">User Reopen</a>
+                    <a href="#" class="sub-sub-item" data-subtab="allocate-company-site">Allocate Company & Site</a>
+                    <a href="#" class="sub-sub-item" data-subtab="application-access">Application Access</a>
+                    <a href="#" class="sub-sub-item" data-subtab="qms-access">QMS Access</a>
+                    <a href="#" class="sub-sub-item" data-subtab="user-deletion">User Deactivation</a>
+                    <a href="#" class="sub-sub-item" data-subtab="reset-password">Reset Password</a>
                 </div>
-                <a href="#" class="nav-item" data-action="mock" data-name="Finance / Ledger">
-                    <span class="nav-icon">💳</span> Finance / Ledger
-                </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Inventory">
-                    <span class="nav-icon">📦</span> Inventory
-                </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Purchasing">
-                    <span class="nav-icon">🛒</span> Purchasing
-                </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Distribution">
-                    <span class="nav-icon">🚚</span> Distribution
-                </a>
-                <a href="#" class="nav-item btn-home-back" id="btn-sidebar-back-home" style="margin-top: auto;">
-                    <span class="nav-icon">🏠</span> Back to Home
-                </a>
-            `;
-        }
+                <a href="#" class="sub-item ${moduleName === 'customer-creation' ? 'active' : ''}" id="nav-customer-creation-sub">Customer Creation</a>
+                <a href="#" class="sub-item ${moduleName === 'supplier-setup' ? 'active' : ''}" id="nav-supplier-setup-sub">Supplier Setup</a>
+                <a href="#" class="sub-item" id="nav-item-setup-sub">Item Setup</a>
+            </div>
+
+            <!-- Part Creation (Top-Level Main Menu) -->
+            <a href="#" class="nav-item ${isPartActive ? 'active' : ''}" id="nav-part-creation-master">
+                <span class="nav-icon">✨</span> Part Creation
+                <span class="nav-arrow" style="margin-left: auto; font-size: 10px; transform: ${isPartActive ? 'rotate(180deg)' : 'rotate(0deg)'}; transition: transform 0.2s;">▼</span>
+            </a>
+            <div class="sub-nav ${isPartActive ? '' : 'hidden'}" id="part-creation-sub-nav">
+                <a href="#" class="sub-item ${isPartActive ? 'active' : ''}" id="nav-pc-part-list-sub">Part List</a>
+                <a href="#" class="sub-item" id="nav-pc-new-request-sub">New Part Request</a>
+            </div>
+
+            <!-- Inventory / Stock -->
+            <a href="#" class="nav-item ${isStockActive ? 'active' : ''}" id="nav-inventory">
+                <span class="nav-icon">📦</span> Inventory &amp; Stock
+                <span class="nav-arrow" style="margin-left: auto; font-size: 10px; transform: ${isStockActive ? 'rotate(180deg)' : 'rotate(0deg)'}; transition: transform 0.2s;">▼</span>
+            </a>
+            <div class="sub-nav ${isStockActive ? '' : 'hidden'}" id="stock-sub-nav">
+                <a href="#" class="sub-item ${isStockActive ? 'active' : ''}" id="nav-stock-dashboard-sub">Stock Dashboard</a>
+                <a href="#" class="sub-item" id="nav-stock-part-creation">Part Creation (QA Approval)</a>
+                <a href="#" class="sub-item" data-action="mock" data-name="Stock Ledger">Stock Ledger</a>
+                <a href="#" class="sub-item" data-action="mock" data-name="Material Transfers">Material Transfers</a>
+                <a href="#" class="sub-item" data-action="mock" data-name="Warehouse Locations">Warehouse Locations</a>
+                <a href="#" class="sub-item" data-action="mock" data-name="Stock Reconciliation">Stock Reconciliation</a>
+            </div>
+
+            <!-- Finance / Ledger -->
+            <a href="#" class="nav-item ${isFinanceActive ? 'active' : ''}" id="nav-finance">
+                <span class="nav-icon">💳</span> Finance / Ledger
+            </a>
+
+            <!-- Purchasing -->
+            <a href="#" class="nav-item ${isPurchaseActive ? 'active' : ''}" id="nav-purchasing">
+                <span class="nav-icon">🛒</span> Purchasing
+            </a>
+
+            <!-- Sales -->
+            <a href="#" class="nav-item ${isSalesActive ? 'active' : ''}" id="nav-sales">
+                <span class="nav-icon">📈</span> Sales
+            </a>
+
+            <!-- Distribution -->
+            <a href="#" class="nav-item" id="nav-distribution">
+                <span class="nav-icon">🚚</span> Distribution
+            </a>
+
+            <a href="#" class="nav-item btn-home-back" id="btn-sidebar-back-home" style="margin-top: auto;">
+                <span class="nav-icon">🏠</span> Back to Launcher
+            </a>
+        `;
 
         sidebarNavMenu.innerHTML = html;
-
-        // Re-attach event listeners to the generated nav items
         attachSidebarListeners();
     }
 
@@ -7215,6 +7135,9 @@ SyriMed Healthcare`
             { title: 'HR Module', module: 'hr', type: 'Module', icon: '👥', isCard: true },
             { title: 'PLPI Module', module: 'plpi', type: 'Module', icon: '⚙️', isCard: true },
             { title: 'Stock Management', module: 'stock', type: 'Module', icon: '📦', isCard: true },
+            { title: 'Part Creation Request (Warehouse)', module: 'stock', subpanel: 'panel-part-creation', action: 'create-part-request', type: 'Stock Management', icon: '✨' },
+            { title: 'Part Creation QA Approval', module: 'stock', subpanel: 'panel-part-creation', filter: 'PENDING_QA', type: 'Stock Management', icon: '🛡️' },
+            { title: 'Inventory Part Buying', module: 'stock', subpanel: 'panel-part-creation', type: 'Stock Management', icon: '📦' },
             { title: 'Master Data Setup', module: 'other', type: 'Module', icon: '📁', isCard: true }
         ];
 
@@ -7391,6 +7314,13 @@ SyriMed Healthcare`
                     if (finModal) finModal.classList.remove('hidden');
                 } else if (typeof switchModule === 'function') {
                     switchModule(item.module);
+                    if (item.subpanel) {
+                        setTimeout(() => {
+                            document.querySelectorAll(`#${item.module}-workspace .stock-sub-panel`).forEach(p => p.classList.add('hidden'));
+                            const subP = document.getElementById(item.subpanel);
+                            if (subP) subP.classList.remove('hidden');
+                        }, 60);
+                    }
                 }
             }
             
@@ -7515,6 +7445,1138 @@ SyriMed Healthcare`
         }
     }
 
+    // ============================================================
+    // DEDICATED WORKSPACE — PART CREATION & QA APPROVAL MODULE
+    // ============================================================
+    function initPartCreation() {
+        const STORAGE_KEY = 'bs_part_creation_requests_v1';
+
+        const defaultRequests = [
+            {
+                id: 'REQ-2026-0001',
+                status: 'APPROVED',
+                requestDate: '2026-08-20',
+                requestedBy: 'Warehouse Ops (John Doe)',
+                stockApprovedBy: 'Stock Control (David Miller)',
+                stockApprovedDate: '2026-08-21',
+                qaVerifiedBy: 'QA Officer (Vilas Vaidya)',
+                qaVerifiedDate: '2026-08-21',
+                company: 'B&S Healthcare Ltd',
+                site: 'Warehouse 1 - Ruislip',
+                requestType: 'NEW PRODUCT',
+                api: 'Paracetamol',
+                productType: 'BRANDED',
+                productName: 'Paracetamol 500mg Tablets',
+                strength: '500mg',
+                packSize: 'Pack of 100',
+                form: 'Tablet',
+                controlledDrug: 'No',
+                cdSchedule: 'N/A',
+                className: 'Non-Controlled',
+                coldChain: 'No',
+                specials: 'No',
+                highRisk: 'No',
+                productFamily: 'Analgesics',
+                storageConditions: 'Store below 25°C',
+                bnfCode: '04.07.01.00',
+                bnfDrugName: 'Paracetamol',
+                bnfSelectionName: 'Paracetamol 500mg',
+                bnfChemicalName: 'Acetaminophen',
+                bnfPrepName: 'Paracetamol Tablets BP',
+                partCodeGenerated: 'PRT-10021',
+                qaChecklist: {
+                    req_type: 'VERIFIED', api: 'VERIFIED', prod_type: 'VERIFIED', product_name: 'VERIFIED',
+                    strength: 'VERIFIED', pack_size: 'VERIFIED', form: 'VERIFIED', controlled_drug: 'VERIFIED',
+                    cd_schedule: 'VERIFIED', class: 'VERIFIED', cold_chain: 'VERIFIED', specials: 'VERIFIED',
+                    high_risk: 'VERIFIED', product_family: 'VERIFIED', storage_conditions: 'VERIFIED'
+                }
+            },
+            {
+                id: 'REQ-2026-0002',
+                status: 'PENDING_QA',
+                requestDate: '2026-08-23',
+                requestedBy: 'Warehouse Team (Sarah Jenkins)',
+                stockApprovedBy: 'Stock Control (David Miller)',
+                stockApprovedDate: '2026-08-24',
+                company: 'B&S Healthcare Ltd',
+                site: 'Warehouse 1 - Ruislip',
+                requestType: 'NEW PRODUCT',
+                api: 'Amoxicillin Trihydrate',
+                productType: 'BRANDED',
+                productName: 'Amoxicillin 250mg Capsules',
+                strength: '250mg',
+                packSize: 'Pack of 21',
+                form: 'Capsule',
+                controlledDrug: 'No',
+                cdSchedule: 'N/A',
+                className: 'Non-Controlled',
+                coldChain: 'No',
+                specials: 'No',
+                highRisk: 'No',
+                productFamily: 'Antibiotics',
+                storageConditions: 'Store below 25°C',
+                bnfCode: '05.01.01.01',
+                bnfDrugName: 'Amoxicillin',
+                bnfSelectionName: 'Amoxicillin 250mg Caps',
+                bnfChemicalName: 'Amoxicillin Trihydrate',
+                bnfPrepName: 'Amoxicillin Capsules BP',
+                qaChecklist: {}
+            },
+            {
+                id: 'REQ-2026-0003',
+                status: 'PENDING_STOCK_CONTROL',
+                requestDate: '2026-08-24',
+                requestedBy: 'Warehouse Op (Mark Smith)',
+                company: 'B&S Pharma',
+                site: 'Dispatch Depot - London',
+                requestType: 'NEW PRODUCT',
+                api: 'Ibuprofen',
+                productType: 'GENERIC',
+                productName: 'Ibuprofen 400mg Tablets',
+                strength: '400mg',
+                packSize: 'Pack of 84',
+                form: 'Tablet',
+                controlledDrug: 'No',
+                cdSchedule: 'N/A',
+                className: 'Non-Controlled',
+                coldChain: 'No',
+                specials: 'No',
+                highRisk: 'No',
+                productFamily: 'NSAID Analgesics',
+                storageConditions: 'Store below 25°C',
+                bnfCode: '10.01.01.00',
+                bnfDrugName: 'Ibuprofen',
+                bnfSelectionName: 'Ibuprofen 400mg',
+                bnfChemicalName: 'Ibuprofen',
+                bnfPrepName: 'Ibuprofen Tablets BP',
+                qaChecklist: {}
+            },
+            {
+                id: 'REQ-2026-0004',
+                status: 'TO_BE_EDITED',
+                requestDate: '2026-08-22',
+                requestedBy: 'Warehouse Op (Mark Smith)',
+                company: 'B&S Pharma',
+                site: 'Dispatch Depot - London',
+                requestType: 'NEW PRODUCT',
+                api: 'Morphine Sulfate',
+                productType: 'BRANDED',
+                productName: 'Morphine Sulfate 10mg/ml Injection',
+                strength: '10mg/ml',
+                packSize: '10 Ampoules',
+                form: 'Injection',
+                controlledDrug: 'Yes',
+                cdSchedule: 'Schedule 2',
+                className: 'Class A',
+                coldChain: 'No',
+                specials: 'No',
+                highRisk: 'Yes',
+                productFamily: 'Controlled Opioids',
+                storageConditions: 'Store below 25°C',
+                bnfCode: '04.07.02.00',
+                bnfDrugName: 'Morphine',
+                bnfSelectionName: 'Morphine Inj 10mg/ml',
+                bnfChemicalName: 'Morphine Sulfate',
+                bnfPrepName: 'Morphine Injection BP',
+                qaNotes: 'Please review Storage Condition and CD Schedule verification.',
+                fieldsToEdit: ['pc-input-cold-chain', 'pc-input-storage-conditions'],
+                qaChecklist: {
+                    cold_chain: 'TO_EDIT',
+                    storage_conditions: 'TO_EDIT'
+                }
+            }
+        ];
+
+        function getRequests() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (!raw) {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultRequests));
+                    return defaultRequests;
+                }
+                return JSON.parse(raw);
+            } catch (e) {
+                return defaultRequests;
+            }
+        }
+
+        function saveRequests(list) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+            renderTable();
+            updateKPIs();
+        }
+
+        let activeFilter = 'ALL';
+
+        function updateKPIs() {
+            const requests = getRequests();
+            const total = requests.length;
+            const pendingStock = requests.filter(r => r.status === 'PENDING_STOCK_CONTROL').length;
+            const pendingQa = requests.filter(r => r.status === 'PENDING_QA').length;
+            const approved = requests.filter(r => r.status === 'APPROVED').length;
+            const toEdit = requests.filter(r => r.status === 'TO_BE_EDITED').length;
+
+            const elTotal = document.getElementById('kpi-part-total');
+            const elPendingStock = document.getElementById('kpi-part-pending-stock');
+            const elPendingQa = document.getElementById('kpi-part-pending-qa');
+            const elApproved = document.getElementById('kpi-part-approved');
+            const elToEdit = document.getElementById('kpi-part-to-edit');
+            const cntStockTab = document.getElementById('cnt-part-pending-stock');
+            const cntQaTab = document.getElementById('cnt-part-pending-qa');
+            const badgeQaCount = document.getElementById('badge-part-qa-count');
+
+            if (elTotal) elTotal.textContent = total;
+            if (elPendingStock) elPendingStock.textContent = pendingStock;
+            if (elPendingQa) elPendingQa.textContent = pendingQa;
+            if (elApproved) elApproved.textContent = approved;
+            if (elToEdit) elToEdit.textContent = toEdit;
+            if (cntStockTab) cntStockTab.textContent = pendingStock;
+            if (cntQaTab) cntQaTab.textContent = pendingQa;
+            if (badgeQaCount) badgeQaCount.textContent = pendingQa;
+        }
+
+        function getBadgeHTML(status) {
+            switch (status) {
+                case 'APPROVED':
+                    return '<span class="badge" style="background: #d1fae5; color: #047857; font-weight: 700; border: 1px solid #a7f3d0;">✅ APPROVED (QA Verified)</span>';
+                case 'PENDING_STOCK_CONTROL':
+                    return '<span class="badge" style="background: #e0f2fe; color: #0369a1; font-weight: 700; border: 1px solid #bae6fd;">📦 PENDING STOCK APPROVAL</span>';
+                case 'PENDING_QA':
+                    return '<span class="badge" style="background: #fef3c7; color: #b45309; font-weight: 700; border: 1px solid #fde68a;">🛡️ PENDING QA REVIEW</span>';
+                case 'TO_BE_EDITED':
+                    return '<span class="badge" style="background: #ffedd5; color: #c2410c; font-weight: 700; border: 1px solid #fed7aa;">🟧 REVISIONS REQUIRED</span>';
+                case 'REJECTED':
+                    return '<span class="badge" style="background: #fee2e2; color: #b91c1c; font-weight: 700; border: 1px solid #fca5a5;">❌ REJECTED</span>';
+                default:
+                    return '<span class="badge" style="background: #f1f5f9; color: #475569; font-weight: 700; border: 1px solid #cbd5e1;">📝 DRAFT</span>';
+            }
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('part-creation-tbody');
+            if (!tbody) return;
+
+            const searchInput = document.getElementById('part-creation-search-input');
+            const searchVal = searchInput ? searchInput.value.trim().toLowerCase() : '';
+
+            const requests = getRequests();
+            const filtered = requests.filter(r => {
+                const matchesFilter = (activeFilter === 'ALL' || r.status === activeFilter);
+                if (!matchesFilter) return false;
+
+                if (!searchVal) return true;
+                const searchStr = `${r.id} ${r.productName} ${r.api} ${r.requestedBy} ${r.partCodeGenerated || ''}`.toLowerCase();
+                return searchStr.includes(searchVal);
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 30px; color: var(--color-text-muted);">
+                            No part creation requests found for filter: <strong>${activeFilter}</strong> ${searchVal ? `• Search: "${searchVal}"` : ''}.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(r => `
+                <tr>
+                    <td style="font-weight: 700; font-family: monospace; color: var(--color-primary);">
+                        ${r.id}
+                        ${r.partCodeGenerated ? `<div style="font-size: 10px; color: #059669; font-weight: 800; margin-top: 2px; font-family: sans-serif;">Part Code: ${r.partCodeGenerated}</div>` : ''}
+                    </td>
+                    <td>
+                        <div style="font-weight: 700; color: var(--color-text-main);">${r.productName || 'N/A'}</div>
+                        <div style="font-size: 11px; color: var(--color-text-muted);">API: <strong>${r.api || 'N/A'}</strong></div>
+                    </td>
+                    <td>
+                        <span style="font-size: 11px; font-weight: 700; background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px;">${r.productType || 'BRANDED'}</span>
+                        <span style="font-size: 12px; margin-left: 4px;">${r.strength || ''}</span>
+                    </td>
+                    <td>
+                        <div style="font-size: 12px; font-weight: 600;">${r.packSize || 'N/A'}</div>
+                        <div style="font-size: 11px; color: var(--color-text-muted);">Form: ${r.form || 'N/A'}</div>
+                    </td>
+                    <td>
+                        <div style="font-size: 12px; font-weight: 600;">${r.requestedBy || 'Warehouse Op'}</div>
+                        <div style="font-size: 11px; color: var(--color-text-muted);">${r.requestDate || ''}</div>
+                    </td>
+                    <td>
+                        ${getBadgeHTML(r.status)}
+                    </td>
+                    <td style="text-align: right;">
+                        <button type="button" class="btn btn-xs btn-outline btn-open-req-detail" data-id="${r.id}" style="font-size: 11px; padding: 3px 10px; border-color: var(--color-primary); color: var(--color-primary);">
+                            ${r.status === 'PENDING_STOCK_CONTROL' ? '📦 Stock Review / Approve' : (r.status === 'PENDING_QA' ? '🛡️ QA Review / Approve' : '👁️ View Request')}
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+
+            // Attach detail open listeners
+            tbody.querySelectorAll('.btn-open-req-detail').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const reqId = btn.getAttribute('data-id');
+                    openPartForm(reqId);
+                });
+            });
+        }
+
+        function showPartList() {
+            if (typeof switchModule === 'function') switchModule('part-creation');
+            const listView = document.getElementById('part-creation-list-view');
+            const formView = document.getElementById('part-creation-form-view');
+            if (listView) listView.classList.remove('hidden');
+            if (formView) formView.classList.add('hidden');
+            renderTable();
+            updateKPIs();
+        }
+
+        function openPartForm(reqId = null) {
+            if (typeof switchModule === 'function') switchModule('part-creation');
+            const listView = document.getElementById('part-creation-list-view');
+            const formView = document.getElementById('part-creation-form-view');
+            if (listView) listView.classList.add('hidden');
+            if (formView) formView.classList.remove('hidden');
+
+            // Reset highlight states
+            document.querySelectorAll('#part-creation-form-view .pc-input, #part-creation-form-view .pc-select').forEach(el => {
+                el.classList.remove('field-to-be-edited');
+            });
+
+            // Uncheck all QA checkboxes by default
+            document.querySelectorAll('.pc-qa-cb').forEach(cb => cb.checked = false);
+
+            if (reqId) {
+                const list = getRequests();
+                const req = list.find(r => r.id === reqId);
+                if (req) {
+                    const rId1 = document.getElementById('pc-form-req-id');
+                    if (rId1) rId1.value = req.id;
+                    const rId2 = document.getElementById('pc-step2-req-id');
+                    if (rId2) rId2.value = req.id;
+
+                    const badgeEl = document.getElementById('pc-form-status-badge');
+                    if (badgeEl) badgeEl.outerHTML = `<span id="pc-form-status-badge" class="badge" style="background:#0284c7; color:#fff;">${req.status}</span>`;
+                    const s2Badge = document.getElementById('pc-step2-status-badge');
+                    if (s2Badge) s2Badge.textContent = req.status;
+
+                    const reqDateVal = req.requestDate || new Date().toISOString().split('T')[0];
+                    const rDate1 = document.getElementById('pc-form-req-date');
+                    if (rDate1) rDate1.value = reqDateVal;
+                    const rDate2 = document.getElementById('pc-step2-req-date');
+                    if (rDate2) rDate2.value = reqDateVal;
+
+                    const reqByVal = req.requestedBy || 'Warehouse Op';
+                    const rBy1 = document.getElementById('pc-form-req-by');
+                    if (rBy1) rBy1.value = reqByVal;
+                    const rBy2 = document.getElementById('pc-step2-req-by');
+                    if (rBy2) rBy2.value = reqByVal;
+
+                    if (document.getElementById('pc-form-company')) document.getElementById('pc-form-company').value = req.company || 'B&S Healthcare Ltd';
+                    if (document.getElementById('pc-form-site')) document.getElementById('pc-form-site').value = req.site || 'Warehouse 1 - Ruislip';
+
+                    // Radio inputs
+                    const rTypeRadio = document.querySelector(`input[name="pc_req_type"][value="${req.requestType}"]`);
+                    if (rTypeRadio) {
+                        rTypeRadio.checked = true;
+                        rTypeRadio.dispatchEvent(new Event('change'));
+                    }
+                    const pTypeRadio = document.querySelector(`input[name="pc_prod_type"][value="${req.productType}"]`);
+                    if (pTypeRadio) pTypeRadio.checked = true;
+
+                    if (document.getElementById('pc-input-api')) document.getElementById('pc-input-api').value = req.api || '';
+                    if (document.getElementById('pc-input-product-name')) document.getElementById('pc-input-product-name').value = req.productName || '';
+                    if (document.getElementById('pc-input-strength')) document.getElementById('pc-input-strength').value = req.strength || '';
+                    if (document.getElementById('pc-input-pack-size')) document.getElementById('pc-input-pack-size').value = req.packSize || '';
+                    if (document.getElementById('pc-input-form')) document.getElementById('pc-input-form').value = req.form || '';
+                    if (document.getElementById('pc-input-controlled-drug')) document.getElementById('pc-input-controlled-drug').value = req.controlledDrug || '';
+                    if (document.getElementById('pc-input-cd-schedule')) document.getElementById('pc-input-cd-schedule').value = req.cdSchedule || '';
+                    if (document.getElementById('pc-input-class')) document.getElementById('pc-input-class').value = req.className || '';
+                    if (document.getElementById('pc-input-cold-chain')) document.getElementById('pc-input-cold-chain').value = req.coldChain || '';
+                    if (document.getElementById('pc-input-specials')) document.getElementById('pc-input-specials').value = req.specials || '';
+                    if (document.getElementById('pc-input-high-risk')) document.getElementById('pc-input-high-risk').value = req.highRisk || '';
+                    if (document.getElementById('pc-input-product-family')) document.getElementById('pc-input-product-family').value = req.productFamily || '';
+                    if (document.getElementById('pc-input-storage-conditions')) document.getElementById('pc-input-storage-conditions').value = req.storageConditions || '';
+                    if (document.getElementById('pc-input-bnf-code')) document.getElementById('pc-input-bnf-code').value = req.bnfCode || '';
+                    if (document.getElementById('pc-input-bnf-drug-name')) document.getElementById('pc-input-bnf-drug-name').value = req.bnfDrugName || '';
+                    if (document.getElementById('pc-input-bnf-selection-name')) document.getElementById('pc-input-bnf-selection-name').value = req.bnfSelectionName || '';
+                    if (document.getElementById('pc-input-bnf-chemical-name')) document.getElementById('pc-input-bnf-chemical-name').value = req.bnfChemicalName || '';
+                    if (document.getElementById('pc-input-bnf-prep-name')) document.getElementById('pc-input-bnf-prep-name').value = req.bnfPrepName || '';
+
+                    // Step 2 inputs
+                    if (document.getElementById('pc-input-shelf-life-val')) document.getElementById('pc-input-shelf-life-val').value = req.shelfLifeVal || '36';
+                    if (document.getElementById('pc-input-vat-code')) document.getElementById('pc-input-vat-code').value = req.vatCode || 'SUK-11';
+                    if (document.getElementById('pc-input-drug-tariff')) document.getElementById('pc-input-drug-tariff').value = req.drugTariff || '';
+                    if (document.getElementById('pc-input-sales-price')) document.getElementById('pc-input-sales-price').value = req.salesPrice || '';
+                    if (document.getElementById('pc-input-min-selling-price')) document.getElementById('pc-input-min-selling-price').value = req.minSellingPrice || '';
+                    if (document.getElementById('pc-input-est-material-cost')) document.getElementById('pc-input-est-material-cost').value = req.estMaterialCost || '';
+                    if (document.getElementById('pc-input-country')) document.getElementById('pc-input-country').value = req.country || 'UNITED KINGDOM';
+                    if (document.getElementById('pc-input-sales-category')) document.getElementById('pc-input-sales-category').value = req.salesCategory || 'G';
+                    if (document.getElementById('pc-input-other-category')) document.getElementById('pc-input-other-category').value = req.otherCategory || '';
+                    if (document.getElementById('pc-input-supplier-name')) document.getElementById('pc-input-supplier-name').value = req.supplierName || '';
+
+                    // Show attached file if present
+                    const attBadge = document.getElementById('pc-attached-file-badge');
+                    if (attBadge) {
+                        if (req.attachedDoc) {
+                            attBadge.textContent = `📎 ${req.attachedDoc}`;
+                            attBadge.classList.remove('hidden');
+                        } else {
+                            attBadge.classList.add('hidden');
+                        }
+                    }
+
+                    // Apply orange highlights if TO_BE_EDITED
+                    if (req.fieldsToEdit && Array.isArray(req.fieldsToEdit)) {
+                        req.fieldsToEdit.forEach(fId => {
+                            const targetField = document.getElementById(fId);
+                            if (targetField) targetField.classList.add('field-to-be-edited');
+                        });
+                    }
+
+                    // Apply QA checkboxes & sync dropdown disabled states
+                    if (req.qaChecklist) {
+                        Object.keys(req.qaChecklist).forEach(key => {
+                            const cb = document.querySelector(`.pc-qa-cb[data-field="pc-input-${key.replace(/_/g, '-')}"]`);
+                            if (cb) cb.checked = (req.qaChecklist[key] === 'VERIFIED');
+                        });
+                    }
+                }
+            } else {
+                // Clear inputs FIRST so values aren't wiped after setting!
+                document.querySelectorAll('#part-creation-form-view .pc-input').forEach(i => i.value = '');
+                document.querySelectorAll('#part-creation-form-view .pc-select').forEach(s => s.selectedIndex = 0);
+                const attBadge = document.getElementById('pc-attached-file-badge');
+                if (attBadge) attBadge.classList.add('hidden');
+
+                // Auto-generate Next Request ID
+                const existingList = getRequests();
+                let maxNum = 4;
+                existingList.forEach(r => {
+                    const m = r.id && r.id.match(/REQ-\d+-(\d+)/);
+                    if (m) {
+                        const num = parseInt(m[1], 10);
+                        if (num > maxNum) maxNum = num;
+                    }
+                });
+                const autoId = 'REQ-2026-' + String(maxNum + 1).padStart(4, '0');
+                const todayStr = new Date().toISOString().split('T')[0];
+
+                const rId1 = document.getElementById('pc-form-req-id');
+                if (rId1) rId1.value = autoId;
+                const rId2 = document.getElementById('pc-step2-req-id');
+                if (rId2) rId2.value = autoId;
+
+                const rDate1 = document.getElementById('pc-form-req-date');
+                if (rDate1) rDate1.value = todayStr;
+                const rDate2 = document.getElementById('pc-step2-req-date');
+                if (rDate2) rDate2.value = todayStr;
+
+                const rBy1 = document.getElementById('pc-form-req-by');
+                if (rBy1) rBy1.value = 'Warehouse Op (John Doe)';
+                const rBy2 = document.getElementById('pc-step2-req-by');
+                if (rBy2) rBy2.value = 'Warehouse Op (John Doe)';
+
+                const badgeEl = document.getElementById('pc-form-status-badge');
+                if (badgeEl) badgeEl.outerHTML = `<span id="pc-form-status-badge" class="badge" style="background:#2563eb; color:#fff; padding:4px 10px; font-size:11px; font-weight:700; border-radius:12px;">DRAFT</span>`;
+                const s2Badge = document.getElementById('pc-step2-status-badge');
+                if (s2Badge) s2Badge.textContent = 'DRAFT';
+            }
+
+            // Sync all QA dropdown disabled states with their checkboxes
+            document.querySelectorAll('.pc-qa-row').forEach(row => {
+                const cb = row.querySelector('.pc-qa-cb');
+                const select = row.querySelector('.pc-qa-select');
+                if (cb && select) {
+                    select.disabled = !cb.checked;
+                }
+            });
+
+            // Dynamic Button Visibility based on Current Workflow Status
+            const btnSubmitStock = document.getElementById('btn-pc-submit-stock');
+            const btnStockApprove = document.getElementById('btn-pc-stock-approve');
+            const btnStockRequestEdit = document.getElementById('btn-pc-stock-request-edit');
+            const btnStockReject = document.getElementById('btn-pc-stock-reject');
+            const btnQaApprove = document.getElementById('btn-pc-qa-approve');
+            const btnQaRequestEdit = document.getElementById('btn-pc-qa-request-edit');
+            const btnQaReject = document.getElementById('btn-pc-qa-reject');
+            const btnSaveDraft = document.getElementById('btn-pc-save-draft');
+
+            const btnStep2Submit = document.getElementById('btn-pc-step2-submit');
+            const btnStep2StockApprove = document.getElementById('btn-pc-step2-stock-approve');
+            const btnStep2StockRequestEdit = document.getElementById('btn-pc-step2-stock-request-edit');
+            const btnStep2StockReject = document.getElementById('btn-pc-step2-stock-reject');
+            const btnStep2QaApprove = document.getElementById('btn-pc-step2-qa-approve');
+            const btnStep2QaRequestEdit = document.getElementById('btn-pc-step2-qa-request-edit');
+            const btnStep2QaReject = document.getElementById('btn-pc-step2-qa-reject');
+
+            const currentStatus = reqId ? (getRequests().find(r => r.id === reqId)?.status || 'DRAFT') : 'DRAFT';
+            const setDisp = (el, val) => { if (el) el.style.display = val; };
+
+            if (currentStatus === 'DRAFT' || currentStatus === 'TO_BE_EDITED') {
+                setDisp(btnSaveDraft, 'inline-block');
+                setDisp(btnSubmitStock, 'inline-block');
+                setDisp(btnStep2Submit, 'inline-block');
+                setDisp(btnStockApprove, 'none');
+                setDisp(btnStockRequestEdit, 'none');
+                setDisp(btnStockReject, 'none');
+                setDisp(btnStep2StockApprove, 'none');
+                setDisp(btnStep2StockRequestEdit, 'none');
+                setDisp(btnStep2StockReject, 'none');
+                setDisp(btnQaApprove, 'none');
+                setDisp(btnQaRequestEdit, 'none');
+                setDisp(btnQaReject, 'none');
+                setDisp(btnStep2QaApprove, 'none');
+                setDisp(btnStep2QaRequestEdit, 'none');
+                setDisp(btnStep2QaReject, 'none');
+            } else if (currentStatus === 'PENDING_STOCK_CONTROL') {
+                setDisp(btnSaveDraft, 'none');
+                setDisp(btnSubmitStock, 'none');
+                setDisp(btnStep2Submit, 'none');
+                setDisp(btnStockApprove, 'inline-block');
+                setDisp(btnStockRequestEdit, 'inline-block');
+                setDisp(btnStockReject, 'inline-block');
+                setDisp(btnStep2StockApprove, 'inline-block');
+                setDisp(btnStep2StockRequestEdit, 'inline-block');
+                setDisp(btnStep2StockReject, 'inline-block');
+                setDisp(btnQaApprove, 'none');
+                setDisp(btnQaRequestEdit, 'none');
+                setDisp(btnQaReject, 'none');
+                setDisp(btnStep2QaApprove, 'none');
+                setDisp(btnStep2QaRequestEdit, 'none');
+                setDisp(btnStep2QaReject, 'none');
+            } else if (currentStatus === 'PENDING_QA') {
+                setDisp(btnSaveDraft, 'none');
+                setDisp(btnSubmitStock, 'none');
+                setDisp(btnStep2Submit, 'none');
+                setDisp(btnStockApprove, 'none');
+                setDisp(btnStockRequestEdit, 'none');
+                setDisp(btnStockReject, 'none');
+                setDisp(btnStep2StockApprove, 'none');
+                setDisp(btnStep2StockRequestEdit, 'none');
+                setDisp(btnStep2StockReject, 'none');
+                setDisp(btnQaApprove, 'inline-block');
+                setDisp(btnQaRequestEdit, 'inline-block');
+                setDisp(btnQaReject, 'inline-block');
+                setDisp(btnStep2QaApprove, 'inline-block');
+                setDisp(btnStep2QaRequestEdit, 'inline-block');
+                setDisp(btnStep2QaReject, 'inline-block');
+            } else {
+                setDisp(btnSaveDraft, 'none');
+                setDisp(btnSubmitStock, 'none');
+                setDisp(btnStep2Submit, 'none');
+                setDisp(btnStockApprove, 'none');
+                setDisp(btnStockRequestEdit, 'none');
+                setDisp(btnStockReject, 'none');
+                setDisp(btnStep2StockApprove, 'none');
+                setDisp(btnStep2StockRequestEdit, 'none');
+                setDisp(btnStep2StockReject, 'none');
+                setDisp(btnQaApprove, 'none');
+                setDisp(btnQaRequestEdit, 'none');
+                setDisp(btnQaReject, 'none');
+                setDisp(btnStep2QaApprove, 'none');
+                setDisp(btnStep2QaRequestEdit, 'none');
+                setDisp(btnStep2QaReject, 'none');
+            }
+        }
+
+        function collectFormData() {
+            const reqId1 = document.getElementById('pc-form-req-id');
+            const reqId2 = document.getElementById('pc-step2-req-id');
+            const reqId = (reqId1 && reqId1.value) ? reqId1.value : ((reqId2 && reqId2.value) ? reqId2.value : 'REQ-2026-0005');
+
+            const reqTypeRadio = document.querySelector('input[name="pc_req_type"]:checked');
+            const prodTypeRadio = document.querySelector('input[name="pc_prod_type"]:checked');
+            const attBadge = document.getElementById('pc-attached-file-badge');
+
+            const qaChecklist = {};
+            document.querySelectorAll('.pc-qa-cb').forEach(cb => {
+                const fieldId = cb.getAttribute('data-field');
+                if (fieldId) {
+                    const key = fieldId.replace('pc-input-', '').replace(/-/g, '_');
+                    qaChecklist[key] = cb.checked ? 'VERIFIED' : 'PENDING';
+                }
+            });
+
+            const apiVal = document.getElementById('pc-input-api') ? document.getElementById('pc-input-api').value : '';
+            const prodNameVal = document.getElementById('pc-input-product-name') ? document.getElementById('pc-input-product-name').value : '';
+            const strengthVal = document.getElementById('pc-input-strength') ? document.getElementById('pc-input-strength').value : '';
+            const formVal = document.getElementById('pc-input-form') ? document.getElementById('pc-input-form').value : '';
+
+            let finalProdName = prodNameVal;
+            if (!finalProdName && apiVal) {
+                finalProdName = `${apiVal} ${strengthVal} ${formVal}`.trim();
+            }
+            if (!finalProdName) {
+                finalProdName = 'New Part Request';
+            }
+
+            return {
+                id: reqId,
+                requestDate: document.getElementById('pc-form-req-date') ? document.getElementById('pc-form-req-date').value : new Date().toISOString().split('T')[0],
+                requestedBy: document.getElementById('pc-form-req-by') ? document.getElementById('pc-form-req-by').value : 'Warehouse Op',
+                company: document.getElementById('pc-form-company') ? document.getElementById('pc-form-company').value : 'B&S Healthcare Ltd',
+                site: document.getElementById('pc-form-site') ? document.getElementById('pc-form-site').value : 'Warehouse 1 - Ruislip',
+                requestType: reqTypeRadio ? reqTypeRadio.value : 'NEW PRODUCT',
+                api: apiVal,
+                productType: prodTypeRadio ? prodTypeRadio.value : 'BRANDED',
+                productName: finalProdName,
+                strength: strengthVal,
+                packSize: document.getElementById('pc-input-pack-size') ? document.getElementById('pc-input-pack-size').value : '',
+                form: formVal,
+                controlledDrug: document.getElementById('pc-input-controlled-drug') ? document.getElementById('pc-input-controlled-drug').value : '',
+                cdSchedule: document.getElementById('pc-input-cd-schedule') ? document.getElementById('pc-input-cd-schedule').value : '',
+                className: document.getElementById('pc-input-class') ? document.getElementById('pc-input-class').value : '',
+                coldChain: document.getElementById('pc-input-cold-chain') ? document.getElementById('pc-input-cold-chain').value : '',
+                specials: document.getElementById('pc-input-specials') ? document.getElementById('pc-input-specials').value : '',
+                highRisk: document.getElementById('pc-input-high-risk') ? document.getElementById('pc-input-high-risk').value : '',
+                productFamily: document.getElementById('pc-input-product-family') ? document.getElementById('pc-input-product-family').value : '',
+                storageConditions: document.getElementById('pc-input-storage-conditions') ? document.getElementById('pc-input-storage-conditions').value : '',
+                bnfCode: document.getElementById('pc-input-bnf-code') ? document.getElementById('pc-input-bnf-code').value : '',
+                bnfDrugName: document.getElementById('pc-input-bnf-drug-name') ? document.getElementById('pc-input-bnf-drug-name').value : '',
+                bnfSelectionName: document.getElementById('pc-input-bnf-selection-name') ? document.getElementById('pc-input-bnf-selection-name').value : '',
+                bnfChemicalName: document.getElementById('pc-input-bnf-chemical-name') ? document.getElementById('pc-input-bnf-chemical-name').value : '',
+                bnfPrepName: document.getElementById('pc-input-bnf-prep-name') ? document.getElementById('pc-input-bnf-prep-name').value : '',
+                shelfLifeVal: document.getElementById('pc-input-shelf-life-val') ? document.getElementById('pc-input-shelf-life-val').value : '',
+                vatCode: document.getElementById('pc-input-vat-code') ? document.getElementById('pc-input-vat-code').value : '',
+                drugTariff: document.getElementById('pc-input-drug-tariff') ? document.getElementById('pc-input-drug-tariff').value : '',
+                salesPrice: document.getElementById('pc-input-sales-price') ? document.getElementById('pc-input-sales-price').value : '',
+                minSellingPrice: document.getElementById('pc-input-min-selling-price') ? document.getElementById('pc-input-min-selling-price').value : '',
+                estMaterialCost: document.getElementById('pc-input-est-material-cost') ? document.getElementById('pc-input-est-material-cost').value : '',
+                country: document.getElementById('pc-input-country') ? document.getElementById('pc-input-country').value : '',
+                salesCategory: document.getElementById('pc-input-sales-category') ? document.getElementById('pc-input-sales-category').value : '',
+                otherCategory: document.getElementById('pc-input-other-category') ? document.getElementById('pc-input-other-category').value : '',
+                supplierName: document.getElementById('pc-input-supplier-name') ? document.getElementById('pc-input-supplier-name').value : '',
+                attachedDoc: attBadge ? attBadge.textContent.replace('📎 ', '') : '',
+                qaChecklist: qaChecklist
+            };
+        }
+
+        function saveRequestWithStatus(status, extraData = {}, customMsg = null) {
+            const formData = collectFormData();
+            formData.status = status;
+            Object.assign(formData, extraData);
+
+            const list = getRequests();
+            const existingIdx = list.findIndex(r => r.id === formData.id);
+            if (existingIdx !== -1) {
+                list[existingIdx] = Object.assign({}, list[existingIdx], formData);
+            } else {
+                list.unshift(formData); // Put at very top of list!
+            }
+
+            saveRequests(list);
+            
+            // Switch to ALL filter tab so new entry is 100% visible!
+            activeFilter = 'ALL';
+            updateActiveTab();
+            showPartList();
+
+            if (customMsg) {
+                alert(customMsg);
+            } else {
+                alert(`🎉 Part Creation Request ${formData.id} status updated!\n\nStatus: ${status}\nProduct: ${formData.productName}\n\nThe entry is now visible in the All Part Requests table.`);
+            }
+        }
+
+        // Bind button actions
+        const btnOpenForm = document.getElementById('btn-open-part-creation-form');
+        const btnBackList = document.getElementById('btn-back-to-part-list');
+        const btnQuickCreate = document.getElementById('btn-quick-part-creation');
+        const btnQuickQa = document.getElementById('btn-quick-part-qa-list');
+        const btnStockPartNav = document.getElementById('nav-stock-part-creation');
+        
+        const btnSaveDraft = document.getElementById('btn-pc-save-draft');
+        const btnSubmitQa = document.getElementById('btn-pc-submit-qa');
+        const btnQaApprove = document.getElementById('btn-pc-qa-approve');
+        const btnQaRequestEdit = document.getElementById('btn-pc-qa-request-edit');
+        const btnQaReject = document.getElementById('btn-pc-qa-reject');
+        const btnCheckAll = document.getElementById('btn-qa-check-all');
+        const btnSaveNext = document.getElementById('btn-pc-save-next');
+        const btnClear = document.getElementById('btn-pc-clear');
+
+        if (btnOpenForm) btnOpenForm.addEventListener('click', () => openPartForm());
+        if (btnBackList) btnBackList.addEventListener('click', () => showPartList());
+        if (btnQuickCreate) {
+            btnQuickCreate.addEventListener('click', () => {
+                switchModule('part-creation');
+                openPartForm();
+            });
+        }
+        if (btnQuickQa) {
+            btnQuickQa.addEventListener('click', () => {
+                switchModule('part-creation');
+                activeFilter = 'PENDING_QA';
+                showPartList();
+            });
+        }
+        if (btnStockPartNav) {
+            btnStockPartNav.addEventListener('click', (e) => {
+                e.preventDefault();
+                switchModule('part-creation');
+                showPartList();
+            });
+        }
+
+        // Dynamic sidebar item clicks for Part Creation top-level menu & submenus
+        document.addEventListener('click', (e) => {
+            const pcMaster = e.target.closest('#nav-part-creation-master');
+            const pcPartListSub = e.target.closest('#nav-pc-part-list-sub');
+            const pcNewReqSub = e.target.closest('#nav-pc-new-request-sub');
+
+            if (pcMaster) {
+                e.preventDefault();
+                const subNav = document.getElementById('part-creation-sub-nav');
+                const arrow = pcMaster.querySelector('.nav-arrow');
+                let isExpanded = false;
+                if (subNav) {
+                    const isHidden = subNav.classList.contains('hidden');
+                    if (isHidden) {
+                        subNav.classList.remove('hidden');
+                        if (arrow) arrow.style.transform = 'rotate(180deg)';
+                        isExpanded = true;
+                    } else {
+                        subNav.classList.add('hidden');
+                        if (arrow) arrow.style.transform = 'rotate(0deg)';
+                    }
+                }
+                const pcWs = document.getElementById('part-creation-workspace');
+                if (isExpanded || !pcWs || pcWs.classList.contains('hidden')) {
+                    switchModule('part-creation');
+                    activeFilter = 'ALL';
+                    updateActiveTab();
+                    showPartList();
+                    if (pcPartListSub) pcPartListSub.classList.add('active');
+                    if (pcNewReqSub) pcNewReqSub.classList.remove('active');
+                }
+            } else if (pcPartListSub) {
+                e.preventDefault();
+                document.querySelectorAll('#part-creation-sub-nav .sub-item').forEach(i => i.classList.remove('active'));
+                pcPartListSub.classList.add('active');
+                const masterItem = document.getElementById('nav-part-creation-master');
+                if (masterItem) masterItem.classList.add('active');
+
+                switchModule('part-creation');
+                activeFilter = 'ALL';
+                updateActiveTab();
+                showPartList();
+            } else if (pcNewReqSub) {
+                e.preventDefault();
+                document.querySelectorAll('#part-creation-sub-nav .sub-item').forEach(i => i.classList.remove('active'));
+                pcNewReqSub.classList.add('active');
+                const masterItem = document.getElementById('nav-part-creation-master');
+                if (masterItem) masterItem.classList.add('active');
+
+                switchModule('part-creation');
+                openPartForm();
+            } else if (e.target.closest('#nav-pc-all-requests')) {
+                e.preventDefault();
+                activeFilter = 'ALL';
+                showPartList();
+            } else if (e.target.closest('#nav-pc-new-request')) {
+                e.preventDefault();
+                openPartForm();
+            } else if (e.target.closest('#nav-pc-pending-qa')) {
+                e.preventDefault();
+                activeFilter = 'PENDING_QA';
+                showPartList();
+            } else if (e.target.closest('#nav-pc-back-stock')) {
+                e.preventDefault();
+                switchModule('stock');
+            }
+        });
+
+        const searchInputEl = document.getElementById('part-creation-search-input');
+        if (searchInputEl) {
+            searchInputEl.addEventListener('input', () => {
+                renderTable();
+            });
+        }
+
+        if (btnSaveDraft) btnSaveDraft.addEventListener('click', () => saveRequestWithStatus('DRAFT'));
+
+        const btnSubmitStock = document.getElementById('btn-pc-submit-stock');
+        const btnStockApprove = document.getElementById('btn-pc-stock-approve');
+        const btnStockRequestEdit = document.getElementById('btn-pc-stock-request-edit');
+        const btnStockReject = document.getElementById('btn-pc-stock-reject');
+
+        if (btnSubmitStock) {
+            btnSubmitStock.addEventListener('click', () => {
+                const data = collectFormData();
+                if (!data.productName && !data.api) {
+                    alert('Please fill in Product Name or API before submitting for Stock Control approval.');
+                    return;
+                }
+                saveRequestWithStatus('PENDING_STOCK_CONTROL', {}, `📤 Request submitted for Stock Control Approval!\n\nStatus is now PENDING STOCK CONTROL.`);
+            });
+        }
+
+        if (btnSubmitQa) {
+            btnSubmitQa.addEventListener('click', () => {
+                const data = collectFormData();
+                if (!data.productName && !data.api) {
+                    alert('Please fill in Product Name or API before submitting.');
+                    return;
+                }
+                saveRequestWithStatus('PENDING_STOCK_CONTROL', {}, `📤 Request submitted for Stock Control Approval!\n\nStatus is now PENDING STOCK CONTROL.`);
+            });
+        }
+
+        function executeStockApprove() {
+            saveRequestWithStatus('PENDING_QA', {
+                stockApprovedBy: 'Stock Control (David Miller)',
+                stockApprovedDate: new Date().toISOString().split('T')[0]
+            }, `📦 Part Creation Request Approved by Stock Control!\n\nForwarded to QA Team for regulatory approval.`);
+        }
+
+        function executeStockRequestEdit() {
+            saveRequestWithStatus('TO_BE_EDITED', {
+                fieldsToEdit: ['pc-input-storage-conditions', 'pc-input-pack-size']
+            }, `🟧 Part Creation Request returned to Requester for revisions by Stock Control.`);
+        }
+
+        function executeStockReject() {
+            if (confirm('Are you sure you want to REJECT this part creation request at Stock Control stage?')) {
+                saveRequestWithStatus('REJECTED', {}, `❌ Part Creation Request has been Rejected by Stock Control.`);
+            }
+        }
+
+        if (btnStockApprove) btnStockApprove.addEventListener('click', executeStockApprove);
+        if (btnStockRequestEdit) btnStockRequestEdit.addEventListener('click', executeStockRequestEdit);
+        if (btnStockReject) btnStockReject.addEventListener('click', executeStockReject);
+
+        function executeQaApprove() {
+            document.querySelectorAll('.pc-qa-cb').forEach(cb => {
+                cb.checked = true;
+                const qaRow = cb.closest('.pc-qa-row');
+                if (qaRow) {
+                    const select = qaRow.querySelector('.pc-qa-select');
+                    if (select) {
+                        select.disabled = false;
+                        select.value = 'VERIFIED';
+                    }
+                }
+            });
+            const partCode = 'PRT-' + Math.floor(10000 + Math.random() * 90000);
+            saveRequestWithStatus('APPROVED', {
+                qaVerifiedBy: 'QA Officer (Vilas Vaidya)',
+                qaVerifiedDate: new Date().toISOString().split('T')[0],
+                partCodeGenerated: partCode,
+                fieldsToEdit: []
+            }, `🎉 Part Creation Approved by QA!\n\nNew Master Part Code generated: ${partCode}\nAdded to Stock Master Record.`);
+        }
+
+        function executeQaRequestEdit() {
+            const fieldsToEdit = [];
+            document.querySelectorAll('.pc-qa-cb').forEach(cb => {
+                if (!cb.checked) {
+                    const fId = cb.getAttribute('data-field');
+                    if (fId) fieldsToEdit.push(fId);
+                }
+            });
+            if (fieldsToEdit.length === 0) {
+                fieldsToEdit.push('pc-input-storage-conditions', 'pc-input-cold-chain');
+            }
+            saveRequestWithStatus('TO_BE_EDITED', { fieldsToEdit: fieldsToEdit }, `🟧 Part Creation Request returned to Warehouse for revisions.\n\nHighlighted fields require updates.`);
+        }
+
+        function executeQaReject() {
+            if (confirm('Are you sure you want to REJECT this part creation request?')) {
+                saveRequestWithStatus('REJECTED', {}, `❌ Part Creation Request has been Rejected.`);
+            }
+        }
+
+        if (btnQaApprove) btnQaApprove.addEventListener('click', executeQaApprove);
+        if (btnQaRequestEdit) btnQaRequestEdit.addEventListener('click', executeQaRequestEdit);
+        if (btnQaReject) btnQaReject.addEventListener('click', executeQaReject);
+
+        const btnStep2StockApprove = document.getElementById('btn-pc-step2-stock-approve');
+        const btnStep2StockRequestEdit = document.getElementById('btn-pc-step2-stock-request-edit');
+        const btnStep2StockReject = document.getElementById('btn-pc-step2-stock-reject');
+
+        if (btnStep2StockApprove) btnStep2StockApprove.addEventListener('click', executeStockApprove);
+        if (btnStep2StockRequestEdit) btnStep2StockRequestEdit.addEventListener('click', executeStockRequestEdit);
+        if (btnStep2StockReject) btnStep2StockReject.addEventListener('click', executeStockReject);
+
+        const btnStep2QaApprove = document.getElementById('btn-pc-step2-qa-approve');
+        const btnStep2QaRequestEdit = document.getElementById('btn-pc-step2-qa-request-edit');
+        const btnStep2QaReject = document.getElementById('btn-pc-step2-qa-reject');
+
+        if (btnStep2QaApprove) btnStep2QaApprove.addEventListener('click', executeQaApprove);
+        if (btnStep2QaRequestEdit) btnStep2QaRequestEdit.addEventListener('click', executeQaRequestEdit);
+        if (btnStep2QaReject) btnStep2QaReject.addEventListener('click', executeQaReject);
+
+        // Dynamic Request Type Radio Handler (NEW PRODUCT vs EXISTING PRODUCT)
+        const reqTypeRadios = document.querySelectorAll('input[name="pc_req_type"]');
+        const searchRowEl = document.getElementById('pc-row-search-product');
+        const searchQaRowEl = document.getElementById('qa-row-search-product');
+        const searchInputProduct = document.getElementById('pc-input-search-product');
+        const searchDropdownEl = document.getElementById('pc-search-product-dropdown');
+
+        function toggleReqTypeFields() {
+            const selectedRadio = document.querySelector('input[name="pc_req_type"]:checked');
+            const val = selectedRadio ? selectedRadio.value : 'NEW PRODUCT';
+            if (val === 'EXISTING PRODUCT') {
+                if (searchRowEl) searchRowEl.classList.remove('hidden');
+                if (searchQaRowEl) searchQaRowEl.classList.remove('hidden');
+            } else {
+                if (searchRowEl) searchRowEl.classList.add('hidden');
+                if (searchQaRowEl) searchQaRowEl.classList.add('hidden');
+                if (searchDropdownEl) searchDropdownEl.classList.add('hidden');
+            }
+        }
+
+        reqTypeRadios.forEach(r => {
+            r.addEventListener('change', toggleReqTypeFields);
+        });
+
+        if (searchInputProduct) {
+            searchInputProduct.addEventListener('focus', () => {
+                const selectedRadio = document.querySelector('input[name="pc_req_type"]:checked');
+                if (selectedRadio && selectedRadio.value === 'EXISTING PRODUCT' && searchDropdownEl) {
+                    searchDropdownEl.classList.remove('hidden');
+                }
+            });
+
+            searchInputProduct.addEventListener('input', () => {
+                const term = searchInputProduct.value.toLowerCase().trim();
+                if (searchDropdownEl) {
+                    searchDropdownEl.classList.remove('hidden');
+                    const items = searchDropdownEl.querySelectorAll('.pc-search-item');
+                    items.forEach(item => {
+                        const txt = item.textContent.toLowerCase();
+                        if (txt.includes(term)) {
+                            item.style.display = 'block';
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+                }
+            });
+        }
+
+        document.querySelectorAll('.pc-search-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const api = item.getAttribute('data-api') || '';
+                const name = item.getAttribute('data-name') || '';
+                const strength = item.getAttribute('data-strength') || '';
+                const pack = item.getAttribute('data-pack') || '';
+                const form = item.getAttribute('data-form') || '';
+
+                if (searchInputProduct) searchInputProduct.value = name;
+                if (document.getElementById('pc-input-api')) document.getElementById('pc-input-api').value = api;
+                if (document.getElementById('pc-input-product-name')) document.getElementById('pc-input-product-name').value = name;
+                if (document.getElementById('pc-input-strength')) document.getElementById('pc-input-strength').value = strength;
+                if (document.getElementById('pc-input-pack-size')) document.getElementById('pc-input-pack-size').value = pack;
+                if (document.getElementById('pc-input-form')) document.getElementById('pc-input-form').value = form;
+
+                if (searchDropdownEl) searchDropdownEl.classList.add('hidden');
+            });
+        });
+
+        // Close search dropdown on click outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#pc-row-search-product') && searchDropdownEl) {
+                searchDropdownEl.classList.add('hidden');
+            }
+        });
+
+        // Dynamic checkbox click -> Enable/Disable QA Dropdown in same row
+        document.querySelectorAll('.pc-qa-cb').forEach(cb => {
+            cb.addEventListener('change', () => {
+                const qaRow = cb.closest('.pc-qa-row');
+                if (qaRow) {
+                    const select = qaRow.querySelector('.pc-qa-select');
+                    if (select) {
+                        select.disabled = !cb.checked;
+                    }
+                }
+            });
+        });
+
+        function showFormStep(stepNum) {
+            const step1 = document.getElementById('pc-form-step-1');
+            const step2 = document.getElementById('pc-form-step-2');
+            const ind1 = document.getElementById('indicator-step-1');
+            const ind2 = document.getElementById('indicator-step-2');
+            const badge = document.getElementById('pc-step-badge');
+            const subTitle = document.getElementById('pc-form-sub-heading');
+
+            if (stepNum === 1) {
+                if (step1) step1.classList.remove('hidden');
+                if (step2) step2.classList.add('hidden');
+                if (ind1) {
+                    ind1.style.background = 'var(--color-primary)';
+                    ind1.style.color = '#fff';
+                    ind1.style.fontWeight = '700';
+                }
+                if (ind2) {
+                    ind2.style.background = '#e2e8f0';
+                    ind2.style.color = 'var(--color-text-muted)';
+                    ind2.style.fontWeight = '600';
+                }
+                if (badge) badge.textContent = 'STEP 1 OF 2';
+                if (subTitle) subTitle.textContent = 'Inventory Part > General Identification & QA Regulatory Approval';
+            } else {
+                if (step1) step1.classList.add('hidden');
+                if (step2) step2.classList.remove('hidden');
+                if (ind2) {
+                    ind2.style.background = 'var(--color-primary)';
+                    ind2.style.color = '#fff';
+                    ind2.style.fontWeight = '700';
+                }
+                if (ind1) {
+                    ind1.style.background = '#e2e8f0';
+                    ind1.style.color = 'var(--color-text-muted)';
+                    ind1.style.fontWeight = '600';
+                }
+                if (badge) badge.textContent = 'STEP 2 OF 2';
+                if (subTitle) subTitle.textContent = 'Inventory Part > Buying & Stock Control';
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        const indStep1 = document.getElementById('indicator-step-1');
+        const indStep2 = document.getElementById('indicator-step-2');
+        if (indStep1) indStep1.addEventListener('click', () => showFormStep(1));
+        if (indStep2) indStep2.addEventListener('click', () => showFormStep(2));
+
+        if (btnCheckAll) {
+            btnCheckAll.addEventListener('click', () => {
+                document.querySelectorAll('#pc-form-step-1 .pc-qa-cb').forEach(cb => {
+                    cb.checked = true;
+                    const qaRow = cb.closest('.pc-qa-row');
+                    if (qaRow) {
+                        const select = qaRow.querySelector('.pc-qa-select');
+                        if (select) select.disabled = false;
+                    }
+                });
+            });
+        }
+
+        const btnStep2CheckAll = document.getElementById('btn-step2-qa-check-all');
+        if (btnStep2CheckAll) {
+            btnStep2CheckAll.addEventListener('click', () => {
+                document.querySelectorAll('#pc-form-step-2 .pc-qa-cb').forEach(cb => {
+                    cb.checked = true;
+                    const qaRow = cb.closest('.pc-qa-row');
+                    if (qaRow) {
+                        const select = qaRow.querySelector('.pc-qa-select');
+                        if (select) select.disabled = false;
+                    }
+                });
+            });
+        }
+
+        if (btnSaveNext) {
+            btnSaveNext.addEventListener('click', () => {
+                showFormStep(2);
+            });
+        }
+
+        const btnStep2Back = document.getElementById('btn-pc-step2-back');
+        if (btnStep2Back) {
+            btnStep2Back.addEventListener('click', () => {
+                showFormStep(1);
+            });
+        }
+
+        const btnStep2Clear = document.getElementById('btn-pc-step2-clear');
+        if (btnStep2Clear) {
+            btnStep2Clear.addEventListener('click', () => {
+                document.querySelectorAll('#pc-form-step-2 .pc-input').forEach(i => i.value = '');
+                document.querySelectorAll('#pc-form-step-2 .pc-select').forEach(s => s.selectedIndex = 0);
+                document.querySelectorAll('#pc-form-step-2 .pc-qa-cb').forEach(cb => {
+                    cb.checked = false;
+                    const qaRow = cb.closest('.pc-qa-row');
+                    if (qaRow) {
+                        const select = qaRow.querySelector('.pc-qa-select');
+                        if (select) select.disabled = true;
+                    }
+                });
+            });
+        }
+
+        const hiddenFileInput = document.getElementById('pc-hidden-file-input');
+        const btnStep2Upload = document.getElementById('btn-pc-step2-upload');
+        const attachedBadge = document.getElementById('pc-attached-file-badge');
+
+        if (btnStep2Upload && hiddenFileInput) {
+            btnStep2Upload.addEventListener('click', () => {
+                hiddenFileInput.click();
+            });
+
+            hiddenFileInput.addEventListener('change', (e) => {
+                if (e.target.files && e.target.files.length > 0) {
+                    const file = e.target.files[0];
+                    const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                    const badgeTxt = `📎 Attached: ${file.name} (${fileSizeMB} MB)`;
+                    if (attachedBadge) {
+                        attachedBadge.textContent = badgeTxt;
+                        attachedBadge.classList.remove('hidden');
+                    }
+                    alert(`✅ Document Attached Successfully!\n\nFilename: ${file.name}\nFile Size: ${fileSizeMB} MB`);
+                }
+            });
+        }
+
+        const btnStep2Submit = document.getElementById('btn-pc-step2-submit');
+        if (btnStep2Submit) {
+            btnStep2Submit.addEventListener('click', () => {
+                const data = collectFormData();
+                if (!data.productName && !data.api) {
+                    alert('Please fill in Product Name or API before submitting for Stock Control approval.');
+                    return;
+                }
+                saveRequestWithStatus('PENDING_STOCK_CONTROL', {}, `📤 Request submitted for Stock Control Approval!\n\nStatus is now PENDING STOCK CONTROL.`);
+            });
+        }
+
+        if (btnClear) {
+            btnClear.addEventListener('click', () => {
+                document.querySelectorAll('#part-creation-form-view .pc-input').forEach(i => i.value = '');
+                document.querySelectorAll('#part-creation-form-view .pc-select').forEach(s => s.selectedIndex = 0);
+                document.querySelectorAll('.pc-qa-cb').forEach(cb => {
+                    cb.checked = false;
+                    const qaRow = cb.closest('.pc-qa-row');
+                    if (qaRow) {
+                        const select = qaRow.querySelector('.pc-qa-select');
+                        if (select) select.disabled = true;
+                    }
+                });
+                document.querySelectorAll('.field-to-be-edited').forEach(e => e.classList.remove('field-to-be-edited'));
+            });
+        }
+
+        // Filter tab clicks
+        document.querySelectorAll('[data-part-filter]').forEach(tab => {
+            tab.addEventListener('click', () => {
+                activeFilter = tab.getAttribute('data-part-filter');
+                updateActiveTab();
+                renderTable();
+            });
+        });
+
+        function updateActiveTab() {
+            document.querySelectorAll('[data-part-filter]').forEach(t => {
+                if (t.getAttribute('data-part-filter') === activeFilter) {
+                    t.classList.add('active-part-tab');
+                } else {
+                    t.classList.remove('active-part-tab');
+                }
+            });
+        }
+
+        // Expose functions globally
+        window.openPartCreationForm = openPartForm;
+        window.showPartCreationList = showPartList;
+
+        // Initial render
+        updateKPIs();
+        renderTable();
+    }
+
     // Initialize page
     loadSavedConfig();
     loadSavedSupplierConfig();
@@ -7525,6 +8587,7 @@ SyriMed Healthcare`
     initFinanceSetup();
     initRBAC();
     initAwesomebar();
+    initPartCreation();
     checkUrlResetToken();
     showToast("Welcome to B&S ERP Portal. Select a module to begin.", "success");
 });
