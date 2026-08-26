@@ -562,11 +562,15 @@ document.addEventListener('DOMContentLoaded', () => {
         plpi: document.getElementById('plpi-workspace'),
         stock: document.getElementById('stock-workspace'),
         partCreation: document.getElementById('part-creation-workspace'),
+        masters: document.getElementById('masters-dashboard-workspace'),
+        submaster: document.getElementById('sub-master-workspace'),
         other: document.getElementById('company-setup-workspace'),
+        company: document.getElementById('company-setup-workspace'),
         site: document.getElementById('site-setup-workspace'),
         user: document.getElementById('user-setup-workspace'),
         customer: document.getElementById('customer-creation-workspace'),
-        supplier: document.getElementById('supplier-creation-workspace'),
+        supplier: document.getElementById('supplier-creation-workspace') || document.getElementById('old-supplier-setup-workspace'),
+        item: document.getElementById('item-setup-workspace'),
         finance: document.getElementById('finance-setup-workspace')
     };
 
@@ -651,7 +655,29 @@ document.addEventListener('DOMContentLoaded', () => {
         homeScreen.classList.add('hidden');
         mainErpContainer.classList.remove('hidden');
 
-        const activeKey = (moduleName === 'user-setup') ? 'user' : (moduleName === 'site' ? 'site' : (moduleName === 'other' ? 'other' : (moduleName === 'customer-creation' ? 'customer' : (moduleName === 'supplier-setup' ? 'supplier' : (moduleName === 'part-creation' ? 'partCreation' : moduleName)))));
+        const activeKeyMap = {
+            'masters': 'masters',
+            'submaster': 'submaster',
+            'company': 'other',
+            'other': 'other',
+            'site': 'site',
+            'user-setup': 'user',
+            'user': 'user',
+            'customer-creation': 'customer',
+            'customer': 'customer',
+            'supplier-setup': 'supplier',
+            'supplier': 'supplier',
+            'item-setup': 'item',
+            'item': 'item',
+            'part-creation': 'partCreation',
+            'sales': 'sales',
+            'purchase': 'purchase',
+            'hr': 'hr',
+            'plpi': 'plpi',
+            'stock': 'stock',
+            'finance': 'finance'
+        };
+        const activeKey = activeKeyMap[moduleName] || moduleName;
 
         // Hide all workspaces and show active workspace
         Object.keys(workspaces).forEach(key => {
@@ -664,25 +690,80 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        // Update sidebar logo branding
+        const logoIcon = document.querySelector('#sidebar-logo .logo-icon');
+        const logoText = document.querySelector('#sidebar-logo .logo-text');
+        if (logoIcon && logoText) {
+            const masterModules = ['masters', 'submaster', 'company', 'other', 'site', 'user-setup', 'customer-creation', 'supplier-setup', 'item-setup', 'item'];
+            if (masterModules.includes(moduleName)) {
+                logoIcon.textContent = '📁';
+                logoIcon.style.background = 'none';
+                logoIcon.style.webkitTextFillColor = '#0ea5e9';
+                logoText.innerHTML = 'Master Data Setup';
+            } else if (moduleName === 'finance') {
+                logoIcon.textContent = '🔀';
+                logoIcon.style.background = 'none';
+                logoIcon.style.webkitTextFillColor = '#4f46e5';
+                logoText.innerHTML = 'Accounts Setup';
+            } else if (moduleName === 'purchase') {
+                logoIcon.textContent = '🛒';
+                logoIcon.style.background = 'none';
+                logoIcon.style.webkitTextFillColor = '#10b981';
+                logoText.innerHTML = 'Procurement';
+            } else if (moduleName === 'invoicing') {
+                logoIcon.textContent = '🧾';
+                logoIcon.style.background = 'none';
+                logoIcon.style.webkitTextFillColor = '#3b82f6';
+                logoText.innerHTML = 'Invoicing';
+            } else if (moduleName === 'stock') {
+                logoIcon.textContent = '📦';
+                logoIcon.style.background = 'none';
+                logoIcon.style.webkitTextFillColor = '#6366f1';
+                logoText.innerHTML = 'Stock Management';
+            } else {
+                logoIcon.textContent = '▲';
+                logoIcon.style.background = '';
+                logoIcon.style.webkitTextFillColor = '';
+                logoText.innerHTML = 'B&S <span>ERP</span>';
+            }
+        }
+
         // Render dynamic sidebar menu
         renderSidebarMenu(moduleName);
 
         // Contextual topbar actions and sub-tab selection
-        if (moduleName === 'other') {
-            const btnCompany = document.getElementById('nav-company-setup-sub');
-            if (btnCompany) btnCompany.click();
+        if (moduleName === 'masters') {
+            if (typeof updateMastersDashboardKPIs === 'function') updateMastersDashboardKPIs();
+            if (btnSave) btnSave.style.display = 'none';
+            if (btnCancel) btnCancel.style.display = 'none';
+        } else if (moduleName === 'submaster') {
+            if (btnSave) btnSave.style.display = 'none';
+            if (btnCancel) btnCancel.style.display = 'none';
+        } else if (moduleName === 'item-setup' || moduleName === 'item') {
+            if (btnSave) btnSave.style.display = 'none';
+            if (btnCancel) btnCancel.style.display = 'none';
+        } else if (moduleName === 'other' || moduleName === 'company') {
+            showCompanyListView();
+            if (btnSave) btnSave.style.display = 'inline-flex';
+            if (btnCancel) btnCancel.style.display = 'inline-flex';
         } else if (moduleName === 'site') {
-            const btnSite = document.getElementById('nav-site-setup-sub');
-            if (btnSite) btnSite.click();
+            showSiteListView();
+            if (btnSave) btnSave.style.display = 'inline-flex';
+            if (btnCancel) btnCancel.style.display = 'inline-flex';
         } else if (moduleName === 'user-setup') {
-            const btnUser = document.getElementById('nav-user-setup-sub');
-            if (btnUser) btnUser.click();
+            if (btnSave) btnSave.style.display = 'none';
+            if (btnCancel) btnCancel.style.display = 'none';
         } else if (moduleName === 'customer-creation') {
-            const btnCustomer = document.getElementById('nav-customer-creation-sub');
-            if (btnCustomer) btnCustomer.click();
+            if (btnSave) btnSave.style.display = 'none';
+            if (btnCancel) btnCancel.style.display = 'none';
+            if (window.CustomerWorkflowModule && typeof window.CustomerWorkflowModule.showListView === 'function') {
+                window.CustomerWorkflowModule.showListView();
+                window.CustomerWorkflowModule.renderList();
+            }
         } else if (moduleName === 'supplier-setup') {
-            const btnSupplier = document.getElementById('nav-supplier-setup-sub');
-            if (btnSupplier) btnSupplier.click();
+            if (btnSave) btnSave.style.display = 'none';
+            if (btnCancel) btnCancel.style.display = 'none';
+            showSupplierListView();
         } else if (moduleName === 'part-creation') {
             if (btnSave) btnSave.style.display = 'none';
             if (btnCancel) btnCancel.style.display = 'none';
@@ -703,29 +784,34 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderSidebarMenu(moduleName) {
         if (!sidebarNavMenu) return;
 
-        const isMasterActive = ['company', 'site', 'user-setup', 'customer-creation', 'supplier-setup', 'other'].includes(moduleName);
-        const isPartActive = (moduleName === 'part-creation');
-        const isStockActive = (moduleName === 'stock');
-        const isFinanceActive = (moduleName === 'finance');
-        const isSalesActive = (moduleName === 'sales');
-        const isPurchaseActive = (moduleName === 'purchase');
-        const isHrActive = (moduleName === 'hr');
-        const isPlpiActive = (moduleName === 'plpi');
+        const isMaster = ['masters', 'submaster', 'company', 'site', 'user-setup', 'customer-creation', 'supplier-setup', 'item-setup', 'item', 'other'].includes(moduleName);
+        const isStock = (moduleName === 'stock');
+        const isPart = (moduleName === 'part-creation');
+        const isPurchase = (moduleName === 'purchase');
+        const isSales = (moduleName === 'sales');
+        const isFinance = (moduleName === 'finance');
+        const isHr = (moduleName === 'hr');
+        const isPlpi = (moduleName === 'plpi');
 
-        const html = `
-            <a href="#" class="nav-item ${moduleName === 'dashboard' ? 'active' : ''}" id="nav-dashboard">
-                <span class="nav-icon">📊</span> Dashboard
-            </a>
+        let html = '';
 
-            <!-- Master Data Setup -->
-            <a href="#" class="nav-item ${isMasterActive ? 'active' : ''}" id="nav-company-setup-master">
-                <span class="nav-icon">📁</span> Master Data Setup
-                <span class="nav-arrow" style="margin-left: auto; font-size: 10px; transform: ${isMasterActive ? 'rotate(180deg)' : 'rotate(0deg)'}; transition: transform 0.2s;">▼</span>
-            </a>
-            <div class="sub-nav ${isMasterActive ? '' : 'hidden'}" id="master-data-sub-nav">
-                <a href="#" class="sub-item ${moduleName === 'company' || moduleName === 'other' ? 'active' : ''}" id="nav-company-setup-sub">Company Setup</a>
-                <a href="#" class="sub-item ${moduleName === 'site' ? 'active' : ''}" id="nav-site-setup-sub">Site Setup</a>
-                <a href="#" class="sub-item ${moduleName === 'user-setup' ? 'active' : ''}" id="nav-user-setup-sub">User Setup</a>
+        if (isMaster) {
+            html = `
+                <div class="sidebar-module-header" style="padding: 10px 14px; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #0ea5e9; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                    <span>📁</span> Master Data Setup
+                </div>
+                <a href="#" class="nav-item ${moduleName === 'masters' ? 'active' : ''}" id="nav-masters-dashboard-sub">
+                    <span class="nav-icon">📊</span> Masters Overview
+                </a>
+                <a href="#" class="nav-item ${moduleName === 'company' || moduleName === 'other' ? 'active' : ''}" id="nav-company-setup-sub">
+                    <span class="nav-icon">🏢</span> Company Setup
+                </a>
+                <a href="#" class="nav-item ${moduleName === 'site' ? 'active' : ''}" id="nav-site-setup-sub">
+                    <span class="nav-icon">🏢</span> Site Setup
+                </a>
+                <a href="#" class="nav-item ${moduleName === 'user-setup' ? 'active' : ''}" id="nav-user-setup-sub">
+                    <span class="nav-icon">👥</span> User Setup
+                </a>
                 <div class="sub-sub-nav ${moduleName === 'user-setup' ? '' : 'hidden'}" id="user-setup-sub-sub-nav">
                     <a href="#" class="sub-sub-item active" data-subtab="user-list">User List</a>
                     <a href="#" class="sub-sub-item" data-subtab="user-creation">User Creation</a>
@@ -736,56 +822,156 @@ document.addEventListener('DOMContentLoaded', () => {
                     <a href="#" class="sub-sub-item" data-subtab="user-deletion">User Deactivation</a>
                     <a href="#" class="sub-sub-item" data-subtab="reset-password">Reset Password</a>
                 </div>
-                <a href="#" class="sub-item ${moduleName === 'customer-creation' ? 'active' : ''}" id="nav-customer-creation-sub">Customer Creation</a>
-                <a href="#" class="sub-item ${moduleName === 'supplier-setup' ? 'active' : ''}" id="nav-supplier-setup-sub">Supplier Setup</a>
-                <a href="#" class="sub-item" id="nav-item-setup-sub">Item Setup</a>
-            </div>
+                <a href="#" class="nav-item ${moduleName === 'customer-creation' ? 'active' : ''}" id="nav-customer-creation-sub">
+                    <span class="nav-icon">🤝</span> Customer Creation
+                </a>
+                <a href="#" class="nav-item ${moduleName === 'supplier-setup' ? 'active' : ''}" id="nav-supplier-setup-sub">
+                    <span class="nav-icon">🚚</span> Supplier Setup
+                </a>
+                <a href="#" class="nav-item ${moduleName === 'submaster' ? 'active' : ''}" id="nav-sub-master-sub">
+                    <span class="nav-icon">🔀</span> Dropdown Sub-Masters
+                </a>
+                <a href="#" class="nav-item ${moduleName === 'item-setup' || moduleName === 'item' ? 'active' : ''}" id="nav-item-setup-sub">
+                    <span class="nav-icon">📦</span> Item Setup
+                </a>
+            `;
+        } else if (isStock) {
+            html = `
+                <div class="sidebar-module-header" style="padding: 10px 14px; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #6366f1; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                    <span>📦</span> Stock Management
+                </div>
+                <a href="#" class="nav-item active" id="nav-stock-dashboard-sub">
+                    <span class="nav-icon">📊</span> Stock Dashboard
+                </a>
+                <a href="#" class="nav-item" data-action="mock" data-name="Stock Entry">
+                    <span class="nav-icon">📝</span> Stock Entry
+                </a>
+                <a href="#" class="nav-item" data-action="mock" data-name="Stock Ledger">
+                    <span class="nav-icon">📄</span> Stock Ledger
+                </a>
+                <a href="#" class="nav-item" data-action="mock" data-name="Material Transfers">
+                    <span class="nav-icon">🚚</span> Material Transfers
+                </a>
+                <a href="#" class="nav-item" data-action="mock" data-name="Warehouse Locations">
+                    <span class="nav-icon">📍</span> Warehouse Locations
+                </a>
+                <a href="#" class="nav-item" data-action="mock" data-name="Stock Reconciliation">
+                    <span class="nav-icon">🛠️</span> Stock Reconciliation
+                </a>
+            `;
+        } else if (isPart) {
+            html = `
+                <div class="sidebar-module-header" style="padding: 10px 14px; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #8b5cf6; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                    <span>✨</span> Part Creation &amp; QA
+                </div>
+                <a href="#" class="nav-item active" id="nav-pc-part-list-sub">
+                    <span class="nav-icon">📋</span> Part Request List
+                </a>
+                <a href="#" class="nav-item" id="nav-pc-new-request-sub">
+                    <span class="nav-icon">➕</span> New Part Request
+                </a>
+            `;
+        } else if (isPurchase) {
+            html = `
+                <div class="sidebar-module-header" style="padding: 10px 14px; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #10b981; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                    <span>🛒</span> Procurement &amp; Purchasing
+                </div>
+                <a href="#" class="nav-item active" id="nav-pur-dashboard-sub">
+                    <span class="nav-icon">📊</span> Procurement Dashboard
+                </a>
+                <a href="#" class="nav-item" data-action="mock" data-name="Material Requests">
+                    <span class="nav-icon">📝</span> Material Requests
+                </a>
+                <a href="#" class="nav-item" data-action="mock" data-name="Purchase Orders">
+                    <span class="nav-icon">📄</span> Purchase Orders
+                </a>
+                <a href="#" class="nav-item" data-action="mock" data-name="Goods Receipts">
+                    <span class="nav-icon">🚚</span> Goods Receipts
+                </a>
+                <a href="#" class="nav-item" data-action="mock" data-name="Vendor Invoices">
+                    <span class="nav-icon">🧾</span> Vendor Invoices
+                </a>
+            `;
+        } else if (isSales) {
+            html = `
+                <div class="sidebar-module-header" style="padding: 10px 14px; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #ec4899; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                    <span>📈</span> Sales &amp; Distribution
+                </div>
+                <a href="#" class="nav-item active" id="nav-sales-dashboard-sub">
+                    <span class="nav-icon">📊</span> Sales Dashboard
+                </a>
+                <a href="#" class="nav-item" data-action="mock" data-name="Sales Quotations">
+                    <span class="nav-icon">💬</span> Sales Quotations
+                </a>
+                <a href="#" class="nav-item" data-action="mock" data-name="Sales Orders">
+                    <span class="nav-icon">📋</span> Sales Orders
+                </a>
+                <a href="#" class="nav-item" data-action="mock" data-name="Delivery Notes">
+                    <span class="nav-icon">🚚</span> Delivery Notes
+                </a>
+                <a href="#" class="nav-item" data-action="mock" data-name="Sales Invoices">
+                    <span class="nav-icon">🧾</span> Sales Invoices
+                </a>
+            `;
+        } else if (isFinance) {
+            html = `
+                <div class="sidebar-module-header" style="padding: 10px 14px; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #4f46e5; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                    <span>💳</span> Finance &amp; Ledger
+                </div>
+                <a href="#" class="nav-item active" id="nav-fin-coa-sub">
+                    <span class="nav-icon">📊</span> Chart of Accounts
+                </a>
+                <a href="#" class="nav-item" data-action="mock" data-name="General Ledger">
+                    <span class="nav-icon">📘</span> General Ledger
+                </a>
+                <a href="#" class="nav-item" data-action="mock" data-name="Payment Modes">
+                    <span class="nav-icon">💳</span> Payment Modes &amp; Budgets
+                </a>
+                <a href="#" class="nav-item" data-action="mock" data-name="Tax Configuration">
+                    <span class="nav-icon">💸</span> Tax Configuration
+                </a>
+            `;
+        } else if (isHr) {
+            html = `
+                <div class="sidebar-module-header" style="padding: 10px 14px; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #f59e0b; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                    <span>👥</span> HR Management
+                </div>
+                <a href="#" class="nav-item active" id="nav-hr-dashboard-sub">
+                    <span class="nav-icon">📊</span> HR Dashboard
+                </a>
+                <a href="#" class="nav-item" data-action="mock" data-name="Employee Directory">
+                    <span class="nav-icon">👤</span> Employee Directory
+                </a>
+                <a href="#" class="nav-item" data-action="mock" data-name="Attendance & Payroll">
+                    <span class="nav-icon">📅</span> Attendance &amp; Payroll
+                </a>
+            `;
+        } else if (isPlpi) {
+            html = `
+                <div class="sidebar-module-header" style="padding: 10px 14px; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #8b5cf6; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                    <span>⚙️</span> PLPI Integration
+                </div>
+                <a href="#" class="nav-item active" id="nav-plpi-overview-sub">
+                    <span class="nav-icon">📊</span> PLPI Overview
+                </a>
+                <a href="#" class="nav-item" data-action="mock" data-name="Bill of Materials (BOM)">
+                    <span class="nav-icon">⚙️</span> Bill of Materials (BOM)
+                </a>
+                <a href="#" class="nav-item" data-action="mock" data-name="Work Centers & Routings">
+                    <span class="nav-icon">🏭</span> Work Centers &amp; Routings
+                </a>
+            `;
+        } else {
+            html = `
+                <a href="#" class="nav-item active" id="nav-dashboard">
+                    <span class="nav-icon">📊</span> Dashboard
+                </a>
+            `;
+        }
 
-            <!-- Part Creation (Top-Level Main Menu) -->
-            <a href="#" class="nav-item ${isPartActive ? 'active' : ''}" id="nav-part-creation-master">
-                <span class="nav-icon">✨</span> Part Creation
-                <span class="nav-arrow" style="margin-left: auto; font-size: 10px; transform: ${isPartActive ? 'rotate(180deg)' : 'rotate(0deg)'}; transition: transform 0.2s;">▼</span>
-            </a>
-            <div class="sub-nav ${isPartActive ? '' : 'hidden'}" id="part-creation-sub-nav">
-                <a href="#" class="sub-item ${isPartActive ? 'active' : ''}" id="nav-pc-part-list-sub">Part List</a>
-                <a href="#" class="sub-item" id="nav-pc-new-request-sub">New Part Request</a>
-            </div>
-
-            <!-- Inventory / Stock -->
-            <a href="#" class="nav-item ${isStockActive ? 'active' : ''}" id="nav-inventory">
-                <span class="nav-icon">📦</span> Inventory &amp; Stock
-                <span class="nav-arrow" style="margin-left: auto; font-size: 10px; transform: ${isStockActive ? 'rotate(180deg)' : 'rotate(0deg)'}; transition: transform 0.2s;">▼</span>
-            </a>
-            <div class="sub-nav ${isStockActive ? '' : 'hidden'}" id="stock-sub-nav">
-                <a href="#" class="sub-item ${isStockActive ? 'active' : ''}" id="nav-stock-dashboard-sub">Stock Dashboard</a>
-                <a href="#" class="sub-item" id="nav-stock-part-creation">Part Creation (QA Approval)</a>
-                <a href="#" class="sub-item" data-action="mock" data-name="Stock Ledger">Stock Ledger</a>
-                <a href="#" class="sub-item" data-action="mock" data-name="Material Transfers">Material Transfers</a>
-                <a href="#" class="sub-item" data-action="mock" data-name="Warehouse Locations">Warehouse Locations</a>
-                <a href="#" class="sub-item" data-action="mock" data-name="Stock Reconciliation">Stock Reconciliation</a>
-            </div>
-
-            <!-- Finance / Ledger -->
-            <a href="#" class="nav-item ${isFinanceActive ? 'active' : ''}" id="nav-finance">
-                <span class="nav-icon">💳</span> Finance / Ledger
-            </a>
-
-            <!-- Purchasing -->
-            <a href="#" class="nav-item ${isPurchaseActive ? 'active' : ''}" id="nav-purchasing">
-                <span class="nav-icon">🛒</span> Purchasing
-            </a>
-
-            <!-- Sales -->
-            <a href="#" class="nav-item ${isSalesActive ? 'active' : ''}" id="nav-sales">
-                <span class="nav-icon">📈</span> Sales
-            </a>
-
-            <!-- Distribution -->
-            <a href="#" class="nav-item" id="nav-distribution">
-                <span class="nav-icon">🚚</span> Distribution
-            </a>
-
-            <a href="#" class="nav-item btn-home-back" id="btn-sidebar-back-home" style="margin-top: auto;">
+        // Always append Back to Launcher button at bottom of sidebar
+        html += `
+            <a href="#" class="nav-item btn-home-back" id="btn-sidebar-back-home" style="margin-top: auto; border-top: 1px solid rgba(255,255,255,0.12); padding-top: 12px;">
                 <span class="nav-icon">🏠</span> Back to Launcher
             </a>
         `;
@@ -795,7 +981,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function attachSidebarListeners() {
-        // Back to Home listener
+        // Back to Launcher listener
         const btnBackHome = document.getElementById('btn-sidebar-back-home');
         if (btnBackHome) {
             btnBackHome.addEventListener('click', (e) => {
@@ -804,149 +990,141 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Company Setup, Site Setup, User Setup and Customer Creation sub-item tab switchers
+        const btnDashboardNav = document.getElementById('nav-dashboard');
+        if (btnDashboardNav) {
+            btnDashboardNav.addEventListener('click', (e) => {
+                e.preventDefault();
+                showHomeScreen();
+            });
+        }
+
+        // Master Data Setup sub-item handlers
+        const btnMastersDashboardSub = document.getElementById('nav-masters-dashboard-sub');
+        if (btnMastersDashboardSub) {
+            btnMastersDashboardSub.addEventListener('click', (e) => {
+                e.preventDefault();
+                switchModule('masters');
+            });
+        }
+
         const btnCompanySetupSub = document.getElementById('nav-company-setup-sub');
-        const btnSiteSetupSub = document.getElementById('nav-site-setup-sub');
-        const btnUserSetupSub = document.getElementById('nav-user-setup-sub');
-        const btnCustomerCreationSub = document.getElementById('nav-customer-creation-sub');
-
-        const userSubSubNav = document.getElementById('user-setup-sub-sub-nav');
-        const companySetupWorkspace = document.getElementById('company-setup-workspace');
-        const siteSetupWorkspace = document.getElementById('site-setup-workspace');
-        const userSetupWorkspace = document.getElementById('user-setup-workspace');
-        const customerCreationWorkspace = document.getElementById('customer-creation-workspace');
-
         if (btnCompanySetupSub) {
             btnCompanySetupSub.addEventListener('click', (e) => {
                 e.preventDefault();
-                if (btnSiteSetupSub) btnSiteSetupSub.classList.remove('active');
-                if (btnUserSetupSub) btnUserSetupSub.classList.remove('active');
-                if (btnCustomerCreationSub) btnCustomerCreationSub.classList.remove('active');
-                btnCompanySetupSub.classList.add('active');
-
-                if (userSubSubNav) userSubSubNav.classList.add('hidden');
-
-                document.querySelectorAll('.workspace-panel').forEach(p => p.classList.add('hidden'));
-                if (companySetupWorkspace) companySetupWorkspace.classList.remove('hidden');
-
-                // Re-enable global save buttons
-                showCompanyListView();
-                if (btnSave) btnSave.style.display = 'inline-flex';
-                if (btnCancel) btnCancel.style.display = 'inline-flex';
+                switchModule('company');
                 showToast("Switched to Company Setup profile.", "success");
             });
         }
 
+        const btnSiteSetupSub = document.getElementById('nav-site-setup-sub');
         if (btnSiteSetupSub) {
             btnSiteSetupSub.addEventListener('click', (e) => {
                 e.preventDefault();
-                if (btnCompanySetupSub) btnCompanySetupSub.classList.remove('active');
-                if (btnUserSetupSub) btnUserSetupSub.classList.remove('active');
-                if (btnCustomerCreationSub) btnCustomerCreationSub.classList.remove('active');
-                btnSiteSetupSub.classList.add('active');
-
-                if (userSubSubNav) userSubSubNav.classList.add('hidden');
-
-                document.querySelectorAll('.workspace-panel').forEach(p => p.classList.add('hidden'));
-                if (siteSetupWorkspace) siteSetupWorkspace.classList.remove('hidden');
-
-                // Keep save buttons visible for site configuration
-                showSiteListView();
-                if (btnSave) btnSave.style.display = 'inline-flex';
-                if (btnCancel) btnCancel.style.display = 'inline-flex';
+                switchModule('site');
                 showToast("Switched to Site Setup master data.", "success");
             });
         }
 
+        const btnUserSetupSub = document.getElementById('nav-user-setup-sub');
         if (btnUserSetupSub) {
             btnUserSetupSub.addEventListener('click', (e) => {
                 e.preventDefault();
-                if (btnCompanySetupSub) btnCompanySetupSub.classList.remove('active');
-                if (btnSiteSetupSub) btnSiteSetupSub.classList.remove('active');
-                if (btnCustomerCreationSub) btnCustomerCreationSub.classList.remove('active');
-                btnUserSetupSub.classList.add('active');
-
-                if (userSubSubNav) userSubSubNav.classList.remove('hidden');
-
-                document.querySelectorAll('.workspace-panel').forEach(p => p.classList.add('hidden'));
-                if (userSetupWorkspace) userSetupWorkspace.classList.remove('hidden');
-
-                if (btnSave) btnSave.style.display = 'none';
-                if (btnCancel) btnCancel.style.display = 'none';
-
-                // Activate first sub-sub-item by default if none are active
-                const activeSubSub = userSubSubNav ? userSubSubNav.querySelector('.sub-sub-item.active') : null;
-                if (!activeSubSub) {
-                    const firstSub = userSubSubNav ? userSubSubNav.querySelector('.sub-sub-item') : null;
-                    if (firstSub) {
-                        firstSub.classList.add('active');
-                        const subtab = firstSub.getAttribute('data-subtab');
-                        switchUserSubtab(subtab);
-                    }
-                } else {
-                    const subtab = activeSubSub.getAttribute('data-subtab');
-                    switchUserSubtab(subtab);
-                }
-
+                switchModule('user-setup');
                 showToast("Switched to User Setup.", "success");
             });
         }
 
+        const btnCustomerCreationSub = document.getElementById('nav-customer-creation-sub');
         if (btnCustomerCreationSub) {
             btnCustomerCreationSub.addEventListener('click', (e) => {
                 e.preventDefault();
-                if (btnCompanySetupSub) btnCompanySetupSub.classList.remove('active');
-                if (btnSiteSetupSub) btnSiteSetupSub.classList.remove('active');
-                if (btnUserSetupSub) btnUserSetupSub.classList.remove('active');
-                btnCustomerCreationSub.classList.add('active');
-
-                if (userSubSubNav) userSubSubNav.classList.add('hidden');
-
-                document.querySelectorAll('.workspace-panel').forEach(p => p.classList.add('hidden'));
-                if (customerCreationWorkspace) customerCreationWorkspace.classList.remove('hidden');
-
-                if (btnSave) btnSave.style.display = 'none';
-                if (btnCancel) btnCancel.style.display = 'none';
-
-                // Initialize workflow list view
-                if (window.CustomerWorkflowModule && typeof window.CustomerWorkflowModule.showListView === 'function') {
-                    window.CustomerWorkflowModule.showListView();
-                    window.CustomerWorkflowModule.renderList();
-                } else {
-                    renderCustomerList();
-                }
-
+                switchModule('customer-creation');
                 showToast("Switched to Customer Creation & Governance Setup.", "success");
             });
         }
 
         const btnSupplierSetupSub = document.getElementById('nav-supplier-setup-sub');
-
         if (btnSupplierSetupSub) {
             btnSupplierSetupSub.addEventListener('click', (e) => {
                 e.preventDefault();
-                if (btnCompanySetupSub) btnCompanySetupSub.classList.remove('active');
-                if (btnSiteSetupSub) btnSiteSetupSub.classList.remove('active');
-                if (btnUserSetupSub) btnUserSetupSub.classList.remove('active');
-                if (btnCustomerCreationSub) btnCustomerCreationSub.classList.remove('active');
-                btnSupplierSetupSub.classList.add('active');
-
-                if (userSubSubNav) userSubSubNav.classList.add('hidden');
-
-                document.querySelectorAll('.workspace-panel').forEach(p => p.classList.add('hidden'));
-                const ws = document.getElementById('supplier-creation-workspace');
-                if (ws) ws.classList.remove('hidden');
-
-                if (btnSave) btnSave.style.display = 'none';
-                if (btnCancel) btnCancel.style.display = 'none';
-
-                showSupplierListView();
-
+                switchModule('supplier-setup');
                 showToast("Switched to Supplier Setup profile.", "success");
             });
         }
 
-        // Sub-sub-items click handlers
+        const btnSubMasterSub = document.getElementById('nav-sub-master-sub');
+        if (btnSubMasterSub) {
+            btnSubMasterSub.addEventListener('click', (e) => {
+                e.preventDefault();
+                switchModule('submaster');
+            });
+        }
+
+        const btnItemSetupSubNav = document.getElementById('nav-item-setup-sub');
+        if (btnItemSetupSubNav) {
+            btnItemSetupSubNav.addEventListener('click', (e) => {
+                e.preventDefault();
+                switchModule('item-setup');
+            });
+        }
+
+        // Part Creation sub-item handlers
+        const btnPcPartListSub = document.getElementById('nav-pc-part-list-sub');
+        const btnPcNewReqSub = document.getElementById('nav-pc-new-request-sub');
+
+        if (btnPcPartListSub) {
+            btnPcPartListSub.addEventListener('click', (e) => {
+                e.preventDefault();
+                switchModule('part-creation');
+                if (typeof showPartCreationList === 'function') showPartCreationList();
+            });
+        }
+
+        if (btnPcNewReqSub) {
+            btnPcNewReqSub.addEventListener('click', (e) => {
+                e.preventDefault();
+                switchModule('part-creation');
+                if (typeof openPartCreationForm === 'function') openPartCreationForm();
+            });
+        }
+
+        // Stock sub-item handlers
+        const btnStockDashSub = document.getElementById('nav-stock-dashboard-sub');
+        if (btnStockDashSub) {
+            btnStockDashSub.addEventListener('click', (e) => {
+                e.preventDefault();
+                switchModule('stock');
+            });
+        }
+
+        // Purchasing sub-item handlers
+        const btnPurDashSub = document.getElementById('nav-pur-dashboard-sub');
+        if (btnPurDashSub) {
+            btnPurDashSub.addEventListener('click', (e) => {
+                e.preventDefault();
+                switchModule('purchase');
+            });
+        }
+
+        // Sales sub-item handlers
+        const btnSalesDashSub = document.getElementById('nav-sales-dashboard-sub');
+        if (btnSalesDashSub) {
+            btnSalesDashSub.addEventListener('click', (e) => {
+                e.preventDefault();
+                switchModule('sales');
+            });
+        }
+
+        // Finance sub-item handlers
+        const btnFinCoaSub = document.getElementById('nav-fin-coa-sub');
+        if (btnFinCoaSub) {
+            btnFinCoaSub.addEventListener('click', (e) => {
+                e.preventDefault();
+                switchModule('finance');
+            });
+        }
+
+        // User Sub-sub-items click handlers
         const subSubItems = sidebarNavMenu.querySelectorAll('.sub-sub-item');
         subSubItems.forEach(item => {
             item.addEventListener('click', (e) => {
@@ -955,7 +1133,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 item.classList.add('active');
 
                 const subtabName = item.getAttribute('data-subtab');
-                switchUserSubtab(subtabName);
+                if (typeof switchUserSubtab === 'function') switchUserSubtab(subtabName);
             });
         });
 
@@ -7109,6 +7287,173 @@ SyriMed Healthcare`
         applyRole(savedRole, true);
     }
 
+
+    // -------------------------------------------------------------
+    // Master Data Setup Dashboard & Sub-Master Config Logic
+    // -------------------------------------------------------------
+    const subMasterData = {
+        companyType: ['Subsidiary', 'Holding Company', 'Joint Venture', 'Branch', 'Partner'],
+        customerGroup: ['Commercial', 'Retail', 'Wholesale', 'Government', 'Export', 'Internal'],
+        paymentTerm: ['COD - Cash on Delivery', '7 Days Net', '15 Days Net', '30 Days Net', '60 Days Net', '90 Days Net'],
+        taxCode: ['VAT 20% Standard', 'VAT 5% Reduced', 'VAT 0% Zero-Rated', 'EXEMPT - Tax Exempt'],
+        currency: ['GBP (£)', 'USD ($)', 'EUR (€)', 'CAD ($)', 'AUD ($)', 'JPY (¥)'],
+        route: ['North-East Corridor', 'Midlands Hub', 'South-East Direct', 'Scotland & Borders', 'Ireland Express'],
+        rsm: ['John Doe (RSM-North)', 'Sarah Smith (RSM-South)', 'Michael Brown (RSM-West)', 'Emma Wilson (RSM-Central)'],
+        creditAnalyst: ['David Miller (Senior Analyst)', 'Rachel Green (Credit Officer)', 'James Taylor (Risk Manager)']
+    };
+    let activeSubMasterCategory = 'companyType';
+
+    function initMasterDataDashboardLinks() {
+        const links = [
+            { id: 'masters-link-company', module: 'other' },
+            { id: 'masters-link-site', module: 'site' },
+            { id: 'masters-link-sub-master', module: 'submaster' },
+            { id: 'masters-link-customer', module: 'customer-creation' },
+            { id: 'masters-link-supplier', module: 'supplier-setup' },
+            { id: 'masters-link-item', module: 'item-setup' },
+            { id: 'masters-link-user-list', module: 'user-setup' },
+            { id: 'masters-link-user-create', module: 'user-setup' },
+            { id: 'masters-link-user-rights', module: 'user-setup' }
+        ];
+
+        links.forEach(link => {
+            const el = document.getElementById(link.id);
+            if (el) {
+                el.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    switchModule(link.module);
+                });
+            }
+        });
+    }
+
+    function updateMastersDashboardKPIs() {
+        const companyCount = typeof registeredCompanies !== 'undefined' ? registeredCompanies.length : 2;
+        const siteCount = typeof registeredSites !== 'undefined' ? registeredSites.length : 2;
+        const userCount = typeof registeredUsers !== 'undefined' ? registeredUsers.length : 4;
+        
+        let custCount = 5;
+        try {
+            if (window.CustomerWorkflowModule && window.CustomerWorkflowModule.customers) {
+                custCount = window.CustomerWorkflowModule.customers.length;
+            }
+        } catch(e) {}
+
+        let supCount = 3;
+        try {
+            if (window.SupplierWorkflowModule && window.SupplierWorkflowModule.suppliers) {
+                supCount = window.SupplierWorkflowModule.suppliers.length;
+            }
+        } catch(e) {}
+
+        const itemCount = 8;
+        const totalSubMasters = Object.values(subMasterData).reduce((sum, arr) => sum + arr.length, 0);
+
+        const setVal = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = val;
+        };
+
+        setVal('kpi-masters-companies', companyCount);
+        setVal('kpi-masters-sites', siteCount);
+        setVal('kpi-masters-users', userCount);
+        setVal('kpi-masters-customers', custCount);
+        setVal('kpi-masters-suppliers', supCount);
+        setVal('kpi-masters-items', itemCount);
+
+        setVal('masters-badge-company', companyCount);
+        setVal('masters-badge-site', siteCount);
+        setVal('masters-badge-sub-masters', totalSubMasters);
+        setVal('masters-badge-customer', custCount);
+        setVal('masters-badge-supplier', supCount);
+        setVal('masters-badge-item', itemCount);
+        setVal('masters-badge-users', userCount);
+    }
+
+    function initSubMasterConfig() {
+        const catButtons = document.querySelectorAll('.sub-master-cat-btn');
+        catButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                catButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                activeSubMasterCategory = btn.getAttribute('data-category') || 'companyType';
+                renderSubMasterTable();
+            });
+        });
+
+        const btnAdd = document.getElementById('btn-sub-master-add');
+        const inputNew = document.getElementById('sub-master-new-value');
+
+        if (btnAdd) {
+            btnAdd.addEventListener('click', () => {
+                const val = inputNew ? inputNew.value.trim() : '';
+                if (!val) {
+                    showToast('Please enter an option value.', 'warning');
+                    return;
+                }
+                if (!subMasterData[activeSubMasterCategory]) subMasterData[activeSubMasterCategory] = [];
+                subMasterData[activeSubMasterCategory].push(val);
+                if (inputNew) inputNew.value = '';
+                renderSubMasterTable();
+                showToast(`Added "${val}" to sub-masters.`, 'success');
+            });
+        }
+
+        renderSubMasterTable();
+    }
+
+    function renderSubMasterTable() {
+        const titleEl = document.getElementById('sub-master-title');
+        const badgeEl = document.getElementById('sub-master-count-badge');
+        const bodyEl = document.getElementById('sub-master-values-body');
+
+        const categoryTitles = {
+            companyType: 'Company Types',
+            customerGroup: 'Customer Groups',
+            paymentTerm: 'Payment Terms',
+            taxCode: 'Tax Codes',
+            currency: 'Currencies',
+            route: 'Routes',
+            rsm: 'Salesmen (RSM)',
+            creditAnalyst: 'Credit Analysts'
+        };
+
+        const currentOptions = subMasterData[activeSubMasterCategory] || [];
+
+        if (titleEl) titleEl.textContent = categoryTitles[activeSubMasterCategory] || 'Sub-Master Options';
+        if (badgeEl) badgeEl.textContent = `${currentOptions.length} Options`;
+
+        if (bodyEl) {
+            bodyEl.innerHTML = '';
+            if (currentOptions.length === 0) {
+                bodyEl.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:15px; color:#94a3b8;">No options configured for this category.</td></tr>';
+                return;
+            }
+
+            currentOptions.forEach((opt, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="text-align: center; font-weight: 600; color: #64748b;">${idx + 1}</td>
+                    <td style="font-weight: 500;">${opt}</td>
+                    <td style="text-align: center;">
+                        <button type="button" class="btn btn-secondary btn-del-sub-master-opt" data-index="${idx}" style="padding: 3px 8px; font-size: 11px; color: #ef4444; border-color: #fca5a5;">🗑️ Delete</button>
+                    </td>
+                `;
+                bodyEl.appendChild(tr);
+            });
+
+            bodyEl.querySelectorAll('.btn-del-sub-master-opt').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const idx = parseInt(btn.getAttribute('data-index'), 10);
+                    const removed = subMasterData[activeSubMasterCategory].splice(idx, 1);
+                    renderSubMasterTable();
+                    showToast(`Removed "${removed[0]}" option.`, 'info');
+                });
+            });
+        }
+    }
+
+
     function initAwesomebar() {
         const awesomebarOverlay = document.getElementById('awesomebar-modal-overlay');
         const awesomebarInput = document.getElementById('awesomebar-search-input');
@@ -7124,7 +7469,9 @@ SyriMed Healthcare`
             { title: 'Customer Master Setup & Workflow', module: 'customer-creation', id: 'nav-customer-creation-sub', type: 'Master Data', icon: '🤝' },
             { title: 'Create Customer (Finance)', module: 'customer-creation', id: 'nav-customer-creation-sub', action: 'create-customer', type: 'Customer Workflow', icon: '➕' },
             { title: 'Supplier Setup & Governance', module: 'supplier-setup', id: 'nav-supplier-setup-sub', type: 'Master Data', icon: '🚚' },
-            { title: 'Item Setup', module: 'other', id: 'nav-item-setup-sub', type: 'Master Data', icon: '📦' },
+            { title: 'Masters Overview & Directory', module: 'masters', id: 'nav-masters-dashboard-sub', type: 'Master Data', icon: '📁' },
+            { title: 'Dropdown Sub-Master Config', module: 'submaster', id: 'nav-sub-master-sub', type: 'Master Data', icon: '🔀' },
+            { title: 'Item Master Catalog', module: 'item-setup', id: 'nav-item-setup-sub', type: 'Master Data', icon: '📦' },
             { title: 'Dashboard', module: 'other', id: 'nav-dashboard', type: 'Module', icon: '📊' },
             { title: 'Finance / Ledger', module: 'finance', id: 'nav-finance', type: 'Module', icon: '💳' },
             { title: 'Inventory', module: 'stock', id: 'nav-inventory', type: 'Module', icon: '📦' },
@@ -8571,6 +8918,7 @@ SyriMed Healthcare`
         // Expose functions globally
         window.openPartCreationForm = openPartForm;
         window.showPartCreationList = showPartList;
+        window.switchModule = switchModule;
 
         // Initial render
         updateKPIs();
@@ -8586,6 +8934,9 @@ SyriMed Healthcare`
     initSupplierSetup();
     initFinanceSetup();
     initRBAC();
+    initMasterDataDashboardLinks();
+    initSubMasterConfig();
+    updateMastersDashboardKPIs();
     initAwesomebar();
     initPartCreation();
     checkUrlResetToken();
