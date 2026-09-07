@@ -26,7 +26,7 @@
             return false;
         };
     </script>
-    <link rel="stylesheet" href="index.css?v=1.1.5">
+    <link rel="stylesheet" href="index.css?v=1.1.6">
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -181,7 +181,7 @@
                         <div class="avatar">SP</div>
                         <div class="user-info">
                             <span class="username font-semibold">SP03</span>
-                            <span class="role" id="topbar-active-role">ERP Administrator</span>
+                            <span class="role" id="topbar-active-role">Standard User</span>
                         </div>
 
                         <!-- RBAC & Role Simulation Dropdown Modal -->
@@ -201,18 +201,18 @@
                                 </label>
                                 <select id="rbac-role-selector"
                                     style="width: 100%; height: 36px; font-size: 12.5px; padding: 4px 10px; border: 1px solid var(--color-border); border-radius: 6px; cursor: pointer; font-weight: 600; background: #fff; color: var(--color-text-main);">
-                                    <option value="Admin" selected>⚙️ ERP Administrator (All Rights)</option>
-                                    <option value="Finance">💼 Finance (Creator / Commercials)</option>
-                                    <option value="QA">🔬 Quality Assurance (QA Verifier & Activator)</option>
-                                    <option value="Transport">🚚 Transport & Logistics (Route ID)</option>
-                                    <option value="RP">🛡️ Responsible Person (Approval Authority)</option>
+                                    <option value="Normal User" selected>👤 Standard User (Assigned: Masters &amp; Stock)</option>
                                     <option value="Manager">👥 Department Manager</option>
-                                    <option value="Normal User">👤 Standard User (Read Only)</option>
+                                    <option value="QA">🔬 Quality Assurance (QA)</option>
+                                    <option value="Admin">⚙️ ERP Administrator (All Modules)</option>
+                                    <option value="Finance">💼 Finance (Creator / Commercials)</option>
+                                    <option value="Transport">🚚 Transport &amp; Logistics (Route ID)</option>
+                                    <option value="RP">🛡️ Responsible Person (Approval Authority)</option>
                                 </select>
                                 <div id="rbac-role-desc"
-                                    style="font-size: 11.5px; color: var(--color-text-muted); margin-top: 8px; line-height: 1.4; padding: 8px 10px; background: var(--color-bg-base); border-radius: 6px; border-left: 3px solid #10b981;">
-                                    <strong id="rbac-role-desc-title" style="color: #059669; display: block; margin-bottom: 2px;">ERP Administrator:</strong>
-                                    <span id="rbac-role-desc-text">Full administrative and supervisory rights across all ERP master workflows.</span>
+                                    style="font-size: 11.5px; color: var(--color-text-muted); margin-top: 8px; line-height: 1.4; padding: 8px 10px; background: var(--color-bg-base); border-radius: 6px; border-left: 3px solid #64748b;">
+                                    <strong id="rbac-role-desc-title" style="color: #475569; display: block; margin-bottom: 2px;">Standard User:</strong>
+                                    <span id="rbac-role-desc-text">Read &amp; operational access to assigned modules (Master Data Setup, Stock Management).</span>
                                 </div>
                             </div>
 
@@ -10956,6 +10956,55 @@
 
 
             </div>
+
+            <!-- ACCESS DENIED / UNAUTHORIZED WORKSPACE PANEL -->
+            <div class="workspace-panel hidden" id="access-denied-workspace">
+                <div class="access-denied-container">
+                    <div class="access-denied-card">
+                        <div class="access-denied-shield">
+                            <div class="shield-halo"></div>
+                            <span class="shield-icon">🛡️</span>
+                        </div>
+                        <div class="access-denied-badge">
+                            <span class="badge-dot"></span>
+                            <span>403 Forbidden · Access Denied</span>
+                        </div>
+                        <h1 class="access-denied-title">Module Access Restricted</h1>
+                        <p class="access-denied-text">
+                            You do not have authorization to access the <strong id="denied-module-name">Finance</strong> module.
+                            This module has not been assigned to your user account profile.
+                        </p>
+                        <div class="access-denied-context">
+                            <div class="context-item">
+                                <span class="context-label">Active User:</span>
+                                <span class="context-value" id="denied-user-id">SP03</span>
+                            </div>
+                            <div class="context-item">
+                                <span class="context-label">Current Role:</span>
+                                <span class="context-value" id="denied-user-role">Standard User</span>
+                            </div>
+                            <div class="context-item full-width">
+                                <span class="context-label">Your Assigned Modules:</span>
+                                <div class="assigned-modules-tags" id="denied-assigned-tags">
+                                    <span class="module-tag">📁 Master Data Setup</span>
+                                    <span class="module-tag">📦 Stock Management</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="access-denied-actions">
+                            <button class="btn btn-primary" id="btn-denied-back-launcher">
+                                <span>🏠</span> Back to Launcher
+                            </button>
+                            <button class="btn btn-secondary" id="btn-denied-go-masters">
+                                <span>📁</span> Go to Master Data
+                            </button>
+                            <button class="btn btn-secondary" id="btn-denied-go-stock">
+                                <span>📦</span> Go to Stock Management
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -11983,7 +12032,7 @@
     <script src="finance_mock.js" charset="utf-8"></script>
     <script src="supplier_workflow.js?v=1.2" charset="utf-8"></script>
     <script src="customer_workflow.js?v=1.0" charset="utf-8"></script>
-    <script src="index.js?v=202608261226" charset="utf-8"></script>
+    <script src="index.js?v=202609071100" charset="utf-8"></script>
 </body>
 
 </html>

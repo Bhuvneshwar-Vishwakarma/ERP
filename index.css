@@ -5148,8 +5148,6 @@ tr.pur-doc-row td { padding: 12px 16px; border-bottom: 1px solid var(--color-bor
     background-color: #ecfdf5 !important;
     color: #047857 !important;
     border-color: #10b981 !important;
-}
-    border-color: #cbd5e1 !important;
     cursor: pointer;
     opacity: 1;
 }
@@ -5174,4 +5172,214 @@ tr.pur-doc-row td { padding: 12px 16px; border-bottom: 1px solid var(--color-bor
     border-color: var(--color-primary, #4f46e5) !important;
     font-weight: 700 !important;
 }
+
+/* ==========================================================================
+   Access Denied & Unauthorized Module Protection Styles
+   ========================================================================== */
+#access-denied-workspace {
+    min-height: calc(100vh - 120px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 20px;
+}
+
+#access-denied-workspace.hidden {
+    display: none !important;
+}
+
+.access-denied-container {
+    max-width: 600px;
+    width: 100%;
+    margin: 0 auto;
+    animation: fadeInScale 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.96) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.access-denied-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 40px 32px;
+    text-align: center;
+    box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(226, 232, 240, 0.8);
+    position: relative;
+    overflow: hidden;
+}
+
+.access-denied-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: linear-gradient(90deg, #ef4444, #f97316, #eab308);
+}
+
+.access-denied-shield {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fef2f2;
+    border: 2px solid #fee2e2;
+    border-radius: 50%;
+}
+
+.shield-halo {
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    border: 2px dashed rgba(239, 68, 68, 0.35);
+    animation: rotateHalo 20s linear infinite;
+}
+
+@keyframes rotateHalo {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.shield-icon {
+    font-size: 38px;
+    line-height: 1;
+}
+
+.access-denied-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #dc2626;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 16px;
+}
+
+.access-denied-badge .badge-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #ef4444;
+    animation: pulseDot 1.5s infinite;
+}
+
+@keyframes pulseDot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.access-denied-title {
+    font-size: 24px;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 10px 0;
+    letter-spacing: -0.02em;
+}
+
+.access-denied-text {
+    font-size: 14px;
+    color: #64748b;
+    line-height: 1.6;
+    margin: 0 0 24px 0;
+}
+
+.access-denied-text strong {
+    color: #0f172a;
+    font-weight: 700;
+}
+
+.access-denied-context {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 28px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    text-align: left;
+}
+
+.context-item.full-width {
+    grid-column: 1 / -1;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 10px;
+    margin-top: 2px;
+}
+
+.context-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #94a3b8;
+    display: block;
+    margin-bottom: 3px;
+}
+
+.context-value {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.assigned-modules-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.module-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.access-denied-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.access-denied-actions .btn {
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
 

@@ -571,7 +571,8 @@ document.addEventListener('DOMContentLoaded', () => {
         customer: document.getElementById('customer-creation-workspace'),
         supplier: document.getElementById('supplier-creation-workspace') || document.getElementById('old-supplier-setup-workspace'),
         item: document.getElementById('item-setup-workspace'),
-        finance: document.getElementById('finance-setup-workspace')
+        finance: document.getElementById('finance-setup-workspace'),
+        accessDenied: document.getElementById('access-denied-workspace')
     };
 
     // Fields
@@ -648,12 +649,293 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // -------------------------------------------------------------
+    // User & Role-Based Module Visibility & Access Control Engine
+    // -------------------------------------------------------------
+    const SYSTEM_MODULES = {
+        'masters': {
+            id: 'masters',
+            name: 'Master Data Setup',
+            icon: '📁',
+            color: '#0ea5e9',
+            submodules: ['masters', 'company', 'other', 'site', 'user-setup', 'user', 'customer-creation', 'customer', 'supplier-setup', 'supplier', 'submaster', 'item-setup', 'item']
+        },
+        'stock': {
+            id: 'stock',
+            name: 'Stock Management',
+            icon: '📦',
+            color: '#6366f1',
+            submodules: ['stock', 'part-creation', 'partCreation']
+        },
+        'sales': {
+            id: 'sales',
+            name: 'Sales Module',
+            icon: '📊',
+            color: '#ec4899',
+            submodules: ['sales', 'sales-quotation', 'sales-order', 'sales-invoice']
+        },
+        'purchase': {
+            id: 'purchase',
+            name: 'Purchase Module',
+            icon: '🛒',
+            color: '#10b981',
+            submodules: ['purchase']
+        },
+        'hr': {
+            id: 'hr',
+            name: 'HR Module',
+            icon: '👥',
+            color: '#f59e0b',
+            submodules: ['hr']
+        },
+        'plpi': {
+            id: 'plpi',
+            name: 'PLPI Module',
+            icon: '⚙️',
+            color: '#8b5cf6',
+            submodules: ['plpi']
+        },
+        'finance': {
+            id: 'finance',
+            name: 'Finance Module',
+            icon: '💳',
+            color: '#4f46e5',
+            submodules: ['finance', 'invoicing']
+        }
+    };
+
+    // Role-based module permissions configuration table
+    // Easily configurable for Normal User, Manager, QA, Administrator, etc.
+    const ROLE_MODULE_PERMISSIONS = {
+        'Normal User': ['masters', 'stock'], // Current user default: only Master Data Setup & Stock Management
+        'Manager': ['masters', 'stock', 'sales', 'purchase'],
+        'QA': ['masters', 'stock', 'plpi'],
+        'Admin': ['masters', 'stock', 'sales', 'purchase', 'hr', 'plpi', 'finance'],
+        'Finance': ['masters', 'finance', 'purchase', 'sales'],
+        'Transport': ['masters', 'stock'],
+        'RP': ['masters', 'stock', 'plpi']
+    };
+
+    // User-specific module assignments configuration table
+    const USER_MODULE_PERMISSIONS = {
+        'SP03': ['masters', 'stock'] // Current user explicitly assigned Master Data Setup & Stock Management
+    };
+
+    const CURRENT_USER_PROFILE = {
+        userId: 'SP03',
+        userName: 'SP03',
+        defaultRole: 'Normal User',
+        assignedModules: ['masters', 'stock']
+    };
+
+    let currentActiveModule = 'masters';
+
+    const ModuleAccessControl = {
+        activeRole: 'Normal User',
+        activeUserId: 'SP03',
+
+        getCurrentUser() {
+            return {
+                ...CURRENT_USER_PROFILE,
+                role: this.activeRole
+            };
+        },
+
+        getActiveRole() {
+            return this.activeRole;
+        },
+
+        setActiveRole(role) {
+            this.activeRole = role || 'Normal User';
+            this.applyModuleVisibility();
+        },
+
+        getActiveAllowedModules() {
+            // Priority 1: Check active simulated role in ROLE_MODULE_PERMISSIONS
+            if (this.activeRole && ROLE_MODULE_PERMISSIONS[this.activeRole]) {
+                return [...ROLE_MODULE_PERMISSIONS[this.activeRole]];
+            }
+            // Priority 2: Check user-specific assignments in USER_MODULE_PERMISSIONS
+            if (USER_MODULE_PERMISSIONS[this.activeUserId]) {
+                return [...USER_MODULE_PERMISSIONS[this.activeUserId]];
+            }
+            return ['masters', 'stock'];
+        },
+
+        isModuleAllowed(moduleKey) {
+            if (!moduleKey) return true;
+            const allowed = this.getActiveAllowedModules();
+
+            // Direct module match
+            if (allowed.includes(moduleKey)) return true;
+
+            // Check if moduleKey is a registered submodule of an allowed module
+            for (const parentKey of allowed) {
+                const parentDef = SYSTEM_MODULES[parentKey];
+                if (parentDef && parentDef.submodules && parentDef.submodules.includes(moduleKey)) {
+                    return true;
+                }
+            }
+
+            return false;
+        },
+
+        getModuleName(moduleKey) {
+            if (SYSTEM_MODULES[moduleKey]) return SYSTEM_MODULES[moduleKey].name;
+            for (const key of Object.keys(SYSTEM_MODULES)) {
+                const def = SYSTEM_MODULES[key];
+                if (def.submodules && def.submodules.includes(moduleKey)) {
+                    return def.name;
+                }
+            }
+            return moduleKey ? (moduleKey.charAt(0).toUpperCase() + moduleKey.slice(1)) : 'Unknown';
+        },
+
+        getModuleIcon(moduleKey) {
+            if (SYSTEM_MODULES[moduleKey]) return SYSTEM_MODULES[moduleKey].icon;
+            for (const key of Object.keys(SYSTEM_MODULES)) {
+                const def = SYSTEM_MODULES[key];
+                if (def.submodules && def.submodules.includes(moduleKey)) {
+                    return def.icon;
+                }
+            }
+            return '📁';
+        },
+
+        applyModuleVisibility() {
+            const allowed = this.getActiveAllowedModules();
+
+            // 1. Filter Home Screen Dashboard Module Cards
+            const cards = document.querySelectorAll('#home-page-container .module-card');
+            cards.forEach(card => {
+                const mod = card.getAttribute('data-module');
+                if (this.isModuleAllowed(mod)) {
+                    card.classList.remove('hidden');
+                    card.style.display = '';
+                } else {
+                    card.classList.add('hidden');
+                    card.style.display = 'none';
+                }
+            });
+
+            // 2. Filter Initial Static Sidebar Links (if present)
+            const navFinance = document.getElementById('nav-finance');
+            if (navFinance) navFinance.style.display = this.isModuleAllowed('finance') ? '' : 'none';
+
+            const navPurchasing = document.getElementById('nav-purchasing');
+            if (navPurchasing) navPurchasing.style.display = this.isModuleAllowed('purchase') ? '' : 'none';
+
+            const navDistribution = document.getElementById('nav-distribution');
+            if (navDistribution) navDistribution.style.display = this.isModuleAllowed('sales') ? '' : 'none';
+
+            const navInventory = document.getElementById('nav-inventory');
+            if (navInventory) navInventory.style.display = this.isModuleAllowed('stock') ? '' : 'none';
+
+            const navPartCreation = document.getElementById('nav-part-creation-master');
+            if (navPartCreation) navPartCreation.style.display = this.isModuleAllowed('stock') ? '' : 'none';
+
+            const navCompanyMaster = document.getElementById('nav-company-setup-master');
+            if (navCompanyMaster) navCompanyMaster.style.display = this.isModuleAllowed('masters') ? '' : 'none';
+
+            // 3. Update Access Denied Screen tags
+            const tagsContainer = document.getElementById('denied-assigned-tags');
+            if (tagsContainer) {
+                tagsContainer.innerHTML = allowed.map(m => {
+                    const def = SYSTEM_MODULES[m];
+                    const icon = def ? def.icon : '📁';
+                    const name = def ? def.name : m;
+                    return `<span class="module-tag">${icon} ${name}</span>`;
+                }).join('');
+            }
+        },
+
+        showAccessDenied(moduleKey) {
+            homeScreen.classList.add('hidden');
+            mainErpContainer.classList.remove('hidden');
+
+            // Hide all other workspaces
+            Object.keys(workspaces).forEach(key => {
+                if (workspaces[key]) workspaces[key].classList.add('hidden');
+            });
+
+            const deniedWorkspace = document.getElementById('access-denied-workspace');
+            if (deniedWorkspace) {
+                deniedWorkspace.classList.remove('hidden');
+            }
+
+            const moduleNameEl = document.getElementById('denied-module-name');
+            if (moduleNameEl) {
+                moduleNameEl.textContent = this.getModuleName(moduleKey);
+            }
+
+            const userRoleEl = document.getElementById('denied-user-role');
+            if (userRoleEl) {
+                userRoleEl.textContent = this.activeRole;
+            }
+
+            const userIdEl = document.getElementById('denied-user-id');
+            if (userIdEl) {
+                userIdEl.textContent = this.activeUserId;
+            }
+
+            // Update sidebar logo branding
+            const logoIcon = document.querySelector('#sidebar-logo .logo-icon');
+            const logoText = document.querySelector('#sidebar-logo .logo-text');
+            if (logoIcon && logoText) {
+                logoIcon.textContent = '🔒';
+                logoIcon.style.background = 'none';
+                logoIcon.style.webkitTextFillColor = '#ef4444';
+                logoText.innerHTML = 'Access Restricted';
+            }
+
+            // Render restricted sidebar navigation
+            if (sidebarNavMenu) {
+                sidebarNavMenu.innerHTML = `
+                    <div class="sidebar-module-header" style="padding: 10px 14px; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #ef4444; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                        <span>🔒</span> Access Restricted
+                    </div>
+                    <div style="padding: 12px 14px; font-size: 12px; color: #94a3b8; line-height: 1.5;">
+                        Access to <strong style="color: #fff;">${this.getModuleName(moduleKey)}</strong> is not authorized for your account profile.
+                    </div>
+                    <a href="#" class="nav-item btn-home-back" id="btn-sidebar-back-home" style="margin-top: auto; border-top: 1px solid rgba(255,255,255,0.12); padding-top: 12px;">
+                        <span class="nav-icon">🏠</span> Back to Launcher
+                    </a>
+                `;
+                const btnBack = document.getElementById('btn-sidebar-back-home');
+                if (btnBack) {
+                    btnBack.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        showHomeScreen();
+                    });
+                }
+            }
+
+            if (typeof showToast === 'function') {
+                showToast(`Access Denied: You are not authorized to view ${this.getModuleName(moduleKey)}.`, 'danger');
+            }
+        }
+    };
+
+    window.ModuleAccessControl = ModuleAccessControl;
+
+    // -------------------------------------------------------------
     // Module Navigation & Screen Routing Logic
     // -------------------------------------------------------------
     function switchModule(moduleName) {
+        // Enforce application/page-level access control!
+        if (!ModuleAccessControl.isModuleAllowed(moduleName)) {
+            ModuleAccessControl.showAccessDenied(moduleName);
+            return;
+        }
+
+        currentActiveModule = moduleName;
+
         // Hide home page and show main ERP container
         homeScreen.classList.add('hidden');
         mainErpContainer.classList.remove('hidden');
+
+        // Hide access denied workspace if previously shown
+        const deniedScreen = document.getElementById('access-denied-workspace');
+        if (deniedScreen) deniedScreen.classList.add('hidden');
 
         const activeKeyMap = {
             'masters': 'masters',
@@ -678,11 +960,12 @@ document.addEventListener('DOMContentLoaded', () => {
             'finance': 'finance'
         };
         const activeKey = activeKeyMap[moduleName] || moduleName;
+        const targetWorkspace = workspaces[activeKey];
 
         // Hide all workspaces and show active workspace
         Object.keys(workspaces).forEach(key => {
             if (workspaces[key]) {
-                if (key === activeKey) {
+                if (workspaces[key] === targetWorkspace) {
                     workspaces[key].classList.remove('hidden');
                 } else {
                     workspaces[key].classList.add('hidden');
@@ -1152,6 +1435,10 @@ document.addEventListener('DOMContentLoaded', () => {
     moduleCards.forEach(card => {
         card.addEventListener('click', () => {
             const moduleName = card.getAttribute('data-module');
+            if (!ModuleAccessControl.isModuleAllowed(moduleName)) {
+                ModuleAccessControl.showAccessDenied(moduleName);
+                return;
+            }
             if (moduleName === 'finance') {
                 const finModal = document.getElementById('finance-modal-overlay');
                 if (finModal) finModal.classList.remove('hidden');
@@ -1162,6 +1449,29 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+
+    // Access Denied screen action button listeners
+    const btnDeniedBack = document.getElementById('btn-denied-back-launcher');
+    if (btnDeniedBack) {
+        btnDeniedBack.addEventListener('click', (e) => {
+            e.preventDefault();
+            showHomeScreen();
+        });
+    }
+    const btnDeniedGoMasters = document.getElementById('btn-denied-go-masters');
+    if (btnDeniedGoMasters) {
+        btnDeniedGoMasters.addEventListener('click', (e) => {
+            e.preventDefault();
+            switchModule('masters');
+        });
+    }
+    const btnDeniedGoStock = document.getElementById('btn-denied-go-stock');
+    if (btnDeniedGoStock) {
+        btnDeniedGoStock.addEventListener('click', (e) => {
+            e.preventDefault();
+            switchModule('stock');
+        });
+    }
 
     // Connect branding logo to return to launcher screen
     if (sidebarLogo) {
@@ -7263,6 +7573,18 @@ SyriMed Healthcare`
                 window.SupplierWorkflowModule.setRole(role);
             }
 
+            // Sync with Module Access Control Engine
+            if (typeof ModuleAccessControl !== 'undefined') {
+                ModuleAccessControl.setActiveRole(role);
+
+                // If currently viewing an active module that is not allowed for this role, enforce access block
+                if (!mainErpContainer.classList.contains('hidden') && currentActiveModule) {
+                    if (!ModuleAccessControl.isModuleAllowed(currentActiveModule)) {
+                        ModuleAccessControl.showAccessDenied(currentActiveModule);
+                    }
+                }
+            }
+
             try {
                 localStorage.setItem('ANTIGRAVITY_ERP_ACTIVE_ROLE', role);
             } catch (e) {}
@@ -7279,10 +7601,10 @@ SyriMed Healthcare`
             });
         }
 
-        // Load saved role or default to Admin
-        let savedRole = 'Admin';
+        // Load saved role or default to Normal User
+        let savedRole = 'Normal User';
         try {
-            savedRole = localStorage.getItem('ANTIGRAVITY_ERP_ACTIVE_ROLE') || 'Admin';
+            savedRole = localStorage.getItem('ANTIGRAVITY_ERP_ACTIVE_ROLE') || 'Normal User';
         } catch (e) {}
         applyRole(savedRole, true);
     }
@@ -7547,6 +7869,16 @@ SyriMed Healthcare`
                 console.error("Error gathering supplier items for search:", e);
             }
 
+            // Filter searchable items by active module authorization
+            if (typeof ModuleAccessControl !== 'undefined') {
+                items = items.filter(item => {
+                    if (item.module) {
+                        return ModuleAccessControl.isModuleAllowed(item.module);
+                    }
+                    return true;
+                });
+            }
+
             return items;
         }
 
@@ -7561,7 +7893,7 @@ SyriMed Healthcare`
                     item.style.backgroundColor = 'var(--color-bg-hover, #f3f4f6)';
                     if (item.scrollIntoViewIfNeeded) {
                         item.scrollIntoViewIfNeeded();
-                    } else {
+                    } else if (typeof item.scrollIntoView === 'function') {
                         item.scrollIntoView({ block: 'nearest' });
                     }
                 } else {
@@ -8919,11 +9251,39 @@ SyriMed Healthcare`
         window.openPartCreationForm = openPartForm;
         window.showPartCreationList = showPartList;
         window.switchModule = switchModule;
+        window.ModuleAccessControl = ModuleAccessControl;
 
         // Initial render
         updateKPIs();
         renderTable();
     }
+
+    // Direct URL & Hash Navigation Handler with Page-Level Access Control
+    function handleUrlRouting() {
+        try {
+            let targetModule = null;
+            const searchParams = new URLSearchParams(window.location.search);
+            targetModule = searchParams.get('module') || searchParams.get('page');
+
+            if (!targetModule && window.location.hash) {
+                const rawHash = window.location.hash.replace(/^#\/?/, '');
+                if (rawHash && !rawHash.includes('token=')) {
+                    targetModule = rawHash.split('/')[0].split('?')[0];
+                }
+            }
+
+            if (targetModule) {
+                const knownModules = ['masters', 'stock', 'sales', 'purchase', 'hr', 'plpi', 'finance', 'company', 'site', 'user-setup', 'customer-creation', 'supplier-setup', 'item-setup', 'part-creation'];
+                if (knownModules.includes(targetModule)) {
+                    switchModule(targetModule);
+                }
+            }
+        } catch (e) {
+            console.error("Error handling URL routing:", e);
+        }
+    }
+
+    window.addEventListener('hashchange', handleUrlRouting);
 
     // Initialize page
     loadSavedConfig();
@@ -8934,11 +9294,13 @@ SyriMed Healthcare`
     initSupplierSetup();
     initFinanceSetup();
     initRBAC();
+    ModuleAccessControl.applyModuleVisibility();
     initMasterDataDashboardLinks();
     initSubMasterConfig();
     updateMastersDashboardKPIs();
     initAwesomebar();
     initPartCreation();
     checkUrlResetToken();
+    handleUrlRouting();
     showToast("Welcome to B&S ERP Portal. Select a module to begin.", "success");
 });
