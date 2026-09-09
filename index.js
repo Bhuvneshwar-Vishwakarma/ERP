@@ -1,6 +1,15 @@
-// ERP Company Setup - Interaction Logic JS File
-
 document.addEventListener('DOMContentLoaded', () => {
+    // Global capturing click listener to prevent Chromium file:// origin errors on hash links
+    document.addEventListener('click', (e) => {
+        const a = e.target.closest('a');
+        if (a) {
+            const href = a.getAttribute('href');
+            if (!href || href === '#' || href.startsWith('#') || href.startsWith('javascript:')) {
+                e.preventDefault();
+            }
+        }
+    }, true);
+
     // -------------------------------------------------------------
     // State management & Local Storage Keys
     // -------------------------------------------------------------
@@ -703,13 +712,42 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // =========================================================================
+    // GLOBAL SYSTEM MODULE VISIBILITY FILTER
+    // =========================================================================
+    // Controls which modules are actively visible across all navigation, menus,
+    // home dashboard cards, and global search throughout the entire application.
+    //
+    // Currently ACTIVE / VISIBLE modules:
+    //   1. 'masters' (Master Data Setup)
+    //   2. 'stock'   (Stock Management)
+    //
+    // ALL other modules ('sales', 'purchase', 'hr', 'plpi', 'finance') are
+    // cleanly hidden while keeping all code, data, workflows, and configurations intact.
+    //
+    // TO RE-ENABLE ALL MODULES IN THE FUTURE:
+    // Simply set: SYSTEM_ACTIVE_MODULES_ONLY = null;
+    // Or call in console: window.setSystemActiveModules(null);
+    // =========================================================================
+    let SYSTEM_ACTIVE_MODULES_ONLY = ['masters', 'stock'];
+
+    // Helper to toggle active modules dynamically from developer console or external scripts
+    window.setSystemActiveModules = function(modules) {
+        SYSTEM_ACTIVE_MODULES_ONLY = (modules === null || Array.isArray(modules)) ? modules : null;
+        if (typeof ModuleAccessControl !== 'undefined' && typeof ModuleAccessControl.applyModuleVisibility === 'function') {
+            ModuleAccessControl.applyModuleVisibility();
+        }
+        console.log("System active modules updated:", SYSTEM_ACTIVE_MODULES_ONLY || "All modules enabled");
+    };
+
     // Role-based module permissions configuration table
     // Easily configurable for Normal User, Manager, QA, Administrator, etc.
     const ROLE_MODULE_PERMISSIONS = {
-        'Normal User': ['masters', 'stock'], // Current user default: only Master Data Setup & Stock Management
-        'Manager': ['masters', 'stock', 'sales', 'purchase'],
-        'QA': ['masters', 'stock', 'plpi'],
-        'Admin': ['masters', 'stock', 'sales', 'purchase', 'hr', 'plpi', 'finance'],
+        'Normal User': ['masters', 'stock', 'part-creation'],
+        'Stock Control': ['masters', 'stock', 'part-creation'],
+        'Manager': ['masters', 'stock', 'sales', 'purchase', 'part-creation'],
+        'QA': ['masters', 'stock', 'plpi', 'part-creation'],
+        'Admin': ['masters', 'stock', 'sales', 'purchase', 'hr', 'plpi', 'finance', 'part-creation'],
         'Finance': ['masters', 'finance', 'purchase', 'sales'],
         'Transport': ['masters', 'stock'],
         'RP': ['masters', 'stock', 'plpi']
@@ -750,19 +788,44 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         getActiveAllowedModules() {
+            let allowed;
             // Priority 1: Check active simulated role in ROLE_MODULE_PERMISSIONS
             if (this.activeRole && ROLE_MODULE_PERMISSIONS[this.activeRole]) {
-                return [...ROLE_MODULE_PERMISSIONS[this.activeRole]];
+                allowed = [...ROLE_MODULE_PERMISSIONS[this.activeRole]];
+            } else if (USER_MODULE_PERMISSIONS[this.activeUserId]) {
+                // Priority 2: Check user-specific assignments in USER_MODULE_PERMISSIONS
+                allowed = [...USER_MODULE_PERMISSIONS[this.activeUserId]];
+            } else {
+                allowed = ['masters', 'stock'];
             }
-            // Priority 2: Check user-specific assignments in USER_MODULE_PERMISSIONS
-            if (USER_MODULE_PERMISSIONS[this.activeUserId]) {
-                return [...USER_MODULE_PERMISSIONS[this.activeUserId]];
+
+            // Apply global system visibility override if set
+            if (Array.isArray(SYSTEM_ACTIVE_MODULES_ONLY)) {
+                return allowed.filter(m => SYSTEM_ACTIVE_MODULES_ONLY.includes(m));
             }
-            return ['masters', 'stock'];
+
+            return allowed;
         },
 
         isModuleAllowed(moduleKey) {
             if (!moduleKey) return true;
+
+            // If global system visibility restriction is active, verify moduleKey belongs to an allowed active module
+            if (Array.isArray(SYSTEM_ACTIVE_MODULES_ONLY)) {
+                const isDirectAllowed = SYSTEM_ACTIVE_MODULES_ONLY.includes(moduleKey);
+                let isSubmoduleAllowed = false;
+                for (const parentKey of SYSTEM_ACTIVE_MODULES_ONLY) {
+                    const parentDef = SYSTEM_MODULES[parentKey];
+                    if (parentDef && parentDef.submodules && parentDef.submodules.includes(moduleKey)) {
+                        isSubmoduleAllowed = true;
+                        break;
+                    }
+                }
+                if (!isDirectAllowed && !isSubmoduleAllowed) {
+                    return false;
+                }
+            }
+
             const allowed = this.getActiveAllowedModules();
 
             // Direct module match
@@ -896,7 +959,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div style="padding: 12px 14px; font-size: 12px; color: #94a3b8; line-height: 1.5;">
                         Access to <strong style="color: #fff;">${this.getModuleName(moduleKey)}</strong> is not authorized for your account profile.
                     </div>
-                    <a href="#" class="nav-item btn-home-back" id="btn-sidebar-back-home" style="margin-top: auto; border-top: 1px solid rgba(255,255,255,0.12); padding-top: 12px;">
+                    <a href="javascript:void(0)" class="nav-item btn-home-back" id="btn-sidebar-back-home" style="margin-top: auto; border-top: 1px solid rgba(255,255,255,0.12); padding-top: 12px;">
                         <span class="nav-icon">🏠</span> Back to Launcher
                     </a>
                 `;
@@ -1083,38 +1146,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="sidebar-module-header" style="padding: 10px 14px; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #0ea5e9; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
                     <span>📁</span> Master Data Setup
                 </div>
-                <a href="#" class="nav-item ${moduleName === 'masters' ? 'active' : ''}" id="nav-masters-dashboard-sub">
+                <a href="javascript:void(0)" class="nav-item ${moduleName === 'masters' ? 'active' : ''}" id="nav-masters-dashboard-sub">
                     <span class="nav-icon">📊</span> Masters Overview
                 </a>
-                <a href="#" class="nav-item ${moduleName === 'company' || moduleName === 'other' ? 'active' : ''}" id="nav-company-setup-sub">
+                <a href="javascript:void(0)" class="nav-item ${moduleName === 'company' || moduleName === 'other' ? 'active' : ''}" id="nav-company-setup-sub">
                     <span class="nav-icon">🏢</span> Company Setup
                 </a>
-                <a href="#" class="nav-item ${moduleName === 'site' ? 'active' : ''}" id="nav-site-setup-sub">
+                <a href="javascript:void(0)" class="nav-item ${moduleName === 'site' ? 'active' : ''}" id="nav-site-setup-sub">
                     <span class="nav-icon">🏢</span> Site Setup
                 </a>
-                <a href="#" class="nav-item ${moduleName === 'user-setup' ? 'active' : ''}" id="nav-user-setup-sub">
+                <a href="javascript:void(0)" class="nav-item ${moduleName === 'user-setup' ? 'active' : ''}" id="nav-user-setup-sub">
                     <span class="nav-icon">👥</span> User Setup
                 </a>
                 <div class="sub-sub-nav ${moduleName === 'user-setup' ? '' : 'hidden'}" id="user-setup-sub-sub-nav">
-                    <a href="#" class="sub-sub-item active" data-subtab="user-list">User List</a>
-                    <a href="#" class="sub-sub-item" data-subtab="user-creation">User Creation</a>
-                    <a href="#" class="sub-sub-item" data-subtab="user-reopen">User Reopen</a>
-                    <a href="#" class="sub-sub-item" data-subtab="allocate-company-site">Allocate Company & Site</a>
-                    <a href="#" class="sub-sub-item" data-subtab="application-access">Application Access</a>
-                    <a href="#" class="sub-sub-item" data-subtab="qms-access">QMS Access</a>
-                    <a href="#" class="sub-sub-item" data-subtab="user-deletion">User Deactivation</a>
-                    <a href="#" class="sub-sub-item" data-subtab="reset-password">Reset Password</a>
+                    <a href="javascript:void(0)" class="sub-sub-item active" data-subtab="user-list">User List</a>
+                    <a href="javascript:void(0)" class="sub-sub-item" data-subtab="user-creation">User Creation</a>
+                    <a href="javascript:void(0)" class="sub-sub-item" data-subtab="user-reopen">User Reopen</a>
+                    <a href="javascript:void(0)" class="sub-sub-item" data-subtab="allocate-company-site">Allocate Company & Site</a>
+                    <a href="javascript:void(0)" class="sub-sub-item" data-subtab="application-access">Application Access</a>
+                    <a href="javascript:void(0)" class="sub-sub-item" data-subtab="qms-access">QMS Access</a>
+                    <a href="javascript:void(0)" class="sub-sub-item" data-subtab="user-deletion">User Deactivation</a>
+                    <a href="javascript:void(0)" class="sub-sub-item" data-subtab="reset-password">Reset Password</a>
                 </div>
-                <a href="#" class="nav-item ${moduleName === 'customer-creation' ? 'active' : ''}" id="nav-customer-creation-sub">
+                <a href="javascript:void(0)" class="nav-item ${moduleName === 'customer-creation' ? 'active' : ''}" id="nav-customer-creation-sub">
                     <span class="nav-icon">🤝</span> Customer Creation
                 </a>
-                <a href="#" class="nav-item ${moduleName === 'supplier-setup' ? 'active' : ''}" id="nav-supplier-setup-sub">
+                <a href="javascript:void(0)" class="nav-item ${moduleName === 'supplier-setup' ? 'active' : ''}" id="nav-supplier-setup-sub">
                     <span class="nav-icon">🚚</span> Supplier Setup
                 </a>
-                <a href="#" class="nav-item ${moduleName === 'submaster' ? 'active' : ''}" id="nav-sub-master-sub">
+                <a href="javascript:void(0)" class="nav-item ${moduleName === 'submaster' ? 'active' : ''}" id="nav-sub-master-sub">
                     <span class="nav-icon">🔀</span> Dropdown Sub-Masters
                 </a>
-                <a href="#" class="nav-item ${moduleName === 'item-setup' || moduleName === 'item' ? 'active' : ''}" id="nav-item-setup-sub">
+                <a href="javascript:void(0)" class="nav-item ${moduleName === 'item-setup' || moduleName === 'item' ? 'active' : ''}" id="nav-item-setup-sub">
                     <span class="nav-icon">📦</span> Item Setup
                 </a>
             `;
@@ -1123,22 +1186,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="sidebar-module-header" style="padding: 10px 14px; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #6366f1; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
                     <span>📦</span> Stock Management
                 </div>
-                <a href="#" class="nav-item active" id="nav-stock-dashboard-sub">
+                <a href="javascript:void(0)" class="nav-item active" id="nav-stock-dashboard-sub">
                     <span class="nav-icon">📊</span> Stock Dashboard
                 </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Stock Entry">
+                <a href="javascript:void(0)" class="nav-item" data-action="mock" data-name="Stock Entry">
                     <span class="nav-icon">📝</span> Stock Entry
                 </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Stock Ledger">
+                <a href="javascript:void(0)" class="nav-item" data-action="mock" data-name="Stock Ledger">
                     <span class="nav-icon">📄</span> Stock Ledger
                 </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Material Transfers">
+                <a href="javascript:void(0)" class="nav-item" data-action="mock" data-name="Material Transfers">
                     <span class="nav-icon">🚚</span> Material Transfers
                 </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Warehouse Locations">
+                <a href="javascript:void(0)" class="nav-item" data-action="mock" data-name="Warehouse Locations">
                     <span class="nav-icon">📍</span> Warehouse Locations
                 </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Stock Reconciliation">
+                <a href="javascript:void(0)" class="nav-item" data-action="mock" data-name="Stock Reconciliation">
                     <span class="nav-icon">🛠️</span> Stock Reconciliation
                 </a>
             `;
@@ -1147,10 +1210,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="sidebar-module-header" style="padding: 10px 14px; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #8b5cf6; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
                     <span>✨</span> Part Creation &amp; QA
                 </div>
-                <a href="#" class="nav-item active" id="nav-pc-part-list-sub">
+                <a href="javascript:void(0)" class="nav-item active" id="nav-pc-part-list-sub">
                     <span class="nav-icon">📋</span> Part Request List
                 </a>
-                <a href="#" class="nav-item" id="nav-pc-new-request-sub">
+                <a href="javascript:void(0)" class="nav-item" id="nav-pc-new-request-sub">
                     <span class="nav-icon">➕</span> New Part Request
                 </a>
             `;
@@ -1159,19 +1222,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="sidebar-module-header" style="padding: 10px 14px; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #10b981; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
                     <span>🛒</span> Procurement &amp; Purchasing
                 </div>
-                <a href="#" class="nav-item active" id="nav-pur-dashboard-sub">
+                <a href="javascript:void(0)" class="nav-item active" id="nav-pur-dashboard-sub">
                     <span class="nav-icon">📊</span> Procurement Dashboard
                 </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Material Requests">
+                <a href="javascript:void(0)" class="nav-item" data-action="mock" data-name="Material Requests">
                     <span class="nav-icon">📝</span> Material Requests
                 </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Purchase Orders">
+                <a href="javascript:void(0)" class="nav-item" data-action="mock" data-name="Purchase Orders">
                     <span class="nav-icon">📄</span> Purchase Orders
                 </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Goods Receipts">
+                <a href="javascript:void(0)" class="nav-item" data-action="mock" data-name="Goods Receipts">
                     <span class="nav-icon">🚚</span> Goods Receipts
                 </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Vendor Invoices">
+                <a href="javascript:void(0)" class="nav-item" data-action="mock" data-name="Vendor Invoices">
                     <span class="nav-icon">🧾</span> Vendor Invoices
                 </a>
             `;
@@ -1180,19 +1243,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="sidebar-module-header" style="padding: 10px 14px; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #ec4899; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
                     <span>📈</span> Sales &amp; Distribution
                 </div>
-                <a href="#" class="nav-item active" id="nav-sales-dashboard-sub">
+                <a href="javascript:void(0)" class="nav-item active" id="nav-sales-dashboard-sub">
                     <span class="nav-icon">📊</span> Sales Dashboard
                 </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Sales Quotations">
+                <a href="javascript:void(0)" class="nav-item" data-action="mock" data-name="Sales Quotations">
                     <span class="nav-icon">💬</span> Sales Quotations
                 </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Sales Orders">
+                <a href="javascript:void(0)" class="nav-item" data-action="mock" data-name="Sales Orders">
                     <span class="nav-icon">📋</span> Sales Orders
                 </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Delivery Notes">
+                <a href="javascript:void(0)" class="nav-item" data-action="mock" data-name="Delivery Notes">
                     <span class="nav-icon">🚚</span> Delivery Notes
                 </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Sales Invoices">
+                <a href="javascript:void(0)" class="nav-item" data-action="mock" data-name="Sales Invoices">
                     <span class="nav-icon">🧾</span> Sales Invoices
                 </a>
             `;
@@ -1201,16 +1264,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="sidebar-module-header" style="padding: 10px 14px; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #4f46e5; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
                     <span>💳</span> Finance &amp; Ledger
                 </div>
-                <a href="#" class="nav-item active" id="nav-fin-coa-sub">
+                <a href="javascript:void(0)" class="nav-item active" id="nav-fin-coa-sub">
                     <span class="nav-icon">📊</span> Chart of Accounts
                 </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="General Ledger">
+                <a href="javascript:void(0)" class="nav-item" data-action="mock" data-name="General Ledger">
                     <span class="nav-icon">📘</span> General Ledger
                 </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Payment Modes">
+                <a href="javascript:void(0)" class="nav-item" data-action="mock" data-name="Payment Modes">
                     <span class="nav-icon">💳</span> Payment Modes &amp; Budgets
                 </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Tax Configuration">
+                <a href="javascript:void(0)" class="nav-item" data-action="mock" data-name="Tax Configuration">
                     <span class="nav-icon">💸</span> Tax Configuration
                 </a>
             `;
@@ -1219,13 +1282,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="sidebar-module-header" style="padding: 10px 14px; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #f59e0b; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
                     <span>👥</span> HR Management
                 </div>
-                <a href="#" class="nav-item active" id="nav-hr-dashboard-sub">
+                <a href="javascript:void(0)" class="nav-item active" id="nav-hr-dashboard-sub">
                     <span class="nav-icon">📊</span> HR Dashboard
                 </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Employee Directory">
+                <a href="javascript:void(0)" class="nav-item" data-action="mock" data-name="Employee Directory">
                     <span class="nav-icon">👤</span> Employee Directory
                 </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Attendance & Payroll">
+                <a href="javascript:void(0)" class="nav-item" data-action="mock" data-name="Attendance & Payroll">
                     <span class="nav-icon">📅</span> Attendance &amp; Payroll
                 </a>
             `;
@@ -1234,19 +1297,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="sidebar-module-header" style="padding: 10px 14px; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #8b5cf6; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
                     <span>⚙️</span> PLPI Integration
                 </div>
-                <a href="#" class="nav-item active" id="nav-plpi-overview-sub">
+                <a href="javascript:void(0)" class="nav-item active" id="nav-plpi-overview-sub">
                     <span class="nav-icon">📊</span> PLPI Overview
                 </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Bill of Materials (BOM)">
+                <a href="javascript:void(0)" class="nav-item" data-action="mock" data-name="Bill of Materials (BOM)">
                     <span class="nav-icon">⚙️</span> Bill of Materials (BOM)
                 </a>
-                <a href="#" class="nav-item" data-action="mock" data-name="Work Centers & Routings">
+                <a href="javascript:void(0)" class="nav-item" data-action="mock" data-name="Work Centers & Routings">
                     <span class="nav-icon">🏭</span> Work Centers &amp; Routings
                 </a>
             `;
         } else {
             html = `
-                <a href="#" class="nav-item active" id="nav-dashboard">
+                <a href="javascript:void(0)" class="nav-item active" id="nav-dashboard">
                     <span class="nav-icon">📊</span> Dashboard
                 </a>
             `;
@@ -1254,7 +1317,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Always append Back to Launcher button at bottom of sidebar
         html += `
-            <a href="#" class="nav-item btn-home-back" id="btn-sidebar-back-home" style="margin-top: auto; border-top: 1px solid rgba(255,255,255,0.12); padding-top: 12px;">
+            <a href="javascript:void(0)" class="nav-item btn-home-back" id="btn-sidebar-back-home" style="margin-top: auto; border-top: 1px solid rgba(255,255,255,0.12); padding-top: 12px;">
                 <span class="nav-icon">🏠</span> Back to Launcher
             </a>
         `;
@@ -1278,6 +1341,22 @@ document.addEventListener('DOMContentLoaded', () => {
             btnDashboardNav.addEventListener('click', (e) => {
                 e.preventDefault();
                 showHomeScreen();
+            });
+        }
+
+        const btnCompanySetupMaster = document.getElementById('nav-company-setup-master');
+        if (btnCompanySetupMaster) {
+            btnCompanySetupMaster.addEventListener('click', (e) => {
+                e.preventDefault();
+                switchModule('masters');
+            });
+        }
+
+        const btnInventoryNav = document.getElementById('nav-inventory');
+        if (btnInventoryNav) {
+            btnInventoryNav.addEventListener('click', (e) => {
+                e.preventDefault();
+                switchModule('stock');
             });
         }
 
@@ -2226,7 +2305,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             tr.innerHTML = `
                 <td><span class="badge" style="background:#f1f5f9;color:#1e293b;font-weight:700;font-family:monospace;font-size:13px;border:1px solid #cbd5e1;">${escapeHtml(comp.companyId)}</span></td>
-                <td><a href="#" class="company-name-link" data-id="${comp.companyId}" style="font-weight: 600; color: var(--color-primary); text-decoration: none;">${escapeHtml(comp.companyName)}</a></td>
+                <td><a href="javascript:void(0)" class="company-name-link" data-id="${comp.companyId}" style="font-weight: 600; color: var(--color-primary); text-decoration: none;">${escapeHtml(comp.companyName)}</a></td>
                 <td>${addressBadge}</td>
                 <td><span class="badge" style="background-color: var(--color-primary-light, #e0f2fe); color: var(--color-primary, #0284c7); font-weight:600;">${comp.accCurrency || 'GBP'}</span></td>
                 <td>${formatDate(comp.creationDate)}</td>
@@ -7490,6 +7569,13 @@ SyriMed Healthcare`
         });
 
         const roleMetadata = {
+            'Stock Control': {
+                display: 'Stock Control Team',
+                title: 'Stock Control Team:',
+                desc: 'Review Page 1 & 2 details, complete Page 3 Stock Control Specification, and submit to QA.',
+                read: true, write: true, delete: false,
+                color: '#0284c7', border: '#0ea5e9'
+            },
             'Admin': {
                 display: 'ERP Administrator',
                 title: 'ERP Administrator:',
@@ -8127,19 +8213,19 @@ SyriMed Healthcare`
     // ============================================================
     // DEDICATED WORKSPACE — PART CREATION & QA APPROVAL MODULE
     // ============================================================
-    function initPartCreation() {
-        const STORAGE_KEY = 'bs_part_creation_requests_v1';
+        function initPartCreation() {
+        const STORAGE_KEY = 'bs_part_creation_requests_v4';
+
+        let currentOpenedRequest = null;
+        let activeFilter = 'ALL';
 
         const defaultRequests = [
             {
                 id: 'REQ-2026-0001',
                 status: 'APPROVED',
-                requestDate: '2026-08-20',
-                requestedBy: 'Warehouse Ops (John Doe)',
-                stockApprovedBy: 'Stock Control (David Miller)',
-                stockApprovedDate: '2026-08-21',
-                qaVerifiedBy: 'QA Officer (Vilas Vaidya)',
-                qaVerifiedDate: '2026-08-21',
+                partCodeGenerated: 'PRT-10020',
+                requestDate: '2026-08-28',
+                requestedBy: 'Warehouse Op (John Doe)',
                 company: 'B&S Healthcare Ltd',
                 site: 'Warehouse 1 - Ruislip',
                 requestType: 'NEW PRODUCT',
@@ -8149,49 +8235,73 @@ SyriMed Healthcare`
                 strength: '500mg',
                 packSize: 'Pack of 100',
                 form: 'Tablet',
+                buyerName: 'Shiva',
                 controlledDrug: 'No',
                 cdSchedule: 'N/A',
                 className: 'Non-Controlled',
                 coldChain: 'No',
                 specials: 'No',
-                highRisk: 'No',
                 productFamily: 'Analgesics',
                 storageConditions: 'Store below 25°C',
                 bnfCode: '04.07.01.00',
                 bnfDrugName: 'Paracetamol',
-                bnfSelectionName: 'Paracetamol 500mg',
+                bnfSelectionName: 'Paracetamol 500mg Tabs',
                 bnfChemicalName: 'Acetaminophen',
                 bnfPrepName: 'Paracetamol Tablets BP',
-                partCodeGenerated: 'PRT-10021',
-                qaChecklist: {
-                    req_type: 'VERIFIED', api: 'VERIFIED', prod_type: 'VERIFIED', product_name: 'VERIFIED',
-                    strength: 'VERIFIED', pack_size: 'VERIFIED', form: 'VERIFIED', controlled_drug: 'VERIFIED',
-                    cd_schedule: 'VERIFIED', class: 'VERIFIED', cold_chain: 'VERIFIED', specials: 'VERIFIED',
-                    high_risk: 'VERIFIED', product_family: 'VERIFIED', storage_conditions: 'VERIFIED'
-                }
+                shelfLifeVal: '36',
+                vatCode: 'SUK-11',
+                drugTariff: '115.83',
+                salesPrice: '92.66',
+                minSellingPrice: '92.66',
+                estMaterialCost: '115.83',
+                supplierName: 'ALLOGA UK LIMITED',
+                country: 'UNITED KINGDOM',
+                partCountry: 'United Kingdom',
+                partType: 'Purchased (Raw)',
+                proposedPartNumber: 'PRT-10020',
+                valuationMethod: 'Weighted Average',
+                lotTracking: 'Lot Tracking',
+                lotQtyRule: 'Many Lots Per Production Order',
+                subLotRule: 'Sub Lots Allowed',
+                componentLotRule: 'Many Lots Allowed',
+                costLevel: 'Cost Per Part',
+                invoiceConsideration: 'Ignore Invoice Price',
+                zeroCostFlag: 'Zero Cost Forbidden',
+                hiddenQty: '0',
+                attachedDoc: 'Paracetamol_Technical_Specification_v2.pdf (1.45 MB)',
+                documents: [
+                    {
+                        id: 'DOC-2026-001',
+                        name: 'Paracetamol_Technical_Specification_v2.pdf',
+                        category: 'Technical Specification',
+                        size: '1.45 MB',
+                        uploadedBy: 'Warehouse Op (John Doe)',
+                        timestamp: '2026-08-28 10:15',
+                        note: 'Verified active pharmaceutical ingredient assay (BP Grade)'
+                    }
+                ],
+                qaChecklist: {}
             },
             {
                 id: 'REQ-2026-0002',
                 status: 'PENDING_QA',
-                requestDate: '2026-08-23',
-                requestedBy: 'Warehouse Team (Sarah Jenkins)',
-                stockApprovedBy: 'Stock Control (David Miller)',
-                stockApprovedDate: '2026-08-24',
+                requestDate: '2026-08-26',
+                requestedBy: 'Warehouse Op (Sarah Jenkins)',
                 company: 'B&S Healthcare Ltd',
                 site: 'Warehouse 1 - Ruislip',
                 requestType: 'NEW PRODUCT',
-                api: 'Amoxicillin Trihydrate',
+                api: 'Amoxicillin',
                 productType: 'BRANDED',
                 productName: 'Amoxicillin 250mg Capsules',
                 strength: '250mg',
-                packSize: 'Pack of 21',
+                packSize: 'Pack of 28',
                 form: 'Capsule',
+                buyerName: 'David Miller',
                 controlledDrug: 'No',
                 cdSchedule: 'N/A',
                 className: 'Non-Controlled',
                 coldChain: 'No',
                 specials: 'No',
-                highRisk: 'No',
                 productFamily: 'Antibiotics',
                 storageConditions: 'Store below 25°C',
                 bnfCode: '05.01.01.01',
@@ -8199,6 +8309,38 @@ SyriMed Healthcare`
                 bnfSelectionName: 'Amoxicillin 250mg Caps',
                 bnfChemicalName: 'Amoxicillin Trihydrate',
                 bnfPrepName: 'Amoxicillin Capsules BP',
+                shelfLifeVal: '24',
+                vatCode: 'SUK-11',
+                drugTariff: '45.00',
+                salesPrice: '38.50',
+                minSellingPrice: '38.50',
+                estMaterialCost: '45.00',
+                supplierName: 'SANDOZ PHARMA',
+                country: 'UNITED KINGDOM',
+                partCountry: 'United Kingdom',
+                partType: 'Purchased (Raw)',
+                proposedPartNumber: 'PRT-10022',
+                valuationMethod: 'Weighted Average',
+                lotTracking: 'Lot Tracking',
+                lotQtyRule: 'Many Lots Per Production Order',
+                subLotRule: 'Sub Lots Allowed',
+                componentLotRule: 'Many Lots Allowed',
+                costLevel: 'Cost Per Part',
+                invoiceConsideration: 'Ignore Invoice Price',
+                zeroCostFlag: 'Zero Cost Forbidden',
+                hiddenQty: '0',
+                attachedDoc: 'Amoxicillin_CoA_Specification.pdf (2.10 MB)',
+                documents: [
+                    {
+                        id: 'DOC-2026-002',
+                        name: 'Amoxicillin_CoA_Specification.pdf',
+                        category: 'Certificate of Analysis',
+                        size: '2.10 MB',
+                        uploadedBy: 'Warehouse Op (Sarah Jenkins)',
+                        timestamp: '2026-08-26 14:20',
+                        note: 'Initial CoA from Sandoz Pharma'
+                    }
+                ],
                 qaChecklist: {}
             },
             {
@@ -8215,12 +8357,12 @@ SyriMed Healthcare`
                 strength: '400mg',
                 packSize: 'Pack of 84',
                 form: 'Tablet',
+                buyerName: 'Milan Dabhi',
                 controlledDrug: 'No',
                 cdSchedule: 'N/A',
                 className: 'Non-Controlled',
                 coldChain: 'No',
                 specials: 'No',
-                highRisk: 'No',
                 productFamily: 'NSAID Analgesics',
                 storageConditions: 'Store below 25°C',
                 bnfCode: '10.01.01.00',
@@ -8228,6 +8370,38 @@ SyriMed Healthcare`
                 bnfSelectionName: 'Ibuprofen 400mg',
                 bnfChemicalName: 'Ibuprofen',
                 bnfPrepName: 'Ibuprofen Tablets BP',
+                shelfLifeVal: '36',
+                vatCode: 'SUK-11',
+                drugTariff: '62.00',
+                salesPrice: '52.00',
+                minSellingPrice: '52.00',
+                estMaterialCost: '62.00',
+                supplierName: 'TEVA UK LIMITED',
+                country: 'UNITED KINGDOM',
+                partCountry: '',
+                partType: '',
+                proposedPartNumber: '',
+                valuationMethod: '',
+                lotTracking: '',
+                lotQtyRule: '',
+                subLotRule: '',
+                componentLotRule: '',
+                costLevel: '',
+                invoiceConsideration: '',
+                zeroCostFlag: '',
+                hiddenQty: '',
+                attachedDoc: 'Ibuprofen_Regulatory_Dossier.pdf (3.24 MB)',
+                documents: [
+                    {
+                        id: 'DOC-2026-003',
+                        name: 'Ibuprofen_Regulatory_Dossier.pdf',
+                        category: 'Regulatory Dossier',
+                        size: '3.24 MB',
+                        uploadedBy: 'Warehouse Op (Mark Smith)',
+                        timestamp: '2026-08-24 11:45',
+                        note: 'CTD Module 3 Quality documentation'
+                    }
+                ],
                 qaChecklist: {}
             },
             {
@@ -8244,12 +8418,12 @@ SyriMed Healthcare`
                 strength: '10mg/ml',
                 packSize: '10 Ampoules',
                 form: 'Injection',
+                buyerName: 'Shiva',
                 controlledDrug: 'Yes',
                 cdSchedule: 'Schedule 2',
                 className: 'Class A',
                 coldChain: 'No',
                 specials: 'No',
-                highRisk: 'Yes',
                 productFamily: 'Controlled Opioids',
                 storageConditions: 'Store below 25°C',
                 bnfCode: '04.07.02.00',
@@ -8257,6 +8431,26 @@ SyriMed Healthcare`
                 bnfSelectionName: 'Morphine Inj 10mg/ml',
                 bnfChemicalName: 'Morphine Sulfate',
                 bnfPrepName: 'Morphine Injection BP',
+                shelfLifeVal: '36',
+                vatCode: 'SUK-11',
+                drugTariff: '180.00',
+                salesPrice: '150.00',
+                minSellingPrice: '150.00',
+                estMaterialCost: '180.00',
+                supplierName: 'WOCKHARDT UK',
+                country: 'UNITED KINGDOM',
+                attachedDoc: 'Morphine_Sulfate_MSDS_Safety.pdf (1.82 MB)',
+                documents: [
+                    {
+                        id: 'DOC-2026-004',
+                        name: 'Morphine_Sulfate_MSDS_Safety.pdf',
+                        category: 'MSDS',
+                        size: '1.82 MB',
+                        uploadedBy: 'Warehouse Op (Mark Smith)',
+                        timestamp: '2026-08-22 09:30',
+                        note: 'Material Safety Data Sheet (Schedule 2 CD precautions)'
+                    }
+                ],
                 qaNotes: 'Please review Storage Condition and CD Schedule verification.',
                 fieldsToEdit: ['pc-input-cold-chain', 'pc-input-storage-conditions'],
                 qaChecklist: {
@@ -8268,12 +8462,38 @@ SyriMed Healthcare`
 
         function getRequests() {
             try {
-                const raw = localStorage.getItem(STORAGE_KEY);
+                const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('bs_part_creation_requests_v2');
                 if (!raw) {
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultRequests));
                     return defaultRequests;
                 }
-                return JSON.parse(raw);
+                const parsed = JSON.parse(raw);
+                parsed.forEach(r => {
+                    if (r.status === 'PENDING STOCK APPROVAL') r.status = 'PENDING_STOCK_CONTROL';
+                    if (!Array.isArray(r.documents)) {
+                        r.documents = [];
+                        if (r.attachedDoc) {
+                            const fileName = r.attachedDoc.replace(/\s*\([^)]+\)/, '').trim();
+                            const sizeMatch = r.attachedDoc.match(/\(([^)]+)\)/);
+                            const sizeStr = sizeMatch ? sizeMatch[1] : '1.5 MB';
+                            let cat = 'Technical Specification';
+                            if (/CoA|Certificate/i.test(fileName)) cat = 'Certificate of Analysis';
+                            else if (/MSDS|Safety/i.test(fileName)) cat = 'MSDS';
+                            else if (/Dossier|Regulatory/i.test(fileName)) cat = 'Regulatory Dossier';
+                            else if (/CAD|Drawing/i.test(fileName)) cat = 'CAD Drawing';
+                            r.documents.push({
+                                id: 'DOC-MIG-' + Math.random().toString(36).substr(2, 6),
+                                name: fileName,
+                                category: cat,
+                                size: sizeStr,
+                                uploadedBy: r.requestedBy || 'System User',
+                                timestamp: (r.requestDate ? r.requestDate + ' 10:30' : '2026-08-28 10:30'),
+                                note: 'System-linked document attachment'
+                            });
+                        }
+                    }
+                });
+                return parsed;
             } catch (e) {
                 return defaultRequests;
             }
@@ -8285,12 +8505,89 @@ SyriMed Healthcare`
             updateKPIs();
         }
 
-        let activeFilter = 'ALL';
+        // Workflow Role Helpers
+        function getActiveWorkflowRole() {
+            const role = (typeof ModuleAccessControl !== 'undefined' && ModuleAccessControl.getActiveRole)
+                ? ModuleAccessControl.getActiveRole()
+                : 'Normal User';
+            if (role === 'QA') return 'QA';
+            if (role === 'Stock Control') return 'Stock Control';
+            return 'User';
+        }
+
+        function setWorkflowRole(roleName) {
+            if (typeof ModuleAccessControl !== 'undefined' && ModuleAccessControl.setActiveRole) {
+                ModuleAccessControl.setActiveRole(roleName);
+            }
+            const rbacSel = document.getElementById('rbac-role-selector');
+            if (rbacSel) rbacSel.value = roleName;
+            const topbarRole = document.getElementById('topbar-active-role');
+            if (topbarRole) {
+                topbarRole.textContent = (roleName === 'Normal User') ? 'Standard User' : (roleName === 'Stock Control' ? 'Stock Control' : roleName);
+            }
+
+            // Sync visual active pill state
+            document.querySelectorAll('.pc-role-btn').forEach(btn => {
+                const btnRole = btn.getAttribute('data-role');
+                if (btnRole === roleName) {
+                    btn.classList.add('active-role-btn');
+                    btn.style.background = '#2563eb';
+                    btn.style.color = '#ffffff';
+                    btn.style.border = 'none';
+                    btn.style.fontWeight = '700';
+                } else {
+                    btn.classList.remove('active-role-btn');
+                    btn.style.background = '#f8fafc';
+                    btn.style.color = '#475569';
+                    btn.style.border = '1px solid #cbd5e1';
+                    btn.style.fontWeight = '600';
+                }
+            });
+
+            // Update mode title badge in form header
+            const modeBadge = document.getElementById('pc-form-mode-title');
+            if (modeBadge) {
+                if (roleName === 'QA') {
+                    modeBadge.textContent = 'Role: QA (Verify All 3 Pages)';
+                    modeBadge.style.background = '#7c3aed';
+                } else if (roleName === 'Stock Control') {
+                    modeBadge.textContent = 'Role: Stock Control (Review Page 1-2, Edit Page 3)';
+                    modeBadge.style.background = '#0284c7';
+                } else {
+                    modeBadge.textContent = 'Role: User (Create Part Request: Page 1-2)';
+                    modeBadge.style.background = '#059669';
+                }
+            }
+
+            // Re-apply workflow permissions for currently open form
+            updateWorkflowUI(currentOpenedRequest);
+            renderTable();
+            updateKPIs();
+        }
+
+        // Attach listeners to all Role Switcher Pills
+        document.querySelectorAll('.pc-role-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetRole = btn.getAttribute('data-role');
+                setWorkflowRole(targetRole);
+            });
+        });
+
+        // Listen for changes from the topbar RBAC dropdown
+        const rbacRoleSelectorEl = document.getElementById('rbac-role-selector');
+        if (rbacRoleSelectorEl) {
+            rbacRoleSelectorEl.addEventListener('change', (e) => {
+                const r = e.target.value;
+                if (r === 'QA' || r === 'Stock Control' || r === 'Normal User') {
+                    setWorkflowRole(r);
+                }
+            });
+        }
 
         function updateKPIs() {
             const requests = getRequests();
             const total = requests.length;
-            const pendingStock = requests.filter(r => r.status === 'PENDING_STOCK_CONTROL').length;
+            const pendingStock = requests.filter(r => r.status === 'PENDING_STOCK_CONTROL' || r.status === 'PENDING STOCK APPROVAL').length;
             const pendingQa = requests.filter(r => r.status === 'PENDING_QA').length;
             const approved = requests.filter(r => r.status === 'APPROVED').length;
             const toEdit = requests.filter(r => r.status === 'TO_BE_EDITED').length;
@@ -8302,7 +8599,6 @@ SyriMed Healthcare`
             const elToEdit = document.getElementById('kpi-part-to-edit');
             const cntStockTab = document.getElementById('cnt-part-pending-stock');
             const cntQaTab = document.getElementById('cnt-part-pending-qa');
-            const badgeQaCount = document.getElementById('badge-part-qa-count');
 
             if (elTotal) elTotal.textContent = total;
             if (elPendingStock) elPendingStock.textContent = pendingStock;
@@ -8311,17 +8607,17 @@ SyriMed Healthcare`
             if (elToEdit) elToEdit.textContent = toEdit;
             if (cntStockTab) cntStockTab.textContent = pendingStock;
             if (cntQaTab) cntQaTab.textContent = pendingQa;
-            if (badgeQaCount) badgeQaCount.textContent = pendingQa;
         }
 
         function getBadgeHTML(status) {
             switch (status) {
                 case 'APPROVED':
-                    return '<span class="badge" style="background: #d1fae5; color: #047857; font-weight: 700; border: 1px solid #a7f3d0;">✅ APPROVED (QA Verified)</span>';
+                    return '<span class="badge" style="background: #d1fae5; color: #047857; font-weight: 700; border: 1px solid #a7f3d0;">✅ APPROVED</span>';
                 case 'PENDING_STOCK_CONTROL':
-                    return '<span class="badge" style="background: #e0f2fe; color: #0369a1; font-weight: 700; border: 1px solid #bae6fd;">📦 PENDING STOCK APPROVAL</span>';
+                case 'PENDING STOCK APPROVAL':
+                    return '<span class="badge" style="background: #e0f2fe; color: #0369a1; font-weight: 700; border: 1px solid #bae6fd;">📦 PENDING STOCK CONTROL</span>';
                 case 'PENDING_QA':
-                    return '<span class="badge" style="background: #fef3c7; color: #b45309; font-weight: 700; border: 1px solid #fde68a;">🛡️ PENDING QA REVIEW</span>';
+                    return '<span class="badge" style="background: #fef3c7; color: #b45309; font-weight: 700; border: 1px solid #fde68a;">🛡️ PENDING QA VERIFICATION</span>';
                 case 'TO_BE_EDITED':
                     return '<span class="badge" style="background: #ffedd5; color: #c2410c; font-weight: 700; border: 1px solid #fed7aa;">🟧 REVISIONS REQUIRED</span>';
                 case 'REJECTED':
@@ -8337,14 +8633,15 @@ SyriMed Healthcare`
 
             const searchInput = document.getElementById('part-creation-search-input');
             const searchVal = searchInput ? searchInput.value.trim().toLowerCase() : '';
+            const currentRole = getActiveWorkflowRole();
 
             const requests = getRequests();
             const filtered = requests.filter(r => {
-                const matchesFilter = (activeFilter === 'ALL' || r.status === activeFilter);
+                const matchesFilter = (activeFilter === 'ALL' || r.status === activeFilter || (activeFilter === 'PENDING_STOCK_CONTROL' && r.status === 'PENDING STOCK APPROVAL'));
                 if (!matchesFilter) return false;
 
                 if (!searchVal) return true;
-                const searchStr = `${r.id} ${r.productName} ${r.api} ${r.requestedBy} ${r.partCodeGenerated || ''}`.toLowerCase();
+                const searchStr = `${r.id} ${r.productName} ${r.api} ${r.requestedBy} ${r.proposedPartNumber || r.partCodeGenerated || ''}`.toLowerCase();
                 return searchStr.includes(searchVal);
             });
 
@@ -8359,38 +8656,66 @@ SyriMed Healthcare`
                 return;
             }
 
-            tbody.innerHTML = filtered.map(r => `
-                <tr>
-                    <td style="font-weight: 700; font-family: monospace; color: var(--color-primary);">
-                        ${r.id}
-                        ${r.partCodeGenerated ? `<div style="font-size: 10px; color: #059669; font-weight: 800; margin-top: 2px; font-family: sans-serif;">Part Code: ${r.partCodeGenerated}</div>` : ''}
-                    </td>
-                    <td>
-                        <div style="font-weight: 700; color: var(--color-text-main);">${r.productName || 'N/A'}</div>
-                        <div style="font-size: 11px; color: var(--color-text-muted);">API: <strong>${r.api || 'N/A'}</strong></div>
-                    </td>
-                    <td>
-                        <span style="font-size: 11px; font-weight: 700; background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px;">${r.productType || 'BRANDED'}</span>
-                        <span style="font-size: 12px; margin-left: 4px;">${r.strength || ''}</span>
-                    </td>
-                    <td>
-                        <div style="font-size: 12px; font-weight: 600;">${r.packSize || 'N/A'}</div>
-                        <div style="font-size: 11px; color: var(--color-text-muted);">Form: ${r.form || 'N/A'}</div>
-                    </td>
-                    <td>
-                        <div style="font-size: 12px; font-weight: 600;">${r.requestedBy || 'Warehouse Op'}</div>
-                        <div style="font-size: 11px; color: var(--color-text-muted);">${r.requestDate || ''}</div>
-                    </td>
-                    <td>
-                        ${getBadgeHTML(r.status)}
-                    </td>
-                    <td style="text-align: right;">
-                        <button type="button" class="btn btn-xs btn-outline btn-open-req-detail" data-id="${r.id}" style="font-size: 11px; padding: 3px 10px; border-color: var(--color-primary); color: var(--color-primary);">
-                            ${r.status === 'PENDING_STOCK_CONTROL' ? '📦 Stock Review / Approve' : (r.status === 'PENDING_QA' ? '🛡️ QA Review / Approve' : '👁️ View Request')}
-                        </button>
-                    </td>
-                </tr>
-            `).join('');
+            tbody.innerHTML = filtered.map(r => {
+                let actionBtnText = '👁️ View Request';
+                let actionBtnClass = 'btn-outline';
+
+                if (currentRole === 'User') {
+                    if (r.status === 'DRAFT' || r.status === 'TO_BE_EDITED') {
+                        actionBtnText = '✏️ Edit & Submit';
+                        actionBtnClass = 'btn-primary';
+                    } else {
+                        actionBtnText = '👁️ View (Readonly)';
+                    }
+                } else if (currentRole === 'Stock Control') {
+                    if (r.status === 'PENDING_STOCK_CONTROL' || r.status === 'PENDING STOCK APPROVAL') {
+                        actionBtnText = '📦 Specify & Submit to QA';
+                        actionBtnClass = 'btn-primary';
+                    } else {
+                        actionBtnText = '👁️ View Request';
+                    }
+                } else if (currentRole === 'QA') {
+                    if (r.status === 'PENDING_QA') {
+                        actionBtnText = '🛡️ Verify & Approve';
+                        actionBtnClass = 'btn-primary';
+                    } else {
+                        actionBtnText = '👁️ View Request';
+                    }
+                }
+
+                return `
+                    <tr>
+                        <td style="font-weight: 700; font-family: monospace; color: var(--color-primary);">
+                            ${r.id}
+                            ${r.partCodeGenerated ? `<div style="font-size: 10px; color: #059669; font-weight: 800; margin-top: 2px; font-family: sans-serif;">Part Code: ${r.partCodeGenerated}</div>` : ''}
+                        </td>
+                        <td>
+                            <div style="font-weight: 700; color: var(--color-text-main);">${r.productName || 'N/A'}</div>
+                            <div style="font-size: 11px; color: var(--color-text-muted);">API: <strong>${r.api || 'N/A'}</strong></div>
+                        </td>
+                        <td>
+                            <span style="font-size: 11px; font-weight: 700; background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px;">${r.productType || 'BRANDED'}</span>
+                            <span style="font-size: 12px; margin-left: 4px;">${r.strength || ''}</span>
+                        </td>
+                        <td>
+                            <div style="font-size: 12px; font-weight: 600;">${r.packSize || 'N/A'}</div>
+                            <div style="font-size: 11px; color: var(--color-text-muted);">Form: ${r.form || 'N/A'}</div>
+                        </td>
+                        <td>
+                            <div style="font-size: 12px; font-weight: 600;">${r.requestedBy || 'Warehouse Op'}</div>
+                            <div style="font-size: 11px; color: var(--color-text-muted);">${r.requestDate || ''}</div>
+                        </td>
+                        <td>
+                            ${getBadgeHTML(r.status)}
+                        </td>
+                        <td style="text-align: right;">
+                            <button type="button" class="btn btn-xs ${actionBtnClass} btn-open-req-detail" data-id="${r.id}" style="font-size: 11px; padding: 4px 10px; font-weight: 700;">
+                                ${actionBtnText}
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
 
             // Attach detail open listeners
             tbody.querySelectorAll('.btn-open-req-detail').forEach(btn => {
@@ -8407,8 +8732,201 @@ SyriMed Healthcare`
             const formView = document.getElementById('part-creation-form-view');
             if (listView) listView.classList.remove('hidden');
             if (formView) formView.classList.add('hidden');
+            currentOpenedRequest = null;
             renderTable();
             updateKPIs();
+        }
+
+        // Section editability helper
+        function setSectionEditable(containerSelector, isEditable) {
+            const container = document.querySelector(containerSelector);
+            if (!container) return;
+            container.querySelectorAll('input:not(.pc-qa-cb), select:not(.pc-qa-select), textarea').forEach(el => {
+                if (el.id === 'pc-form-req-id' || el.id === 'pc-step2-req-id' || el.id === 'pc-step3-req-id' || el.id === 'pc-step3-status-input' || el.id === 'pc-input-vat-percent') {
+                    return; // preserve system-managed fields
+                }
+                el.disabled = !isEditable;
+                if (!isEditable) {
+                    el.style.backgroundColor = '#f8fafc';
+                    el.style.cursor = 'not-allowed';
+                } else {
+                    el.style.backgroundColor = '#ffffff';
+                    el.style.cursor = 'text';
+                }
+            });
+        }
+
+        // Master workflow UI updater: Controls Page 3 visibility, edit permissions, and dynamic context-specific action buttons
+        function updateWorkflowUI(req = null) {
+            const role = getActiveWorkflowRole();
+            const status = req ? req.status : 'DRAFT';
+            const isCompleted = (status === 'APPROVED' || status === 'REJECTED');
+
+            // Stepper elements
+            const indStep3 = document.getElementById('indicator-step-3');
+            const sepStep23 = document.getElementById('sep-step-2-3');
+
+            // Page 1 Buttons
+            const btnP1SaveDraft = document.getElementById('btn-pc-save-draft');
+            const btnP1Clear = document.getElementById('btn-pc-clear');
+            const btnP1Next = document.getElementById('btn-pc-save-next');
+
+            // Page 2 Buttons
+            const btnP2Back = document.getElementById('btn-pc-step2-back');
+            const btnP2SaveDraft = document.getElementById('btn-pc-step2-save-draft');
+            const btnP2Clear = document.getElementById('btn-pc-step2-clear');
+            const btnP2Upload = document.getElementById('btn-pc-step2-upload');
+            const btnP2Submit = document.getElementById('btn-pc-step2-submit');
+            const btnP2Next = document.getElementById('btn-pc-step2-next');
+
+            // Page 3 Buttons
+            const btnP3Close = document.getElementById('btn-pc-step3-close');
+            const btnP3Back = document.getElementById('btn-pc-step3-back');
+            const btnP3Upload = document.getElementById('btn-pc-step3-upload');
+            const btnP3Download = document.getElementById('btn-pc-step3-download');
+            const btnP3Comment = document.getElementById('btn-pc-step3-comment');
+            const btnP3StockDraft = document.getElementById('btn-pc-step3-submit');
+            const btnP3StockSubmitQa = document.getElementById('btn-pc-step3-stock-approve');
+            const btnP3StockRev = document.getElementById('btn-pc-step3-stock-request-edit');
+            const btnP3StockRej = document.getElementById('btn-pc-step3-stock-reject');
+            const btnP3QaApprove = document.getElementById('btn-pc-step3-qa-approve');
+            const btnP3QaRev = document.getElementById('btn-pc-step3-qa-request-edit');
+            const btnP3QaRej = document.getElementById('btn-pc-step3-qa-reject');
+            const btnAddLoc = document.getElementById('btn-add-location-row');
+            const btnAddRev = document.getElementById('btn-add-revision-row');
+
+            const setDisp = (el, disp) => { if (el) el.style.display = disp; };
+
+            // 1. PAGE 3 VISIBILITY RULES
+            if (role === 'User') {
+                setDisp(indStep3, 'none');
+                setDisp(sepStep23, 'none');
+                setDisp(btnP2Next, 'none');
+
+                // If user is currently viewing Step 3, automatically redirect to Step 1
+                const step3Panel = document.getElementById('pc-form-step-3');
+                if (step3Panel && !step3Panel.classList.contains('hidden')) {
+                    showFormStep(1);
+                }
+            } else {
+                setDisp(indStep3, 'flex');
+                setDisp(sepStep23, 'inline-block');
+                setDisp(btnP2Next, 'inline-flex');
+            }
+
+            // 2. CONTEXT-SPECIFIC ACTION BUTTONS PER ROLE & STATUS
+            if (role === 'User') {
+                const canUserEdit = (status === 'DRAFT' || status === 'TO_BE_EDITED');
+                setSectionEditable('#pc-form-step-1', canUserEdit);
+                setSectionEditable('#pc-form-step-2', canUserEdit);
+                setSectionEditable('#pc-form-step-3', false);
+
+                // Page 1 Buttons: User can save draft / clear when editable, proceed to Page 2
+                setDisp(btnP1SaveDraft, canUserEdit ? 'inline-flex' : 'none');
+                setDisp(btnP1Clear, canUserEdit ? 'inline-flex' : 'none');
+                setDisp(btnP1Next, 'inline-flex');
+
+                // Page 2 Buttons: User can save draft / clear / upload / submit to stock control
+                setDisp(btnP2Back, 'inline-flex');
+                setDisp(btnP2SaveDraft, canUserEdit ? 'inline-flex' : 'none');
+                setDisp(btnP2Clear, canUserEdit ? 'inline-flex' : 'none');
+                setDisp(btnP2Upload, canUserEdit ? 'inline-flex' : 'none');
+                if (btnP2Upload) btnP2Upload.disabled = !canUserEdit;
+                setDisp(btnP2Submit, canUserEdit ? 'inline-flex' : 'none');
+                setDisp(btnP2Next, 'none'); // Page 3 is strictly hidden from User
+
+                // Page 3 Buttons: Strictly hidden for User
+                [btnP3Close, btnP3Back, btnP3Upload, btnP3Download, btnP3Comment, btnP3StockDraft, btnP3StockSubmitQa,
+                 btnP3StockRev, btnP3StockRej, btnP3QaApprove, btnP3QaRev, btnP3QaRej, btnAddLoc, btnAddRev]
+                    .forEach(b => setDisp(b, 'none'));
+
+            } else if (role === 'Stock Control') {
+                const canStockAct = (status === 'PENDING_STOCK_CONTROL' || status === 'PENDING STOCK APPROVAL' || status === 'DRAFT');
+                setSectionEditable('#pc-form-step-1', false);
+                setSectionEditable('#pc-form-step-2', false);
+                setSectionEditable('#pc-form-step-3', canStockAct);
+
+                // Page 1: Read-only, only navigation
+                setDisp(btnP1SaveDraft, 'none');
+                setDisp(btnP1Clear, 'none');
+                setDisp(btnP1Next, 'inline-flex');
+
+                // Page 2: Read-only, only navigation (Back to Page 1 or Next to Page 3), upload accessible
+                setDisp(btnP2Back, 'inline-flex');
+                setDisp(btnP2SaveDraft, 'none');
+                setDisp(btnP2Clear, 'none');
+                setDisp(btnP2Upload, 'inline-flex');
+                setDisp(btnP2Submit, 'none');
+                setDisp(btnP2Next, 'inline-flex');
+
+                // Page 3: Stock Control action controls
+                setDisp(btnP3Back, 'inline-flex');
+                setDisp(btnP3Upload, 'inline-flex');
+                setDisp(btnP3Close, isCompleted ? 'inline-flex' : 'none');
+                setDisp(btnP3Download, 'inline-flex');
+                setDisp(btnP3Comment, 'inline-flex');
+                setDisp(btnP3StockDraft, canStockAct ? 'inline-flex' : 'none');
+                setDisp(btnP3StockSubmitQa, canStockAct ? 'inline-flex' : 'none');
+                setDisp(btnP3StockRev, canStockAct ? 'inline-flex' : 'none');
+                setDisp(btnP3StockRej, canStockAct ? 'inline-flex' : 'none');
+                setDisp(btnAddLoc, canStockAct ? 'inline-block' : 'none');
+                setDisp(btnAddRev, canStockAct ? 'inline-block' : 'none');
+
+                // QA actions hidden
+                setDisp(btnP3QaApprove, 'none');
+                setDisp(btnP3QaRev, 'none');
+                setDisp(btnP3QaRej, 'none');
+
+            } else if (role === 'QA') {
+                const canQaAct = (status === 'PENDING_QA');
+                setSectionEditable('#pc-form-step-1', false);
+                setSectionEditable('#pc-form-step-2', false);
+                setSectionEditable('#pc-form-step-3', false);
+
+                // Page 1: Read-only, only navigation
+                setDisp(btnP1SaveDraft, 'none');
+                setDisp(btnP1Clear, 'none');
+                setDisp(btnP1Next, 'inline-flex');
+
+                // Page 2: Read-only, only navigation (Back to Page 1 or Next to Page 3), upload accessible
+                setDisp(btnP2Back, 'inline-flex');
+                setDisp(btnP2SaveDraft, 'none');
+                setDisp(btnP2Clear, 'none');
+                setDisp(btnP2Upload, 'inline-flex');
+                setDisp(btnP2Submit, 'none');
+                setDisp(btnP2Next, 'inline-flex');
+
+                // Page 3: QA verification and approval controls
+                setDisp(btnP3Back, 'inline-flex');
+                setDisp(btnP3Upload, 'inline-flex');
+                setDisp(btnP3Close, isCompleted ? 'inline-flex' : 'none');
+                setDisp(btnP3Download, 'inline-flex');
+                setDisp(btnP3Comment, 'inline-flex');
+                setDisp(btnP3StockDraft, 'none');
+                setDisp(btnP3StockSubmitQa, 'none');
+                setDisp(btnP3StockRev, 'none');
+                setDisp(btnP3StockRej, 'none');
+                setDisp(btnAddLoc, 'none');
+                setDisp(btnAddRev, 'none');
+
+                setDisp(btnP3QaApprove, canQaAct ? 'inline-flex' : 'none');
+                setDisp(btnP3QaRev, canQaAct ? 'inline-flex' : 'none');
+                setDisp(btnP3QaRej, canQaAct ? 'inline-flex' : 'none');
+            }
+
+            // 3. QA CHECKLIST PERMISSIONS
+            const isQaUser = (role === 'QA');
+            document.querySelectorAll('.pc-qa-cb').forEach(cb => {
+                cb.disabled = !isQaUser;
+                cb.style.cursor = isQaUser ? 'pointer' : 'not-allowed';
+            });
+            document.querySelectorAll('.pc-qa-row').forEach(row => {
+                const cb = row.querySelector('.pc-qa-cb');
+                const sel = row.querySelector('.pc-qa-select');
+                if (sel) {
+                    sel.disabled = !isQaUser || !(cb && cb.checked);
+                }
+            });
         }
 
         function openPartForm(reqId = null) {
@@ -8429,6 +8947,7 @@ SyriMed Healthcare`
             if (reqId) {
                 const list = getRequests();
                 const req = list.find(r => r.id === reqId);
+                currentOpenedRequest = req || null;
                 if (req) {
                     const rId1 = document.getElementById('pc-form-req-id');
                     if (rId1) rId1.value = req.id;
@@ -8440,20 +8959,20 @@ SyriMed Healthcare`
                     const s2Badge = document.getElementById('pc-step2-status-badge');
                     if (s2Badge) s2Badge.textContent = req.status;
 
-                    const reqDateVal = req.requestDate || new Date().toISOString().split('T')[0];
+                    const reqDateVal = req.requestDate || '';
                     const rDate1 = document.getElementById('pc-form-req-date');
                     if (rDate1) rDate1.value = reqDateVal;
                     const rDate2 = document.getElementById('pc-step2-req-date');
                     if (rDate2) rDate2.value = reqDateVal;
 
-                    const reqByVal = req.requestedBy || 'Warehouse Op';
+                    const reqByVal = req.requestedBy || '';
                     const rBy1 = document.getElementById('pc-form-req-by');
                     if (rBy1) rBy1.value = reqByVal;
                     const rBy2 = document.getElementById('pc-step2-req-by');
                     if (rBy2) rBy2.value = reqByVal;
 
-                    if (document.getElementById('pc-form-company')) document.getElementById('pc-form-company').value = req.company || 'B&S Healthcare Ltd';
-                    if (document.getElementById('pc-form-site')) document.getElementById('pc-form-site').value = req.site || 'Warehouse 1 - Ruislip';
+                    if (document.getElementById('pc-form-company')) document.getElementById('pc-form-company').value = req.company || '';
+                    if (document.getElementById('pc-form-site')) document.getElementById('pc-form-site').value = req.site || '';
 
                     // Radio inputs
                     const rTypeRadio = document.querySelector(`input[name="pc_req_type"][value="${req.requestType}"]`);
@@ -8469,12 +8988,12 @@ SyriMed Healthcare`
                     if (document.getElementById('pc-input-strength')) document.getElementById('pc-input-strength').value = req.strength || '';
                     if (document.getElementById('pc-input-pack-size')) document.getElementById('pc-input-pack-size').value = req.packSize || '';
                     if (document.getElementById('pc-input-form')) document.getElementById('pc-input-form').value = req.form || '';
+                    if (document.getElementById('pc-input-buyer-name')) document.getElementById('pc-input-buyer-name').value = req.buyerName || '';
                     if (document.getElementById('pc-input-controlled-drug')) document.getElementById('pc-input-controlled-drug').value = req.controlledDrug || '';
                     if (document.getElementById('pc-input-cd-schedule')) document.getElementById('pc-input-cd-schedule').value = req.cdSchedule || '';
                     if (document.getElementById('pc-input-class')) document.getElementById('pc-input-class').value = req.className || '';
                     if (document.getElementById('pc-input-cold-chain')) document.getElementById('pc-input-cold-chain').value = req.coldChain || '';
                     if (document.getElementById('pc-input-specials')) document.getElementById('pc-input-specials').value = req.specials || '';
-                    if (document.getElementById('pc-input-high-risk')) document.getElementById('pc-input-high-risk').value = req.highRisk || '';
                     if (document.getElementById('pc-input-product-family')) document.getElementById('pc-input-product-family').value = req.productFamily || '';
                     if (document.getElementById('pc-input-storage-conditions')) document.getElementById('pc-input-storage-conditions').value = req.storageConditions || '';
                     if (document.getElementById('pc-input-bnf-code')) document.getElementById('pc-input-bnf-code').value = req.bnfCode || '';
@@ -8484,27 +9003,42 @@ SyriMed Healthcare`
                     if (document.getElementById('pc-input-bnf-prep-name')) document.getElementById('pc-input-bnf-prep-name').value = req.bnfPrepName || '';
 
                     // Step 2 inputs
-                    if (document.getElementById('pc-input-shelf-life-val')) document.getElementById('pc-input-shelf-life-val').value = req.shelfLifeVal || '36';
-                    if (document.getElementById('pc-input-vat-code')) document.getElementById('pc-input-vat-code').value = req.vatCode || 'SUK-11';
+                    if (document.getElementById('pc-input-shelf-life-val')) document.getElementById('pc-input-shelf-life-val').value = req.shelfLifeVal || '';
+                    if (document.getElementById('pc-input-vat-code')) document.getElementById('pc-input-vat-code').value = req.vatCode || '';
                     if (document.getElementById('pc-input-drug-tariff')) document.getElementById('pc-input-drug-tariff').value = req.drugTariff || '';
                     if (document.getElementById('pc-input-sales-price')) document.getElementById('pc-input-sales-price').value = req.salesPrice || '';
                     if (document.getElementById('pc-input-min-selling-price')) document.getElementById('pc-input-min-selling-price').value = req.minSellingPrice || '';
                     if (document.getElementById('pc-input-est-material-cost')) document.getElementById('pc-input-est-material-cost').value = req.estMaterialCost || '';
-                    if (document.getElementById('pc-input-country')) document.getElementById('pc-input-country').value = req.country || 'UNITED KINGDOM';
-                    if (document.getElementById('pc-input-sales-category')) document.getElementById('pc-input-sales-category').value = req.salesCategory || 'G';
-                    if (document.getElementById('pc-input-other-category')) document.getElementById('pc-input-other-category').value = req.otherCategory || '';
+                    if (document.getElementById('pc-input-country')) document.getElementById('pc-input-country').value = req.country || '';
                     if (document.getElementById('pc-input-supplier-name')) document.getElementById('pc-input-supplier-name').value = req.supplierName || '';
 
-                    // Show attached file if present
-                    const attBadge = document.getElementById('pc-attached-file-badge');
-                    if (attBadge) {
-                        if (req.attachedDoc) {
-                            attBadge.textContent = `📎 ${req.attachedDoc}`;
-                            attBadge.classList.remove('hidden');
-                        } else {
-                            attBadge.classList.add('hidden');
-                        }
-                    }
+                    // Step 3 inputs
+                    const s3ReqId = document.getElementById('pc-step3-req-id');
+                    if (s3ReqId) s3ReqId.value = req.id;
+                    const s3StatusInput = document.getElementById('pc-step3-status-input');
+                    if (s3StatusInput) s3StatusInput.value = req.status || 'DRAFT';
+                    const s3Badge = document.getElementById('pc-step3-status-badge');
+                    if (s3Badge) s3Badge.textContent = req.status;
+                    const s3Date = document.getElementById('pc-step3-req-date');
+                    if (s3Date) s3Date.value = reqDateVal;
+                    const s3By = document.getElementById('pc-step3-req-by');
+                    if (s3By) s3By.value = reqByVal;
+
+                    if (document.getElementById('pc-sc-part-country')) document.getElementById('pc-sc-part-country').value = req.partCountry || '';
+                    if (document.getElementById('pc-sc-part-type')) document.getElementById('pc-sc-part-type').value = req.partType || '';
+                    if (document.getElementById('pc-sc-proposed-part-no')) document.getElementById('pc-sc-proposed-part-no').value = req.proposedPartNumber || '';
+                    if (document.getElementById('pc-sc-valuation-method')) document.getElementById('pc-sc-valuation-method').value = req.valuationMethod || '';
+                    if (document.getElementById('pc-sc-lot-tracking')) document.getElementById('pc-sc-lot-tracking').value = req.lotTracking || '';
+                    if (document.getElementById('pc-sc-lot-qty-rule')) document.getElementById('pc-sc-lot-qty-rule').value = req.lotQtyRule || '';
+                    if (document.getElementById('pc-sc-sub-lot-rule')) document.getElementById('pc-sc-sub-lot-rule').value = req.subLotRule || '';
+                    if (document.getElementById('pc-sc-component-lot-rule')) document.getElementById('pc-sc-component-lot-rule').value = req.componentLotRule || '';
+                    if (document.getElementById('pc-sc-cost-level')) document.getElementById('pc-sc-cost-level').value = req.costLevel || '';
+                    if (document.getElementById('pc-sc-invoice-consideration')) document.getElementById('pc-sc-invoice-consideration').value = req.invoiceConsideration || '';
+                    if (document.getElementById('pc-sc-zero-cost-flag')) document.getElementById('pc-sc-zero-cost-flag').value = req.zeroCostFlag || '';
+                    if (document.getElementById('pc-sc-hidden-qty')) document.getElementById('pc-sc-hidden-qty').value = req.hiddenQty !== undefined ? req.hiddenQty : '';
+
+                    // Show attached file if present across Step 2 and Step 3
+                    updateAttachedFileBadges(req);
 
                     // Apply orange highlights if TO_BE_EDITED
                     if (req.fieldsToEdit && Array.isArray(req.fieldsToEdit)) {
@@ -8517,19 +9051,29 @@ SyriMed Healthcare`
                     // Apply QA checkboxes & sync dropdown disabled states
                     if (req.qaChecklist) {
                         Object.keys(req.qaChecklist).forEach(key => {
-                            const cb = document.querySelector(`.pc-qa-cb[data-field="pc-input-${key.replace(/_/g, '-')}"]`);
+                            const cb = document.querySelector(`.pc-qa-cb[data-field="pc-input-${key.replace(/_/g, '-')}"], .pc-qa-cb[data-field="pc-sc-${key.replace(/_/g, '-')}"], .pc-qa-cb[data-field="pc-${key.replace(/_/g, '-')}"]`);
                             if (cb) cb.checked = (req.qaChecklist[key] === 'VERIFIED');
                         });
                     }
                 }
             } else {
-                // Clear inputs FIRST so values aren't wiped after setting!
+                currentOpenedRequest = null;
+                // Clear all input fields (text, number, date) - strictly blank initially
                 document.querySelectorAll('#part-creation-form-view .pc-input').forEach(i => i.value = '');
+                // Dropdown fields reset to index 0 (neutral placeholder "Select...")
                 document.querySelectorAll('#part-creation-form-view .pc-select').forEach(s => s.selectedIndex = 0);
-                const attBadge = document.getElementById('pc-attached-file-badge');
-                if (attBadge) attBadge.classList.add('hidden');
+                // Uncheck all radio buttons
+                document.querySelectorAll('#part-creation-form-view input[type="radio"]').forEach(r => r.checked = false);
+                // Uncheck all checkboxes (including QA checkboxes)
+                document.querySelectorAll('#part-creation-form-view input[type="checkbox"]').forEach(c => c.checked = false);
+                // Reset and disable QA validation dropdowns
+                document.querySelectorAll('.pc-qa-select').forEach(s => {
+                    s.disabled = true;
+                    s.selectedIndex = 0;
+                });
+                updateAttachedFileBadges(null);
 
-                // Auto-generate Next Request ID
+                // Auto-generate Next Request ID (system-generated identifier)
                 const existingList = getRequests();
                 let maxNum = 4;
                 existingList.forEach(r => {
@@ -8540,124 +9084,39 @@ SyriMed Healthcare`
                     }
                 });
                 const autoId = 'REQ-2026-' + String(maxNum + 1).padStart(4, '0');
-                const todayStr = new Date().toISOString().split('T')[0];
 
                 const rId1 = document.getElementById('pc-form-req-id');
                 if (rId1) rId1.value = autoId;
                 const rId2 = document.getElementById('pc-step2-req-id');
                 if (rId2) rId2.value = autoId;
-
-                const rDate1 = document.getElementById('pc-form-req-date');
-                if (rDate1) rDate1.value = todayStr;
-                const rDate2 = document.getElementById('pc-step2-req-date');
-                if (rDate2) rDate2.value = todayStr;
-
-                const rBy1 = document.getElementById('pc-form-req-by');
-                if (rBy1) rBy1.value = 'Warehouse Op (John Doe)';
-                const rBy2 = document.getElementById('pc-step2-req-by');
-                if (rBy2) rBy2.value = 'Warehouse Op (John Doe)';
+                const s3ReqId = document.getElementById('pc-step3-req-id');
+                if (s3ReqId) s3ReqId.value = autoId;
 
                 const badgeEl = document.getElementById('pc-form-status-badge');
                 if (badgeEl) badgeEl.outerHTML = `<span id="pc-form-status-badge" class="badge" style="background:#2563eb; color:#fff; padding:4px 10px; font-size:11px; font-weight:700; border-radius:12px;">DRAFT</span>`;
                 const s2Badge = document.getElementById('pc-step2-status-badge');
                 if (s2Badge) s2Badge.textContent = 'DRAFT';
-            }
+                const s3Badge = document.getElementById('pc-step3-status-badge');
+                if (s3Badge) s3Badge.textContent = 'DRAFT';
+                const s3StatusInput = document.getElementById('pc-step3-status-input');
+                if (s3StatusInput) s3StatusInput.value = 'DRAFT';
 
-            // Sync all QA dropdown disabled states with their checkboxes
-            document.querySelectorAll('.pc-qa-row').forEach(row => {
-                const cb = row.querySelector('.pc-qa-cb');
-                const select = row.querySelector('.pc-qa-select');
-                if (cb && select) {
-                    select.disabled = !cb.checked;
+                // Reset Step 3 tables to clean empty state
+                const locTbody = document.querySelector('#table-sc-locations tbody');
+                if (locTbody) {
+                    locTbody.innerHTML = '<tr id="sc-loc-empty-row"><td colspan="8" style="text-align: center; padding: 18px; color: #94a3b8; font-style: italic;">No location records added yet. Click "+ Add Location Row" to add a location.</td></tr>';
                 }
-            });
-
-            // Dynamic Button Visibility based on Current Workflow Status
-            const btnSubmitStock = document.getElementById('btn-pc-submit-stock');
-            const btnStockApprove = document.getElementById('btn-pc-stock-approve');
-            const btnStockRequestEdit = document.getElementById('btn-pc-stock-request-edit');
-            const btnStockReject = document.getElementById('btn-pc-stock-reject');
-            const btnQaApprove = document.getElementById('btn-pc-qa-approve');
-            const btnQaRequestEdit = document.getElementById('btn-pc-qa-request-edit');
-            const btnQaReject = document.getElementById('btn-pc-qa-reject');
-            const btnSaveDraft = document.getElementById('btn-pc-save-draft');
-
-            const btnStep2Submit = document.getElementById('btn-pc-step2-submit');
-            const btnStep2StockApprove = document.getElementById('btn-pc-step2-stock-approve');
-            const btnStep2StockRequestEdit = document.getElementById('btn-pc-step2-stock-request-edit');
-            const btnStep2StockReject = document.getElementById('btn-pc-step2-stock-reject');
-            const btnStep2QaApprove = document.getElementById('btn-pc-step2-qa-approve');
-            const btnStep2QaRequestEdit = document.getElementById('btn-pc-step2-qa-request-edit');
-            const btnStep2QaReject = document.getElementById('btn-pc-step2-qa-reject');
-
-            const currentStatus = reqId ? (getRequests().find(r => r.id === reqId)?.status || 'DRAFT') : 'DRAFT';
-            const setDisp = (el, val) => { if (el) el.style.display = val; };
-
-            if (currentStatus === 'DRAFT' || currentStatus === 'TO_BE_EDITED') {
-                setDisp(btnSaveDraft, 'inline-block');
-                setDisp(btnSubmitStock, 'inline-block');
-                setDisp(btnStep2Submit, 'inline-block');
-                setDisp(btnStockApprove, 'none');
-                setDisp(btnStockRequestEdit, 'none');
-                setDisp(btnStockReject, 'none');
-                setDisp(btnStep2StockApprove, 'none');
-                setDisp(btnStep2StockRequestEdit, 'none');
-                setDisp(btnStep2StockReject, 'none');
-                setDisp(btnQaApprove, 'none');
-                setDisp(btnQaRequestEdit, 'none');
-                setDisp(btnQaReject, 'none');
-                setDisp(btnStep2QaApprove, 'none');
-                setDisp(btnStep2QaRequestEdit, 'none');
-                setDisp(btnStep2QaReject, 'none');
-            } else if (currentStatus === 'PENDING_STOCK_CONTROL') {
-                setDisp(btnSaveDraft, 'none');
-                setDisp(btnSubmitStock, 'none');
-                setDisp(btnStep2Submit, 'none');
-                setDisp(btnStockApprove, 'inline-block');
-                setDisp(btnStockRequestEdit, 'inline-block');
-                setDisp(btnStockReject, 'inline-block');
-                setDisp(btnStep2StockApprove, 'inline-block');
-                setDisp(btnStep2StockRequestEdit, 'inline-block');
-                setDisp(btnStep2StockReject, 'inline-block');
-                setDisp(btnQaApprove, 'none');
-                setDisp(btnQaRequestEdit, 'none');
-                setDisp(btnQaReject, 'none');
-                setDisp(btnStep2QaApprove, 'none');
-                setDisp(btnStep2QaRequestEdit, 'none');
-                setDisp(btnStep2QaReject, 'none');
-            } else if (currentStatus === 'PENDING_QA') {
-                setDisp(btnSaveDraft, 'none');
-                setDisp(btnSubmitStock, 'none');
-                setDisp(btnStep2Submit, 'none');
-                setDisp(btnStockApprove, 'none');
-                setDisp(btnStockRequestEdit, 'none');
-                setDisp(btnStockReject, 'none');
-                setDisp(btnStep2StockApprove, 'none');
-                setDisp(btnStep2StockRequestEdit, 'none');
-                setDisp(btnStep2StockReject, 'none');
-                setDisp(btnQaApprove, 'inline-block');
-                setDisp(btnQaRequestEdit, 'inline-block');
-                setDisp(btnQaReject, 'inline-block');
-                setDisp(btnStep2QaApprove, 'inline-block');
-                setDisp(btnStep2QaRequestEdit, 'inline-block');
-                setDisp(btnStep2QaReject, 'inline-block');
-            } else {
-                setDisp(btnSaveDraft, 'none');
-                setDisp(btnSubmitStock, 'none');
-                setDisp(btnStep2Submit, 'none');
-                setDisp(btnStockApprove, 'none');
-                setDisp(btnStockRequestEdit, 'none');
-                setDisp(btnStockReject, 'none');
-                setDisp(btnStep2StockApprove, 'none');
-                setDisp(btnStep2StockRequestEdit, 'none');
-                setDisp(btnStep2StockReject, 'none');
-                setDisp(btnQaApprove, 'none');
-                setDisp(btnQaRequestEdit, 'none');
-                setDisp(btnQaReject, 'none');
-                setDisp(btnStep2QaApprove, 'none');
-                setDisp(btnStep2QaRequestEdit, 'none');
-                setDisp(btnStep2QaReject, 'none');
+                const revTbody = document.querySelector('#table-sc-revisions tbody');
+                if (revTbody) {
+                    revTbody.innerHTML = '<tr id="sc-rev-empty-row"><td colspan="7" style="text-align: center; padding: 18px; color: #94a3b8; font-style: italic;">No revision records added yet. Click "+ Add Revision Row" to add a revision.</td></tr>';
+                }
             }
+
+            // Apply workflow role page visibility and field permissions
+            updateWorkflowUI(currentOpenedRequest);
+
+            // Open sequentially at Step 1
+            showFormStep(1);
         }
 
         function collectFormData() {
@@ -8673,15 +9132,15 @@ SyriMed Healthcare`
             document.querySelectorAll('.pc-qa-cb').forEach(cb => {
                 const fieldId = cb.getAttribute('data-field');
                 if (fieldId) {
-                    const key = fieldId.replace('pc-input-', '').replace(/-/g, '_');
+                    const key = fieldId.replace('pc-input-', '').replace('pc-sc-', '').replace(/-/g, '_');
                     qaChecklist[key] = cb.checked ? 'VERIFIED' : 'PENDING';
                 }
             });
 
-            const apiVal = document.getElementById('pc-input-api') ? document.getElementById('pc-input-api').value : '';
-            const prodNameVal = document.getElementById('pc-input-product-name') ? document.getElementById('pc-input-product-name').value : '';
-            const strengthVal = document.getElementById('pc-input-strength') ? document.getElementById('pc-input-strength').value : '';
-            const formVal = document.getElementById('pc-input-form') ? document.getElementById('pc-input-form').value : '';
+            const apiVal = document.getElementById('pc-input-api') ? document.getElementById('pc-input-api').value.trim() : '';
+            const prodNameVal = document.getElementById('pc-input-product-name') ? document.getElementById('pc-input-product-name').value.trim() : '';
+            const strengthVal = document.getElementById('pc-input-strength') ? document.getElementById('pc-input-strength').value.trim() : '';
+            const formVal = document.getElementById('pc-input-form') ? document.getElementById('pc-input-form').value.trim() : '';
 
             let finalProdName = prodNameVal;
             if (!finalProdName && apiVal) {
@@ -8693,23 +9152,23 @@ SyriMed Healthcare`
 
             return {
                 id: reqId,
-                requestDate: document.getElementById('pc-form-req-date') ? document.getElementById('pc-form-req-date').value : new Date().toISOString().split('T')[0],
-                requestedBy: document.getElementById('pc-form-req-by') ? document.getElementById('pc-form-req-by').value : 'Warehouse Op',
-                company: document.getElementById('pc-form-company') ? document.getElementById('pc-form-company').value : 'B&S Healthcare Ltd',
-                site: document.getElementById('pc-form-site') ? document.getElementById('pc-form-site').value : 'Warehouse 1 - Ruislip',
-                requestType: reqTypeRadio ? reqTypeRadio.value : 'NEW PRODUCT',
+                requestDate: document.getElementById('pc-form-req-date') ? document.getElementById('pc-form-req-date').value : '',
+                requestedBy: document.getElementById('pc-form-req-by') ? document.getElementById('pc-form-req-by').value : '',
+                company: document.getElementById('pc-form-company') ? document.getElementById('pc-form-company').value : '',
+                site: document.getElementById('pc-form-site') ? document.getElementById('pc-form-site').value : '',
+                requestType: reqTypeRadio ? reqTypeRadio.value : '',
                 api: apiVal,
-                productType: prodTypeRadio ? prodTypeRadio.value : 'BRANDED',
+                productType: prodTypeRadio ? prodTypeRadio.value : '',
                 productName: finalProdName,
                 strength: strengthVal,
                 packSize: document.getElementById('pc-input-pack-size') ? document.getElementById('pc-input-pack-size').value : '',
                 form: formVal,
+                buyerName: document.getElementById('pc-input-buyer-name') ? document.getElementById('pc-input-buyer-name').value : '',
                 controlledDrug: document.getElementById('pc-input-controlled-drug') ? document.getElementById('pc-input-controlled-drug').value : '',
                 cdSchedule: document.getElementById('pc-input-cd-schedule') ? document.getElementById('pc-input-cd-schedule').value : '',
                 className: document.getElementById('pc-input-class') ? document.getElementById('pc-input-class').value : '',
                 coldChain: document.getElementById('pc-input-cold-chain') ? document.getElementById('pc-input-cold-chain').value : '',
                 specials: document.getElementById('pc-input-specials') ? document.getElementById('pc-input-specials').value : '',
-                highRisk: document.getElementById('pc-input-high-risk') ? document.getElementById('pc-input-high-risk').value : '',
                 productFamily: document.getElementById('pc-input-product-family') ? document.getElementById('pc-input-product-family').value : '',
                 storageConditions: document.getElementById('pc-input-storage-conditions') ? document.getElementById('pc-input-storage-conditions').value : '',
                 bnfCode: document.getElementById('pc-input-bnf-code') ? document.getElementById('pc-input-bnf-code').value : '',
@@ -8724,10 +9183,29 @@ SyriMed Healthcare`
                 minSellingPrice: document.getElementById('pc-input-min-selling-price') ? document.getElementById('pc-input-min-selling-price').value : '',
                 estMaterialCost: document.getElementById('pc-input-est-material-cost') ? document.getElementById('pc-input-est-material-cost').value : '',
                 country: document.getElementById('pc-input-country') ? document.getElementById('pc-input-country').value : '',
-                salesCategory: document.getElementById('pc-input-sales-category') ? document.getElementById('pc-input-sales-category').value : '',
-                otherCategory: document.getElementById('pc-input-other-category') ? document.getElementById('pc-input-other-category').value : '',
                 supplierName: document.getElementById('pc-input-supplier-name') ? document.getElementById('pc-input-supplier-name').value : '',
-                attachedDoc: attBadge ? attBadge.textContent.replace('📎 ', '') : '',
+                // Step 3 fields
+                partCountry: document.getElementById('pc-sc-part-country') ? document.getElementById('pc-sc-part-country').value : '',
+                partType: document.getElementById('pc-sc-part-type') ? document.getElementById('pc-sc-part-type').value : '',
+                proposedPartNumber: document.getElementById('pc-sc-proposed-part-no') ? document.getElementById('pc-sc-proposed-part-no').value.trim() : '',
+                partCodeGenerated: document.getElementById('pc-sc-proposed-part-no') ? document.getElementById('pc-sc-proposed-part-no').value.trim() : '',
+                valuationMethod: document.getElementById('pc-sc-valuation-method') ? document.getElementById('pc-sc-valuation-method').value : '',
+                lotTracking: document.getElementById('pc-sc-lot-tracking') ? document.getElementById('pc-sc-lot-tracking').value : '',
+                lotQtyRule: document.getElementById('pc-sc-lot-qty-rule') ? document.getElementById('pc-sc-lot-qty-rule').value : '',
+                subLotRule: document.getElementById('pc-sc-sub-lot-rule') ? document.getElementById('pc-sc-sub-lot-rule').value : '',
+                componentLotRule: document.getElementById('pc-sc-component-lot-rule') ? document.getElementById('pc-sc-component-lot-rule').value : '',
+                costLevel: document.getElementById('pc-sc-cost-level') ? document.getElementById('pc-sc-cost-level').value : '',
+                invoiceConsideration: document.getElementById('pc-sc-invoice-consideration') ? document.getElementById('pc-sc-invoice-consideration').value : '',
+                zeroCostFlag: document.getElementById('pc-sc-zero-cost-flag') ? document.getElementById('pc-sc-zero-cost-flag').value : '',
+                hiddenQty: document.getElementById('pc-sc-hidden-qty') ? document.getElementById('pc-sc-hidden-qty').value : '',
+                attachedDoc: (attBadge && !attBadge.classList.contains('hidden') && attBadge.textContent)
+                    ? attBadge.textContent.replace('📎 Attached: ', '').replace('📎 ', '')
+                    : ((document.getElementById('pc-step3-attached-file-badge') && !document.getElementById('pc-step3-attached-file-badge').classList.contains('hidden'))
+                        ? document.getElementById('pc-step3-attached-file-badge').textContent.replace('📎 Attached: ', '').replace('📎 ', '')
+                        : (currentOpenedRequest && currentOpenedRequest.attachedDoc ? currentOpenedRequest.attachedDoc : '')),
+                documents: (currentOpenedRequest && Array.isArray(currentOpenedRequest.documents))
+                    ? [...currentOpenedRequest.documents]
+                    : [],
                 qaChecklist: qaChecklist
             };
         }
@@ -8746,8 +9224,7 @@ SyriMed Healthcare`
             }
 
             saveRequests(list);
-            
-            // Switch to ALL filter tab so new entry is 100% visible!
+
             activeFilter = 'ALL';
             updateActiveTab();
             showPartList();
@@ -8755,374 +9232,788 @@ SyriMed Healthcare`
             if (customMsg) {
                 alert(customMsg);
             } else {
-                alert(`🎉 Part Creation Request ${formData.id} status updated!\n\nStatus: ${status}\nProduct: ${formData.productName}\n\nThe entry is now visible in the All Part Requests table.`);
+                alert(`🎉 Part Creation Request ${formData.id} status updated!\n\nStatus: ${status}\nProduct: ${formData.productName}`);
             }
         }
 
-        // Bind button actions
-        const btnOpenForm = document.getElementById('btn-open-part-creation-form');
-        const btnBackList = document.getElementById('btn-back-to-part-list');
-        const btnQuickCreate = document.getElementById('btn-quick-part-creation');
-        const btnQuickQa = document.getElementById('btn-quick-part-qa-list');
-        const btnStockPartNav = document.getElementById('nav-stock-part-creation');
-        
-        const btnSaveDraft = document.getElementById('btn-pc-save-draft');
-        const btnSubmitQa = document.getElementById('btn-pc-submit-qa');
-        const btnQaApprove = document.getElementById('btn-pc-qa-approve');
-        const btnQaRequestEdit = document.getElementById('btn-pc-qa-request-edit');
-        const btnQaReject = document.getElementById('btn-pc-qa-reject');
-        const btnCheckAll = document.getElementById('btn-qa-check-all');
-        const btnSaveNext = document.getElementById('btn-pc-save-next');
-        const btnClear = document.getElementById('btn-pc-clear');
-
-        if (btnOpenForm) btnOpenForm.addEventListener('click', () => openPartForm());
-        if (btnBackList) btnBackList.addEventListener('click', () => showPartList());
-        if (btnQuickCreate) {
-            btnQuickCreate.addEventListener('click', () => {
-                switchModule('part-creation');
-                openPartForm();
-            });
-        }
-        if (btnQuickQa) {
-            btnQuickQa.addEventListener('click', () => {
-                switchModule('part-creation');
-                activeFilter = 'PENDING_QA';
-                showPartList();
-            });
-        }
-        if (btnStockPartNav) {
-            btnStockPartNav.addEventListener('click', (e) => {
-                e.preventDefault();
-                switchModule('part-creation');
-                showPartList();
-            });
-        }
-
-        // Dynamic sidebar item clicks for Part Creation top-level menu & submenus
-        document.addEventListener('click', (e) => {
-            const pcMaster = e.target.closest('#nav-part-creation-master');
-            const pcPartListSub = e.target.closest('#nav-pc-part-list-sub');
-            const pcNewReqSub = e.target.closest('#nav-pc-new-request-sub');
-
-            if (pcMaster) {
-                e.preventDefault();
-                const subNav = document.getElementById('part-creation-sub-nav');
-                const arrow = pcMaster.querySelector('.nav-arrow');
-                let isExpanded = false;
-                if (subNav) {
-                    const isHidden = subNav.classList.contains('hidden');
-                    if (isHidden) {
-                        subNav.classList.remove('hidden');
-                        if (arrow) arrow.style.transform = 'rotate(180deg)';
-                        isExpanded = true;
-                    } else {
-                        subNav.classList.add('hidden');
-                        if (arrow) arrow.style.transform = 'rotate(0deg)';
-                    }
-                }
-                const pcWs = document.getElementById('part-creation-workspace');
-                if (isExpanded || !pcWs || pcWs.classList.contains('hidden')) {
-                    switchModule('part-creation');
-                    activeFilter = 'ALL';
-                    updateActiveTab();
-                    showPartList();
-                    if (pcPartListSub) pcPartListSub.classList.add('active');
-                    if (pcNewReqSub) pcNewReqSub.classList.remove('active');
-                }
-            } else if (pcPartListSub) {
-                e.preventDefault();
-                document.querySelectorAll('#part-creation-sub-nav .sub-item').forEach(i => i.classList.remove('active'));
-                pcPartListSub.classList.add('active');
-                const masterItem = document.getElementById('nav-part-creation-master');
-                if (masterItem) masterItem.classList.add('active');
-
-                switchModule('part-creation');
-                activeFilter = 'ALL';
-                updateActiveTab();
-                showPartList();
-            } else if (pcNewReqSub) {
-                e.preventDefault();
-                document.querySelectorAll('#part-creation-sub-nav .sub-item').forEach(i => i.classList.remove('active'));
-                pcNewReqSub.classList.add('active');
-                const masterItem = document.getElementById('nav-part-creation-master');
-                if (masterItem) masterItem.classList.add('active');
-
-                switchModule('part-creation');
-                openPartForm();
-            } else if (e.target.closest('#nav-pc-all-requests')) {
-                e.preventDefault();
-                activeFilter = 'ALL';
-                showPartList();
-            } else if (e.target.closest('#nav-pc-new-request')) {
-                e.preventDefault();
-                openPartForm();
-            } else if (e.target.closest('#nav-pc-pending-qa')) {
-                e.preventDefault();
-                activeFilter = 'PENDING_QA';
-                showPartList();
-            } else if (e.target.closest('#nav-pc-back-stock')) {
-                e.preventDefault();
-                switchModule('stock');
-            }
-        });
-
-        const searchInputEl = document.getElementById('part-creation-search-input');
-        if (searchInputEl) {
-            searchInputEl.addEventListener('input', () => {
-                renderTable();
-            });
-        }
-
-        if (btnSaveDraft) btnSaveDraft.addEventListener('click', () => saveRequestWithStatus('DRAFT'));
-
-        const btnSubmitStock = document.getElementById('btn-pc-submit-stock');
-        const btnStockApprove = document.getElementById('btn-pc-stock-approve');
-        const btnStockRequestEdit = document.getElementById('btn-pc-stock-request-edit');
-        const btnStockReject = document.getElementById('btn-pc-stock-reject');
-
-        if (btnSubmitStock) {
-            btnSubmitStock.addEventListener('click', () => {
-                const data = collectFormData();
-                if (!data.productName && !data.api) {
-                    alert('Please fill in Product Name or API before submitting for Stock Control approval.');
-                    return;
-                }
-                saveRequestWithStatus('PENDING_STOCK_CONTROL', {}, `📤 Request submitted for Stock Control Approval!\n\nStatus is now PENDING STOCK CONTROL.`);
-            });
-        }
-
-        if (btnSubmitQa) {
-            btnSubmitQa.addEventListener('click', () => {
-                const data = collectFormData();
-                if (!data.productName && !data.api) {
-                    alert('Please fill in Product Name or API before submitting.');
-                    return;
-                }
-                saveRequestWithStatus('PENDING_STOCK_CONTROL', {}, `📤 Request submitted for Stock Control Approval!\n\nStatus is now PENDING STOCK CONTROL.`);
-            });
-        }
-
-        function executeStockApprove() {
-            saveRequestWithStatus('PENDING_QA', {
-                stockApprovedBy: 'Stock Control (David Miller)',
-                stockApprovedDate: new Date().toISOString().split('T')[0]
-            }, `📦 Part Creation Request Approved by Stock Control!\n\nForwarded to QA Team for regulatory approval.`);
-        }
-
-        function executeStockRequestEdit() {
-            saveRequestWithStatus('TO_BE_EDITED', {
-                fieldsToEdit: ['pc-input-storage-conditions', 'pc-input-pack-size']
-            }, `🟧 Part Creation Request returned to Requester for revisions by Stock Control.`);
-        }
-
-        function executeStockReject() {
-            if (confirm('Are you sure you want to REJECT this part creation request at Stock Control stage?')) {
-                saveRequestWithStatus('REJECTED', {}, `❌ Part Creation Request has been Rejected by Stock Control.`);
-            }
-        }
-
-        if (btnStockApprove) btnStockApprove.addEventListener('click', executeStockApprove);
-        if (btnStockRequestEdit) btnStockRequestEdit.addEventListener('click', executeStockRequestEdit);
-        if (btnStockReject) btnStockReject.addEventListener('click', executeStockReject);
-
-        function executeQaApprove() {
-            document.querySelectorAll('.pc-qa-cb').forEach(cb => {
-                cb.checked = true;
-                const qaRow = cb.closest('.pc-qa-row');
-                if (qaRow) {
-                    const select = qaRow.querySelector('.pc-qa-select');
-                    if (select) {
-                        select.disabled = false;
-                        select.value = 'VERIFIED';
-                    }
-                }
-            });
-            const partCode = 'PRT-' + Math.floor(10000 + Math.random() * 90000);
-            saveRequestWithStatus('APPROVED', {
-                qaVerifiedBy: 'QA Officer (Vilas Vaidya)',
-                qaVerifiedDate: new Date().toISOString().split('T')[0],
-                partCodeGenerated: partCode,
-                fieldsToEdit: []
-            }, `🎉 Part Creation Approved by QA!\n\nNew Master Part Code generated: ${partCode}\nAdded to Stock Master Record.`);
-        }
-
-        function executeQaRequestEdit() {
-            const fieldsToEdit = [];
-            document.querySelectorAll('.pc-qa-cb').forEach(cb => {
-                if (!cb.checked) {
-                    const fId = cb.getAttribute('data-field');
-                    if (fId) fieldsToEdit.push(fId);
-                }
-            });
-            if (fieldsToEdit.length === 0) {
-                fieldsToEdit.push('pc-input-storage-conditions', 'pc-input-cold-chain');
-            }
-            saveRequestWithStatus('TO_BE_EDITED', { fieldsToEdit: fieldsToEdit }, `🟧 Part Creation Request returned to Warehouse for revisions.\n\nHighlighted fields require updates.`);
-        }
-
-        function executeQaReject() {
-            if (confirm('Are you sure you want to REJECT this part creation request?')) {
-                saveRequestWithStatus('REJECTED', {}, `❌ Part Creation Request has been Rejected.`);
-            }
-        }
-
-        if (btnQaApprove) btnQaApprove.addEventListener('click', executeQaApprove);
-        if (btnQaRequestEdit) btnQaRequestEdit.addEventListener('click', executeQaRequestEdit);
-        if (btnQaReject) btnQaReject.addEventListener('click', executeQaReject);
-
-        const btnStep2StockApprove = document.getElementById('btn-pc-step2-stock-approve');
-        const btnStep2StockRequestEdit = document.getElementById('btn-pc-step2-stock-request-edit');
-        const btnStep2StockReject = document.getElementById('btn-pc-step2-stock-reject');
-
-        if (btnStep2StockApprove) btnStep2StockApprove.addEventListener('click', executeStockApprove);
-        if (btnStep2StockRequestEdit) btnStep2StockRequestEdit.addEventListener('click', executeStockRequestEdit);
-        if (btnStep2StockReject) btnStep2StockReject.addEventListener('click', executeStockReject);
-
-        const btnStep2QaApprove = document.getElementById('btn-pc-step2-qa-approve');
-        const btnStep2QaRequestEdit = document.getElementById('btn-pc-step2-qa-request-edit');
-        const btnStep2QaReject = document.getElementById('btn-pc-step2-qa-reject');
-
-        if (btnStep2QaApprove) btnStep2QaApprove.addEventListener('click', executeQaApprove);
-        if (btnStep2QaRequestEdit) btnStep2QaRequestEdit.addEventListener('click', executeQaRequestEdit);
-        if (btnStep2QaReject) btnStep2QaReject.addEventListener('click', executeQaReject);
-
-        // Dynamic Request Type Radio Handler (NEW PRODUCT vs EXISTING PRODUCT)
-        const reqTypeRadios = document.querySelectorAll('input[name="pc_req_type"]');
-        const searchRowEl = document.getElementById('pc-row-search-product');
-        const searchQaRowEl = document.getElementById('qa-row-search-product');
-        const searchInputProduct = document.getElementById('pc-input-search-product');
-        const searchDropdownEl = document.getElementById('pc-search-product-dropdown');
-
-        function toggleReqTypeFields() {
-            const selectedRadio = document.querySelector('input[name="pc_req_type"]:checked');
-            const val = selectedRadio ? selectedRadio.value : 'NEW PRODUCT';
-            if (val === 'EXISTING PRODUCT') {
-                if (searchRowEl) searchRowEl.classList.remove('hidden');
-                if (searchQaRowEl) searchQaRowEl.classList.remove('hidden');
-            } else {
-                if (searchRowEl) searchRowEl.classList.add('hidden');
-                if (searchQaRowEl) searchQaRowEl.classList.add('hidden');
-                if (searchDropdownEl) searchDropdownEl.classList.add('hidden');
-            }
-        }
-
-        reqTypeRadios.forEach(r => {
-            r.addEventListener('change', toggleReqTypeFields);
-        });
-
-        if (searchInputProduct) {
-            searchInputProduct.addEventListener('focus', () => {
-                const selectedRadio = document.querySelector('input[name="pc_req_type"]:checked');
-                if (selectedRadio && selectedRadio.value === 'EXISTING PRODUCT' && searchDropdownEl) {
-                    searchDropdownEl.classList.remove('hidden');
-                }
-            });
-
-            searchInputProduct.addEventListener('input', () => {
-                const term = searchInputProduct.value.toLowerCase().trim();
-                if (searchDropdownEl) {
-                    searchDropdownEl.classList.remove('hidden');
-                    const items = searchDropdownEl.querySelectorAll('.pc-search-item');
-                    items.forEach(item => {
-                        const txt = item.textContent.toLowerCase();
-                        if (txt.includes(term)) {
-                            item.style.display = 'block';
-                        } else {
-                            item.style.display = 'none';
-                        }
-                    });
-                }
-            });
-        }
-
-        document.querySelectorAll('.pc-search-item').forEach(item => {
-            item.addEventListener('click', () => {
-                const api = item.getAttribute('data-api') || '';
-                const name = item.getAttribute('data-name') || '';
-                const strength = item.getAttribute('data-strength') || '';
-                const pack = item.getAttribute('data-pack') || '';
-                const form = item.getAttribute('data-form') || '';
-
-                if (searchInputProduct) searchInputProduct.value = name;
-                if (document.getElementById('pc-input-api')) document.getElementById('pc-input-api').value = api;
-                if (document.getElementById('pc-input-product-name')) document.getElementById('pc-input-product-name').value = name;
-                if (document.getElementById('pc-input-strength')) document.getElementById('pc-input-strength').value = strength;
-                if (document.getElementById('pc-input-pack-size')) document.getElementById('pc-input-pack-size').value = pack;
-                if (document.getElementById('pc-input-form')) document.getElementById('pc-input-form').value = form;
-
-                if (searchDropdownEl) searchDropdownEl.classList.add('hidden');
-            });
-        });
-
-        // Close search dropdown on click outside
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('#pc-row-search-product') && searchDropdownEl) {
-                searchDropdownEl.classList.add('hidden');
-            }
-        });
-
-        // Dynamic checkbox click -> Enable/Disable QA Dropdown in same row
-        document.querySelectorAll('.pc-qa-cb').forEach(cb => {
-            cb.addEventListener('change', () => {
-                const qaRow = cb.closest('.pc-qa-row');
-                if (qaRow) {
-                    const select = qaRow.querySelector('.pc-qa-select');
-                    if (select) {
-                        select.disabled = !cb.checked;
-                    }
-                }
-            });
-        });
-
+        // Stepper Navigation
         function showFormStep(stepNum) {
+            const role = getActiveWorkflowRole();
+
+            // Enforce sequential role constraint: User cannot navigate to Page 3
+            if (role === 'User' && stepNum === 3) {
+                alert('⚠️ Page 3 (Stock Control Specification) is only accessible once the request is submitted to the Stock Control Team.');
+                return;
+            }
+
             const step1 = document.getElementById('pc-form-step-1');
             const step2 = document.getElementById('pc-form-step-2');
+            const step3 = document.getElementById('pc-form-step-3');
             const ind1 = document.getElementById('indicator-step-1');
             const ind2 = document.getElementById('indicator-step-2');
+            const ind3 = document.getElementById('indicator-step-3');
             const badge = document.getElementById('pc-step-badge');
             const subTitle = document.getElementById('pc-form-sub-heading');
+
+            const setIndicator = (el, active) => {
+                if (!el) return;
+                if (active) {
+                    el.style.background = 'var(--color-primary)';
+                    el.style.color = '#fff';
+                    el.style.fontWeight = '700';
+                } else {
+                    el.style.background = '#e2e8f0';
+                    el.style.color = 'var(--color-text-muted)';
+                    el.style.fontWeight = '600';
+                }
+            };
+
+            const totalSteps = (role === 'User') ? 2 : 3;
 
             if (stepNum === 1) {
                 if (step1) step1.classList.remove('hidden');
                 if (step2) step2.classList.add('hidden');
-                if (ind1) {
-                    ind1.style.background = 'var(--color-primary)';
-                    ind1.style.color = '#fff';
-                    ind1.style.fontWeight = '700';
-                }
-                if (ind2) {
-                    ind2.style.background = '#e2e8f0';
-                    ind2.style.color = 'var(--color-text-muted)';
-                    ind2.style.fontWeight = '600';
-                }
-                if (badge) badge.textContent = 'STEP 1 OF 2';
+                if (step3) step3.classList.add('hidden');
+                setIndicator(ind1, true);
+                setIndicator(ind2, false);
+                setIndicator(ind3, false);
+                if (badge) badge.textContent = `STEP 1 OF ${totalSteps}`;
                 if (subTitle) subTitle.textContent = 'Inventory Part > General Identification & QA Regulatory Approval';
-            } else {
+            } else if (stepNum === 2) {
                 if (step1) step1.classList.add('hidden');
                 if (step2) step2.classList.remove('hidden');
-                if (ind2) {
-                    ind2.style.background = 'var(--color-primary)';
-                    ind2.style.color = '#fff';
-                    ind2.style.fontWeight = '700';
-                }
-                if (ind1) {
-                    ind1.style.background = '#e2e8f0';
-                    ind1.style.color = 'var(--color-text-muted)';
-                    ind1.style.fontWeight = '600';
-                }
-                if (badge) badge.textContent = 'STEP 2 OF 2';
-                if (subTitle) subTitle.textContent = 'Inventory Part > Buying & Stock Control';
+                if (step3) step3.classList.add('hidden');
+                setIndicator(ind1, false);
+                setIndicator(ind2, true);
+                setIndicator(ind3, false);
+                if (badge) badge.textContent = `STEP 2 OF ${totalSteps}`;
+                if (subTitle) subTitle.textContent = 'Inventory Part > Warehouse Stock Control & Buying';
+            } else if (stepNum === 3) {
+                if (step1) step1.classList.add('hidden');
+                if (step2) step2.classList.add('hidden');
+                if (step3) step3.classList.remove('hidden');
+                setIndicator(ind1, false);
+                setIndicator(ind2, false);
+                setIndicator(ind3, true);
+                if (badge) badge.textContent = `STEP 3 OF ${totalSteps}`;
+                if (subTitle) subTitle.textContent = 'Inventory Part > Stock Control Specification';
+
+                // Synchronize Page 3 header strip from Step 1
+                const rId1 = document.getElementById('pc-form-req-id');
+                const rId3 = document.getElementById('pc-step3-req-id');
+                if (rId1 && rId3 && rId1.value) rId3.value = rId1.value;
+
+                const rDate1 = document.getElementById('pc-form-req-date');
+                const rDate3 = document.getElementById('pc-step3-req-date');
+                if (rDate1 && rDate3 && rDate1.value) rDate3.value = rDate1.value;
+
+                const rBy1 = document.getElementById('pc-form-req-by');
+                const rBy3 = document.getElementById('pc-step3-req-by');
+                if (rBy1 && rBy3 && rBy1.value) rBy3.value = rBy1.value;
             }
+
+            const mainContent = document.querySelector('.main-content');
+            if (mainContent) mainContent.scrollTo({ top: 0, behavior: 'smooth' });
             window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            updateWorkflowUI(currentOpenedRequest);
         }
 
+        // Stepper click handlers
         const indStep1 = document.getElementById('indicator-step-1');
         const indStep2 = document.getElementById('indicator-step-2');
+        const indStep3 = document.getElementById('indicator-step-3');
         if (indStep1) indStep1.addEventListener('click', () => showFormStep(1));
         if (indStep2) indStep2.addEventListener('click', () => showFormStep(2));
+        if (indStep3) indStep3.addEventListener('click', () => showFormStep(3));
 
+        // Page 1 Navigation
+        const btnSaveNext = document.getElementById('btn-pc-save-next');
+        if (btnSaveNext) {
+            btnSaveNext.addEventListener('click', () => {
+                showFormStep(2);
+            });
+        }
+
+        // Page 2 Navigation
+        const btnStep2Back = document.getElementById('btn-pc-step2-back');
+        if (btnStep2Back) {
+            btnStep2Back.addEventListener('click', () => {
+                showFormStep(1);
+            });
+        }
+
+        const btnStep2Next = document.getElementById('btn-pc-step2-next');
+        if (btnStep2Next) {
+            btnStep2Next.addEventListener('click', () => {
+                showFormStep(3);
+            });
+        }
+
+        // Page 3 Navigation
+        const btnStep3Back = document.getElementById('btn-pc-step3-back');
+        if (btnStep3Back) {
+            btnStep3Back.addEventListener('click', () => {
+                showFormStep(2);
+            });
+        }
+
+        const btnStep3Close = document.getElementById('btn-pc-step3-close');
+        if (btnStep3Close) {
+            btnStep3Close.addEventListener('click', () => {
+                showPartList();
+            });
+        }
+
+        // --- WORKFLOW SUBMISSION ACTIONS ---
+
+        // 1. User Submit Action (From Page 2): Sends request to Stock Control
+        const btnStep2Submit = document.getElementById('btn-pc-step2-submit');
+        if (btnStep2Submit) {
+            btnStep2Submit.addEventListener('click', () => {
+                const data = collectFormData();
+                if (!data.productName && !data.api) {
+                    alert('Please enter a Product Name or API before submitting.');
+                    return;
+                }
+                saveRequestWithStatus(
+                    'PENDING_STOCK_CONTROL',
+                    {},
+                    `📤 Part Creation Request ${data.id} submitted successfully to the Stock Control Team!\n\nStatus is now PENDING STOCK CONTROL.\nPage 3 (Stock Control Specification) is now accessible to Stock Control.`
+                );
+            });
+        }
+
+        // User Save Draft (From Page 1)
+        const btnSaveDraft = document.getElementById('btn-pc-save-draft');
+        if (btnSaveDraft) {
+            btnSaveDraft.addEventListener('click', () => {
+                const data = collectFormData();
+                saveRequestWithStatus('DRAFT', {}, `💾 Draft saved successfully for Request ${data.id}.`);
+            });
+        }
+
+        // User Save Draft (From Page 2)
+        const btnStep2SaveDraft = document.getElementById('btn-pc-step2-save-draft');
+        if (btnStep2SaveDraft) {
+            btnStep2SaveDraft.addEventListener('click', () => {
+                const data = collectFormData();
+                saveRequestWithStatus('DRAFT', {}, `💾 Draft saved successfully for Request ${data.id}.`);
+            });
+        }
+
+        // 2. Stock Control Team Submit Action (From Page 3): Sends request to QA
+        const btnStep3StockApprove = document.getElementById('btn-pc-step3-stock-approve');
+        if (btnStep3StockApprove) {
+            btnStep3StockApprove.addEventListener('click', () => {
+                const data = collectFormData();
+                const partNo = (data.proposedPartNumber || '').trim();
+                if (!partNo) {
+                    alert('⚠️ Please enter the Part Number in Page 3 before submitting to QA.\n\n(Stock Control is required to fill and assign the Part Number.)');
+                    const partNoInput = document.getElementById('pc-sc-proposed-part-no');
+                    if (partNoInput) {
+                        partNoInput.focus();
+                        partNoInput.style.borderColor = '#dc2626';
+                        partNoInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    return;
+                }
+                saveRequestWithStatus(
+                    'PENDING_QA',
+                    { proposedPartNumber: partNo, partCodeGenerated: partNo },
+                    `🛡️ Stock Control specifications submitted successfully to QA!\n\nAssigned Part Number: ${partNo}\nRequest ${data.id} is now PENDING QA VERIFICATION.\nQA will now review and verify all 3 pages.`
+                );
+            });
+        }
+
+        // Stock Control Save Draft (From Page 3)
+        const btnStep3Submit = document.getElementById('btn-pc-step3-submit');
+        if (btnStep3Submit) {
+            btnStep3Submit.addEventListener('click', () => {
+                const data = collectFormData();
+                saveRequestWithStatus('PENDING_STOCK_CONTROL', {}, `💾 Stock Control draft specifications saved for Request ${data.id}.`);
+            });
+        }
+
+        // Stock Control Return to User for Revision (From Page 3)
+        const btnStep3StockRequestEdit = document.getElementById('btn-pc-step3-stock-request-edit');
+        if (btnStep3StockRequestEdit) {
+            btnStep3StockRequestEdit.addEventListener('click', () => {
+                const reason = prompt('Enter the revision reason to return this request to the User:', 'Please clarify required formulation parameters.');
+                if (reason && reason.trim()) {
+                    const data = collectFormData();
+                    saveRequestWithStatus(
+                        'TO_BE_EDITED',
+                        { qaNotes: reason.trim() },
+                        `🟧 Request ${data.id} returned to the User for correction!\n\nStatus: REVISIONS REQUIRED\nReason: ${reason.trim()}`
+                    );
+                }
+            });
+        }
+
+        // 3. QA Team Actions (From Page 3): Approve, Request Revision, Reject
+        const handleQaApprove = () => {
+            const data = collectFormData();
+            const assignedPartNo = (data.proposedPartNumber || '').trim() || (data.id ? 'PRT-' + data.id.replace(/\D/g, '') : 'PRT-PART');
+
+            saveRequestWithStatus(
+                'APPROVED',
+                { partCodeGenerated: assignedPartNo, proposedPartNumber: assignedPartNo },
+                `✅ Part Creation Request ${data.id} APPROVED by QA!\n\nApproved Part Number: ${assignedPartNo}\nProduct: ${data.productName}\n\nAll specifications across Page 1, Page 2, and Page 3 have been verified and the inventory part master is now ACTIVE.`
+            );
+        };
+
+        const btnStep3QaApprove = document.getElementById('btn-pc-step3-qa-approve');
+        if (btnStep3QaApprove) btnStep3QaApprove.addEventListener('click', handleQaApprove);
+        const btnStep2QaApprove = document.getElementById('btn-pc-step2-qa-approve');
+        if (btnStep2QaApprove) btnStep2QaApprove.addEventListener('click', handleQaApprove);
+        const btnQaApprove = document.getElementById('btn-pc-qa-approve');
+        if (btnQaApprove) btnQaApprove.addEventListener('click', handleQaApprove);
+
+        const btnStep3QaRequestEdit = document.getElementById('btn-pc-step3-qa-request-edit');
+        if (btnStep3QaRequestEdit) {
+            btnStep3QaRequestEdit.addEventListener('click', () => {
+                const reason = prompt('Enter QA revision reason for the requester and stock control:', 'Please verify storage temperature and lot tracking rules.');
+                if (reason && reason.trim()) {
+                    const data = collectFormData();
+                    saveRequestWithStatus(
+                        'TO_BE_EDITED',
+                        { qaNotes: reason.trim() },
+                        `🟧 Request ${data.id} sent back for revision by QA!\n\nStatus: REVISIONS REQUIRED\nReason: ${reason.trim()}`
+                    );
+                }
+            });
+        }
+
+        const btnStep3QaReject = document.getElementById('btn-pc-step3-qa-reject');
+        if (btnStep3QaReject) {
+            btnStep3QaReject.addEventListener('click', () => {
+                if (confirm('Are you sure you want to REJECT this Part Creation request?')) {
+                    const data = collectFormData();
+                    saveRequestWithStatus(
+                        'REJECTED',
+                        {},
+                        `❌ Request ${data.id} has been REJECTED by QA.`
+                    );
+                }
+            });
+        }
+
+        // ============================================================
+        // 3.8 FILE INFO & DOCUMENT MANAGEMENT (URS 4.7.1, DS 3.10)
+        // ============================================================
+        const ALLOWED_EXTENSIONS = ['pdf', 'doc', 'docx', 'xlsx', 'xls', 'png', 'jpg', 'jpeg'];
+
+        const partDocModalOverlay = document.getElementById('part-doc-modal-overlay');
+        const btnPartDocClose = document.getElementById('btn-part-doc-modal-close');
+        const btnPartDocDone = document.getElementById('btn-part-doc-modal-done');
+        const pcDocReqIdSpan = document.getElementById('pc-doc-modal-req-id');
+        const pcDocProdNameSpan = document.getElementById('pc-doc-modal-prod-name');
+        const pcDocRoleSpan = document.getElementById('pc-doc-modal-role');
+        const pcDocCategorySelect = document.getElementById('pc-doc-category-select');
+        const pcDocNoteInput = document.getElementById('pc-doc-note-input');
+        const pcDocDropzone = document.getElementById('pc-doc-dropzone');
+        const btnPcBrowseFile = document.getElementById('btn-pc-browse-file');
+        const pcDocNativeInput = document.getElementById('pc-doc-native-file-input');
+        const pcDocFormatError = document.getElementById('pc-doc-format-error');
+        const pcDocFormatErrorMsg = document.getElementById('pc-doc-format-error-msg');
+        const pcDocCountBadge = document.getElementById('pc-doc-count-badge');
+        const pcDocumentsTbody = document.getElementById('pc-documents-tbody');
+
+        const btnStep2Upload = document.getElementById('btn-pc-step2-upload');
+        const btnStep3Upload = document.getElementById('btn-pc-step3-upload');
+        const attachedBadge = document.getElementById('pc-attached-file-badge');
+        const attachedBadge3 = document.getElementById('pc-step3-attached-file-badge');
+        const topBadge3 = document.getElementById('pc-step3-top-file-badge');
+        const topBadgeNone = document.getElementById('pc-step3-top-file-none');
+
+        function getDocFileIcon(filename) {
+            if (!filename) return '📄';
+            const ext = (filename.split('.').pop() || '').toLowerCase();
+            if (ext === 'pdf') return '📕';
+            if (ext === 'doc' || ext === 'docx') return '📘';
+            if (ext === 'xlsx' || ext === 'xls') return '📗';
+            if (['png', 'jpg', 'jpeg', 'svg', 'webp'].includes(ext)) return '🖼️';
+            return '📄';
+        }
+
+        function getDocCategoryPill(category) {
+            const cat = category || 'Technical Specification';
+            let bg = '#eff6ff';
+            let color = '#1d4ed8';
+            let border = '#bfdbfe';
+
+            if (cat === 'MSDS') {
+                bg = '#fef2f2'; color = '#b91c1c'; border = '#fca5a5';
+            } else if (cat.includes('Certificate') || cat.includes('CoA')) {
+                bg = '#ecfdf5'; color = '#047857'; border = '#a7f3d0';
+            } else if (cat.includes('CAD')) {
+                bg = '#f5f3ff'; color = '#6d28d9'; border = '#ddd6fe';
+            } else if (cat.includes('Dossier') || cat.includes('Regulatory')) {
+                bg = '#fffbeb'; color = '#b45309'; border = '#fde68a';
+            } else if (cat.includes('Compliance') || cat.includes('GMP')) {
+                bg = '#f0fdf4'; color = '#15803d'; border = '#bbf7d0';
+            } else if (cat.includes('Artwork') || cat.includes('Packaging')) {
+                bg = '#fdf4ff'; color = '#a21caf'; border = '#f5d0fe';
+            }
+            return `<span class="badge" style="background:${bg}; color:${color}; border:1px solid ${border}; font-size:11px; padding:3px 8px; border-radius:10px; font-weight:600;">${escapeHtml(cat)}</span>`;
+        }
+
+        function formatFileSize(bytes) {
+            if (!bytes || bytes === 0) return '0 KB';
+            if (bytes < 1024 * 1024) {
+                return (bytes / 1024).toFixed(1) + ' KB';
+            }
+            return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+        }
+
+        function getCurrentUploader() {
+            const role = getActiveWorkflowRole();
+            const reqByInput = document.getElementById('pc-form-req-by')?.value;
+            if (role === 'QA') return 'QA Verifier (Dr. Angela Vance)';
+            if (role === 'Stock Control') return 'Stock Control (Milan Dabhi)';
+            if (reqByInput && reqByInput.trim()) return reqByInput.trim();
+            return 'Warehouse Op (Current User)';
+        }
+
+        function getFormattedTimestamp() {
+            const now = new Date();
+            const yyyy = now.getFullYear();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            const hh = String(now.getHours()).padStart(2, '0');
+            const min = String(now.getMinutes()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
+        }
+
+        function getActivePartRequest() {
+            if (currentOpenedRequest) {
+                if (!Array.isArray(currentOpenedRequest.documents)) {
+                    currentOpenedRequest.documents = [];
+                }
+                return currentOpenedRequest;
+            }
+            const rId = document.getElementById('pc-form-req-id')?.value || 'REQ-2026-0005';
+            const list = getRequests();
+            let found = list.find(r => r.id === rId);
+            if (!found) {
+                const draft = collectFormData();
+                draft.id = rId;
+                draft.status = 'DRAFT';
+                draft.documents = [];
+                list.unshift(draft);
+                saveRequests(list);
+                currentOpenedRequest = draft;
+                return draft;
+            }
+            if (!Array.isArray(found.documents)) found.documents = [];
+            currentOpenedRequest = found;
+            return found;
+        }
+
+        function updateAttachedFileBadges(req) {
+            if (!req) {
+                if (attachedBadge) attachedBadge.classList.add('hidden');
+                if (attachedBadge3) attachedBadge3.classList.add('hidden');
+                if (topBadge3) topBadge3.style.display = 'none';
+                if (topBadgeNone) topBadgeNone.style.display = 'inline-block';
+                return;
+            }
+            const docs = Array.isArray(req.documents) ? req.documents : [];
+            if (docs.length > 0) {
+                const latestDoc = docs[docs.length - 1];
+                const badgeText = (docs.length === 1)
+                    ? `📎 Attached: ${latestDoc.name} (${latestDoc.size})`
+                    : `📎 Attached: ${docs.length} Documents (Latest: ${latestDoc.name})`;
+
+                if (attachedBadge) {
+                    attachedBadge.textContent = badgeText;
+                    attachedBadge.classList.remove('hidden');
+                    attachedBadge.title = 'Click to view & manage attached documents';
+                    attachedBadge.style.cursor = 'pointer';
+                }
+                if (attachedBadge3) {
+                    attachedBadge3.textContent = badgeText;
+                    attachedBadge3.classList.remove('hidden');
+                    attachedBadge3.title = 'Click to view & manage attached documents';
+                    attachedBadge3.style.cursor = 'pointer';
+                }
+                if (topBadge3) {
+                    topBadge3.textContent = `📎 ${latestDoc.name}${docs.length > 1 ? ` (+${docs.length - 1} more)` : ''}`;
+                    topBadge3.style.display = 'inline-flex';
+                    topBadge3.title = 'Click to view & manage attached documents';
+                    topBadge3.style.cursor = 'pointer';
+                }
+                if (topBadgeNone) topBadgeNone.style.display = 'none';
+            } else if (req.attachedDoc) {
+                if (attachedBadge) {
+                    attachedBadge.textContent = `📎 ${req.attachedDoc}`;
+                    attachedBadge.classList.remove('hidden');
+                }
+                if (attachedBadge3) {
+                    attachedBadge3.textContent = `📎 ${req.attachedDoc}`;
+                    attachedBadge3.classList.remove('hidden');
+                }
+                if (topBadge3) {
+                    topBadge3.textContent = `📎 ${req.attachedDoc}`;
+                    topBadge3.style.display = 'inline-flex';
+                }
+                if (topBadgeNone) topBadgeNone.style.display = 'none';
+            } else {
+                if (attachedBadge) attachedBadge.classList.add('hidden');
+                if (attachedBadge3) attachedBadge3.classList.add('hidden');
+                if (topBadge3) topBadge3.style.display = 'none';
+                if (topBadgeNone) topBadgeNone.style.display = 'inline-block';
+            }
+        }
+
+        function renderDocumentTable(req) {
+            if (!pcDocumentsTbody) return;
+            const docs = (req && Array.isArray(req.documents)) ? req.documents : [];
+            if (pcDocCountBadge) {
+                pcDocCountBadge.textContent = `${docs.length} File${docs.length === 1 ? '' : 's'}`;
+            }
+            if (docs.length === 0) {
+                pcDocumentsTbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 32px 16px; color: #94a3b8; font-style: italic;">
+                            <div style="font-size: 26px; margin-bottom: 6px;">📂</div>
+                            No documents attached yet for Request <strong>${escapeHtml(req ? req.id : '')}</strong>.<br>
+                            <span style="font-size: 11.5px; color: #64748b;">Upload MSDS, CAD drawings, or Technical Specs using the drop zone above.</span>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            pcDocumentsTbody.innerHTML = docs.map((doc, idx) => {
+                const icon = getDocFileIcon(doc.name);
+                const catPill = getDocCategoryPill(doc.category);
+                return `
+                    <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s ease;" onmouseover="this.style.background='#f8fafc';" onmouseout="this.style.background='';">
+                        <td style="padding: 10px 12px; font-weight: 700; color: #64748b; font-size: 11.5px;">${idx + 1}</td>
+                        <td style="padding: 10px 14px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 18px;">${icon}</span>
+                                <div>
+                                    <div style="font-weight: 600; color: #0f172a; word-break: break-all;">${escapeHtml(doc.name)}</div>
+                                    ${doc.note ? `<div style="font-size: 11px; color: #64748b; margin-top: 1px;">Note: ${escapeHtml(doc.note)}</div>` : ''}
+                                </div>
+                            </div>
+                        </td>
+                        <td style="padding: 10px 12px;">${catPill}</td>
+                        <td style="padding: 10px 12px; font-family: monospace; font-size: 11.5px; color: #334155; font-weight: 600;">${doc.size || 'N/A'}</td>
+                        <td style="padding: 10px 14px; font-size: 12px; color: #1e293b;">
+                            <div style="font-weight: 600;">${escapeHtml(doc.uploadedBy || 'System User')}</div>
+                            <div style="font-size: 10.5px; color: #059669; font-weight: 600;">System Verified</div>
+                        </td>
+                        <td style="padding: 10px 14px; font-family: monospace; font-size: 11.5px; color: #475569;">${doc.timestamp || 'N/A'}</td>
+                        <td style="padding: 10px 14px; text-align: right;">
+                            <div style="display: flex; gap: 6px; justify-content: flex-end;">
+                                <button type="button" class="btn btn-secondary btn-doc-download" data-id="${doc.id}" title="Download Document"
+                                    style="padding: 4px 10px; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border-color: #0284c7; color: #0284c7; background: #f0f9ff; cursor: pointer;">
+                                    <span>📥</span> Download
+                                </button>
+                                <button type="button" class="btn btn-outline btn-doc-delete" data-id="${doc.id}" title="Delete Document"
+                                    style="padding: 4px 8px; font-size: 11px; display: inline-flex; align-items: center; gap: 3px; border-color: #fca5a5; color: #dc2626; background: #fff; cursor: pointer;">
+                                    <span>🗑️</span>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Attach download listeners
+            pcDocumentsTbody.querySelectorAll('.btn-doc-download').forEach(b => {
+                b.addEventListener('click', () => {
+                    const docId = b.getAttribute('data-id');
+                    triggerDownloadDocument(req, docId);
+                });
+            });
+
+            // Attach delete listeners
+            pcDocumentsTbody.querySelectorAll('.btn-doc-delete').forEach(b => {
+                b.addEventListener('click', () => {
+                    const docId = b.getAttribute('data-id');
+                    triggerDeleteDocument(req, docId);
+                });
+            });
+        }
+
+        function handleDocumentFileUpload(file) {
+            if (!file) return;
+            if (pcDocFormatError) pcDocFormatError.classList.add('hidden');
+
+            const parts = file.name.toLowerCase().split('.');
+            const ext = parts.length > 1 ? parts.pop() : '';
+            if (!ALLOWED_EXTENSIONS.includes(ext)) {
+                if (pcDocFormatError && pcDocFormatErrorMsg) {
+                    pcDocFormatErrorMsg.textContent = `⚠️ Business Rule: Unsupported file format (.${ext || 'unknown'}). Supported formats are PDF, DOCX, XLSX, and Images (PNG, JPG).`;
+                    pcDocFormatError.classList.remove('hidden');
+                }
+                alert(`⚠️ Invalid Format: .${ext || 'unknown'}\n\nAccording to Business Rule, only PDF, DOCX, XLSX, and Image files can be attached.`);
+                return;
+            }
+
+            const req = getActivePartRequest();
+            const cat = pcDocCategorySelect ? pcDocCategorySelect.value : 'Technical Specification';
+            const note = pcDocNoteInput ? pcDocNoteInput.value.trim() : '';
+            const uploader = getCurrentUploader();
+            const timestamp = getFormattedTimestamp();
+            const fileSize = formatFileSize(file.size);
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const dataUrl = e.target.result;
+                const newDoc = {
+                    id: 'DOC-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+                    name: file.name,
+                    category: cat,
+                    size: fileSize,
+                    uploadedBy: uploader,
+                    timestamp: timestamp,
+                    note: note,
+                    dataUrl: dataUrl
+                };
+
+                if (!Array.isArray(req.documents)) req.documents = [];
+                req.documents.push(newDoc);
+                req.attachedDoc = `${file.name} (${fileSize})`;
+
+                // Save to list
+                const list = getRequests();
+                const idx = list.findIndex(r => r.id === req.id);
+                if (idx !== -1) {
+                    list[idx] = req;
+                } else {
+                    list.unshift(req);
+                }
+                saveRequests(list);
+
+                // Reset inputs
+                if (pcDocNoteInput) pcDocNoteInput.value = '';
+                if (pcDocNativeInput) pcDocNativeInput.value = '';
+
+                // Re-render and update badges
+                renderDocumentTable(req);
+                updateAttachedFileBadges(req);
+
+                // Toast notification
+                if (typeof showToast === 'function') {
+                    showToast(`Document "${file.name}" attached successfully!`, 'success');
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function triggerDownloadDocument(req, docId) {
+            if (!req || !Array.isArray(req.documents)) return;
+            const doc = req.documents.find(d => d.id === docId);
+            if (!doc) return;
+
+            const a = document.createElement('a');
+            if (doc.dataUrl) {
+                a.href = doc.dataUrl;
+            } else {
+                const content = `======================================================\n` +
+                                `B&S HEALTHCARE ERP — ATTACHED TECHNICAL DOCUMENT\n` +
+                                `======================================================\n\n` +
+                                `Document Name : ${doc.name}\n` +
+                                `Category      : ${doc.category}\n` +
+                                `Linked Request: ${req.id}\n` +
+                                `Product Name  : ${req.productName || 'N/A'}\n` +
+                                `Uploaded By   : ${doc.uploadedBy}\n` +
+                                `Timestamp     : ${doc.timestamp}\n` +
+                                `File Size     : ${doc.size}\n` +
+                                `Note          : ${doc.note || 'None'}\n\n` +
+                                `Storage Blob  : EBS-S3-SIMULATED-BLOB-${doc.id}\n` +
+                                `System Module : File Info & Document Management\n\n` +
+                                `[End of Technical Attachment Record]\n`;
+                const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                a.href = URL.createObjectURL(blob);
+            }
+            a.download = doc.name;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function triggerDeleteDocument(req, docId) {
+            if (!req || !Array.isArray(req.documents)) return;
+            const doc = req.documents.find(d => d.id === docId);
+            if (!doc) return;
+
+            if (!confirm(`🗑️ Delete Technical Document?\n\nFile: ${doc.name}\nCategory: ${doc.category}\nLinked Request: ${req.id}\n\nAre you sure you want to remove this document from the request?`)) {
+                return;
+            }
+
+            req.documents = req.documents.filter(d => d.id !== docId);
+            if (req.documents.length > 0) {
+                const last = req.documents[req.documents.length - 1];
+                req.attachedDoc = `${last.name} (${last.size})`;
+            } else {
+                req.attachedDoc = '';
+            }
+
+            const list = getRequests();
+            const idx = list.findIndex(r => r.id === req.id);
+            if (idx !== -1) {
+                list[idx] = req;
+                saveRequests(list);
+            }
+
+            renderDocumentTable(req);
+            updateAttachedFileBadges(req);
+
+            if (typeof showToast === 'function') {
+                showToast(`Document "${doc.name}" deleted.`, 'warning');
+            }
+        }
+
+        function openDocumentModal() {
+            const req = getActivePartRequest();
+            if (pcDocReqIdSpan) pcDocReqIdSpan.textContent = req.id;
+            if (pcDocProdNameSpan) pcDocProdNameSpan.textContent = `Product: ${req.productName || 'New Product'}`;
+            if (pcDocRoleSpan) pcDocRoleSpan.textContent = getActiveWorkflowRole();
+            if (pcDocFormatError) pcDocFormatError.classList.add('hidden');
+            if (pcDocNoteInput) pcDocNoteInput.value = '';
+            if (pcDocNativeInput) pcDocNativeInput.value = '';
+
+            renderDocumentTable(req);
+            if (partDocModalOverlay) partDocModalOverlay.classList.remove('hidden');
+        }
+
+        function closeDocumentModal() {
+            if (partDocModalOverlay) partDocModalOverlay.classList.add('hidden');
+            const req = currentOpenedRequest || getActivePartRequest();
+            updateAttachedFileBadges(req);
+        }
+
+        // Connect button and dropzone events
+        if (btnStep2Upload) btnStep2Upload.addEventListener('click', openDocumentModal);
+        if (btnStep3Upload) btnStep3Upload.addEventListener('click', openDocumentModal);
+        if (attachedBadge) attachedBadge.addEventListener('click', openDocumentModal);
+        if (attachedBadge3) attachedBadge3.addEventListener('click', openDocumentModal);
+        if (topBadge3) topBadge3.addEventListener('click', openDocumentModal);
+        if (btnPartDocClose) btnPartDocClose.addEventListener('click', closeDocumentModal);
+        if (btnPartDocDone) btnPartDocDone.addEventListener('click', closeDocumentModal);
+
+        // Click outside modal card to close
+        if (partDocModalOverlay) {
+            partDocModalOverlay.addEventListener('click', (e) => {
+                if (e.target === partDocModalOverlay) closeDocumentModal();
+            });
+        }
+
+        // Native file browse button & input
+        if (btnPcBrowseFile && pcDocNativeInput) {
+            btnPcBrowseFile.addEventListener('click', (e) => {
+                e.stopPropagation();
+                pcDocNativeInput.click();
+            });
+        }
+
+        if (pcDocDropzone && pcDocNativeInput) {
+            pcDocDropzone.addEventListener('click', () => {
+                pcDocNativeInput.click();
+            });
+
+            pcDocDropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                pcDocDropzone.style.borderColor = '#0284c7';
+                pcDocDropzone.style.background = '#f0f9ff';
+            });
+
+            pcDocDropzone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                pcDocDropzone.style.borderColor = '#94a3b8';
+                pcDocDropzone.style.background = '#ffffff';
+            });
+
+            pcDocDropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                pcDocDropzone.style.borderColor = '#94a3b8';
+                pcDocDropzone.style.background = '#ffffff';
+                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    handleDocumentFileUpload(e.dataTransfer.files[0]);
+                }
+            });
+        }
+
+        if (pcDocNativeInput) {
+            pcDocNativeInput.addEventListener('change', (e) => {
+                if (e.target.files && e.target.files.length > 0) {
+                    handleDocumentFileUpload(e.target.files[0]);
+                }
+            });
+        }
+
+        // Table dynamic row handlers in Step 3
+        const btnAddLoc = document.getElementById('btn-add-location-row');
+        if (btnAddLoc) {
+            btnAddLoc.addEventListener('click', () => {
+                const tbody = document.querySelector('#table-sc-locations tbody');
+                if (tbody) {
+                    const emptyRow = document.getElementById('sc-loc-empty-row');
+                    if (emptyRow) emptyRow.remove();
+                    const rowCount = tbody.querySelectorAll('tr:not(#sc-loc-empty-row)').length + 1;
+                    const rowNumStr = String(rowCount).padStart(2, '0') + '.';
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="padding: 6px 10px; border: 1px solid #cbd5e1; font-weight: 700; color: #0f172a;">${rowNumStr}</td>
+                        <td style="padding: 3px 6px; border: 1px solid #cbd5e1;"><input type="text" class="pc-input" style="height: 28px; padding: 2px 6px; font-size: 11px; width: 100%;" placeholder="e.g. Picking"></td>
+                        <td style="padding: 3px 6px; border: 1px solid #cbd5e1;"><input type="text" class="pc-input" style="height: 28px; padding: 2px 6px; font-size: 11px; width: 100%;" placeholder="e.g. MAIN"></td>
+                        <td style="padding: 3px 6px; border: 1px solid #cbd5e1;"><input type="text" class="pc-input" style="height: 28px; padding: 2px 6px; font-size: 11px; width: 100%;" placeholder="e.g. UK"></td>
+                        <td style="padding: 3px 6px; border: 1px solid #cbd5e1;"><input type="text" class="pc-input" style="height: 28px; padding: 2px 6px; font-size: 11px; width: 100%;" placeholder="e.g. G"></td>
+                        <td style="padding: 3px 6px; border: 1px solid #cbd5e1;"><input type="text" class="pc-input" style="height: 28px; padding: 2px 6px; font-size: 11px; width: 100%;" placeholder="e.g. 02"></td>
+                        <td style="padding: 3px 6px; border: 1px solid #cbd5e1;"><input type="text" class="pc-input" style="height: 28px; padding: 2px 6px; font-size: 11px; width: 100%;" placeholder="e.g. 01"></td>
+                        <td style="padding: 3px 6px; border: 1px solid #cbd5e1;"><input type="text" class="pc-input" style="height: 28px; padding: 2px 6px; font-size: 11px; width: 100%;" placeholder="e.g. ${rowNumStr}"></td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+            });
+        }
+
+        const btnAddRev = document.getElementById('btn-add-revision-row');
+        if (btnAddRev) {
+            btnAddRev.addEventListener('click', () => {
+                const tbody = document.querySelector('#table-sc-revisions tbody');
+                if (tbody) {
+                    const emptyRow = document.getElementById('sc-rev-empty-row');
+                    if (emptyRow) emptyRow.remove();
+                    const rowCount = tbody.querySelectorAll('tr:not(#sc-rev-empty-row)').length + 1;
+                    const revCode = 'R' + String(rowCount).padStart(2, '0');
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="padding: 6px 10px; border: 1px solid #cbd5e1; font-weight: 900; text-align: center; color: #0284c7;">${revCode}</td>
+                        <td style="padding: 3px 6px; border: 1px solid #cbd5e1;"><input type="date" class="pc-input" style="height: 28px; padding: 2px 6px; font-size: 11px; width: 100%;"></td>
+                        <td style="padding: 3px 6px; border: 1px solid #cbd5e1;"><input type="date" class="pc-input" style="height: 28px; padding: 2px 6px; font-size: 11px; width: 100%;"></td>
+                        <td style="padding: 3px 6px; border: 1px solid #cbd5e1;"><input type="text" class="pc-input" style="height: 28px; padding: 2px 6px; font-size: 11px; width: 100%;" placeholder="Enter revision text"></td>
+                        <td style="padding: 3px 6px; border: 1px solid #cbd5e1;">
+                            <select class="pc-select" style="height: 28px; padding: 2px 6px; font-size: 11px; width: 100%;">
+                                <option value="" selected>Select Status</option>
+                                <option value="Active">Active</option>
+                                <option value="Inactive">Inactive</option>
+                                <option value="Pending">Pending</option>
+                            </select>
+                        </td>
+                        <td style="padding: 3px 6px; border: 1px solid #cbd5e1;"><input type="text" class="pc-input" style="height: 28px; padding: 2px 6px; font-size: 11px; width: 100%;" placeholder="e.g. ${revCode}"></td>
+                        <td style="padding: 3px 6px; border: 1px solid #cbd5e1;"><input type="text" class="pc-input" style="height: 28px; padding: 2px 6px; font-size: 11px; width: 100%;" placeholder="Enter engineering description"></td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+            });
+        }
+
+        // QA Check All buttons
+        const btnCheckAll = document.getElementById('btn-qa-check-all');
         if (btnCheckAll) {
             btnCheckAll.addEventListener('click', () => {
+                if (getActiveWorkflowRole() !== 'QA') return;
                 document.querySelectorAll('#pc-form-step-1 .pc-qa-cb').forEach(cb => {
                     cb.checked = true;
                     const qaRow = cb.closest('.pc-qa-row');
@@ -9137,6 +10028,7 @@ SyriMed Healthcare`
         const btnStep2CheckAll = document.getElementById('btn-step2-qa-check-all');
         if (btnStep2CheckAll) {
             btnStep2CheckAll.addEventListener('click', () => {
+                if (getActiveWorkflowRole() !== 'QA') return;
                 document.querySelectorAll('#pc-form-step-2 .pc-qa-cb').forEach(cb => {
                     cb.checked = true;
                     const qaRow = cb.closest('.pc-qa-row');
@@ -9148,83 +10040,67 @@ SyriMed Healthcare`
             });
         }
 
-        if (btnSaveNext) {
-            btnSaveNext.addEventListener('click', () => {
-                showFormStep(2);
-            });
-        }
-
-        const btnStep2Back = document.getElementById('btn-pc-step2-back');
-        if (btnStep2Back) {
-            btnStep2Back.addEventListener('click', () => {
-                showFormStep(1);
-            });
-        }
-
-        const btnStep2Clear = document.getElementById('btn-pc-step2-clear');
-        if (btnStep2Clear) {
-            btnStep2Clear.addEventListener('click', () => {
-                document.querySelectorAll('#pc-form-step-2 .pc-input').forEach(i => i.value = '');
-                document.querySelectorAll('#pc-form-step-2 .pc-select').forEach(s => s.selectedIndex = 0);
-                document.querySelectorAll('#pc-form-step-2 .pc-qa-cb').forEach(cb => {
-                    cb.checked = false;
+        const btnStep3CheckAll = document.getElementById('btn-step3-qa-check-all');
+        if (btnStep3CheckAll) {
+            btnStep3CheckAll.addEventListener('click', () => {
+                if (getActiveWorkflowRole() !== 'QA') return;
+                document.querySelectorAll('#pc-form-step-3 .pc-qa-cb').forEach(cb => {
+                    cb.checked = true;
                     const qaRow = cb.closest('.pc-qa-row');
                     if (qaRow) {
                         const select = qaRow.querySelector('.pc-qa-select');
-                        if (select) select.disabled = true;
+                        if (select) select.disabled = false;
                     }
                 });
             });
         }
 
-        const hiddenFileInput = document.getElementById('pc-hidden-file-input');
-        const btnStep2Upload = document.getElementById('btn-pc-step2-upload');
-        const attachedBadge = document.getElementById('pc-attached-file-badge');
-
-        if (btnStep2Upload && hiddenFileInput) {
-            btnStep2Upload.addEventListener('click', () => {
-                hiddenFileInput.click();
-            });
-
-            hiddenFileInput.addEventListener('change', (e) => {
-                if (e.target.files && e.target.files.length > 0) {
-                    const file = e.target.files[0];
-                    const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
-                    const badgeTxt = `📎 Attached: ${file.name} (${fileSizeMB} MB)`;
-                    if (attachedBadge) {
-                        attachedBadge.textContent = badgeTxt;
-                        attachedBadge.classList.remove('hidden');
+        // QA row checkbox toggle listener
+        document.addEventListener('change', (e) => {
+            if (e.target.classList && e.target.classList.contains('pc-qa-cb')) {
+                const qaRow = e.target.closest('.pc-qa-row');
+                if (qaRow) {
+                    const select = qaRow.querySelector('.pc-qa-select');
+                    if (select) {
+                        select.disabled = !e.target.checked;
                     }
-                    alert(`✅ Document Attached Successfully!\n\nFilename: ${file.name}\nFile Size: ${fileSizeMB} MB`);
                 }
+            }
+        });
+
+        // Top level Part Creation buttons
+        const btnOpenForm = document.getElementById('btn-open-part-creation-form');
+        const btnBackList = document.getElementById('btn-back-to-part-list');
+        const btnQuickCreate = document.getElementById('btn-quick-part-creation');
+        const btnQuickQa = document.getElementById('btn-quick-part-qa-list');
+        const btnStockPartNav = document.getElementById('nav-stock-part-creation');
+
+        if (btnOpenForm) btnOpenForm.addEventListener('click', () => {
+            // Opening as User creates a fresh new request
+            setWorkflowRole('Normal User');
+            openPartForm();
+        });
+        if (btnBackList) btnBackList.addEventListener('click', () => showPartList());
+        if (btnQuickCreate) {
+            btnQuickCreate.addEventListener('click', () => {
+                switchModule('part-creation');
+                setWorkflowRole('Normal User');
+                openPartForm();
             });
         }
-
-        const btnStep2Submit = document.getElementById('btn-pc-step2-submit');
-        if (btnStep2Submit) {
-            btnStep2Submit.addEventListener('click', () => {
-                const data = collectFormData();
-                if (!data.productName && !data.api) {
-                    alert('Please fill in Product Name or API before submitting for Stock Control approval.');
-                    return;
-                }
-                saveRequestWithStatus('PENDING_STOCK_CONTROL', {}, `📤 Request submitted for Stock Control Approval!\n\nStatus is now PENDING STOCK CONTROL.`);
+        if (btnQuickQa) {
+            btnQuickQa.addEventListener('click', () => {
+                switchModule('part-creation');
+                setWorkflowRole('QA');
+                activeFilter = 'PENDING_QA';
+                showPartList();
             });
         }
-
-        if (btnClear) {
-            btnClear.addEventListener('click', () => {
-                document.querySelectorAll('#part-creation-form-view .pc-input').forEach(i => i.value = '');
-                document.querySelectorAll('#part-creation-form-view .pc-select').forEach(s => s.selectedIndex = 0);
-                document.querySelectorAll('.pc-qa-cb').forEach(cb => {
-                    cb.checked = false;
-                    const qaRow = cb.closest('.pc-qa-row');
-                    if (qaRow) {
-                        const select = qaRow.querySelector('.pc-qa-select');
-                        if (select) select.disabled = true;
-                    }
-                });
-                document.querySelectorAll('.field-to-be-edited').forEach(e => e.classList.remove('field-to-be-edited'));
+        if (btnStockPartNav) {
+            btnStockPartNav.addEventListener('click', (e) => {
+                e.preventDefault();
+                switchModule('part-creation');
+                showPartList();
             });
         }
 
@@ -9247,9 +10123,87 @@ SyriMed Healthcare`
             });
         }
 
+        // Search input
+        const searchInputEl = document.getElementById('part-creation-search-input');
+        if (searchInputEl) {
+            searchInputEl.addEventListener('input', () => {
+                renderTable();
+            });
+        }
+
+        // Step 2 Clear button
+        const btnStep2Clear = document.getElementById('btn-pc-step2-clear');
+        if (btnStep2Clear) {
+            btnStep2Clear.addEventListener('click', () => {
+                document.querySelectorAll('#pc-form-step-2 .pc-input').forEach(i => i.value = '');
+                document.querySelectorAll('#pc-form-step-2 .pc-select').forEach(s => s.selectedIndex = 0);
+                document.querySelectorAll('#pc-form-step-2 input[type="radio"]').forEach(r => r.checked = false);
+            });
+        }
+
+        // Step 3 Download button
+        const btnStep3Download = document.getElementById('btn-pc-step3-download');
+        if (btnStep3Download) {
+            btnStep3Download.addEventListener('click', () => {
+                const data = collectFormData();
+                const exportText = `=====================================================
+B&S HEALTHCARE ERP - PART CREATION SPECIFICATION
+Page 3: Stock Control & Buying Specification
+=====================================================
+Request ID: ${data.id}
+Date: ${data.requestDate}
+Requested By: ${data.requestedBy}
+Product Name: ${data.productName}
+Attached Document: ${data.attachedDoc || 'None'}
+API / Substance: ${data.api || 'N/A'}
+Strength: ${data.strength || 'N/A'} | Form: ${data.form || 'N/A'} | Pack Size: ${data.packSize || 'N/A'}
+Buyer Name: ${data.buyerName || 'N/A'}
+
+--- STOCK CONTROL SUBMITTED DETAILS ---
+Part Country: ${data.partCountry || 'N/A'}
+Part Type: ${data.partType || 'N/A'}
+Proposed Part Number: ${data.proposedPartNumber || 'N/A'}
+Valuation Method: ${data.valuationMethod || 'N/A'}
+Lot/Batch Tracking: ${data.lotTracking || 'N/A'}
+Lot Qty Rule: ${data.lotQtyRule || 'N/A'}
+Sub Lot Rule: ${data.subLotRule || 'N/A'}
+Component Lot Rule: ${data.componentLotRule || 'N/A'}
+Inventory Part Cost Level: ${data.costLevel || 'N/A'}
+Invoice Consideration: ${data.invoiceConsideration || 'N/A'}
+Zero Cost Flag: ${data.zeroCostFlag || 'N/A'}
+Hidden Qty: ${data.hiddenQty || '0'}
+
+Generated on: ${new Date().toLocaleString()}
+Workflow Status: ${data.status || 'DRAFT'}
+=====================================================`;
+                const blob = new Blob([exportText], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${data.id}_Stock_Control_Specification.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+        }
+
+        // Step 3 Add Comment button
+        const btnStep3Comment = document.getElementById('btn-pc-step3-comment');
+        if (btnStep3Comment) {
+            btnStep3Comment.addEventListener('click', () => {
+                const comment = prompt('Enter a workflow note or review comment:');
+                if (comment && comment.trim()) {
+                    alert(`💬 Comment added successfully!\n\n"${comment.trim()}"`);
+                }
+            });
+        }
+
         // Expose functions globally
         window.openPartCreationForm = openPartForm;
         window.showPartCreationList = showPartList;
+        window.setWorkflowRole = setWorkflowRole;
+        window.getActiveWorkflowRole = getActiveWorkflowRole;
         window.switchModule = switchModule;
         window.ModuleAccessControl = ModuleAccessControl;
 
@@ -9294,6 +10248,7 @@ SyriMed Healthcare`
     initSupplierSetup();
     initFinanceSetup();
     initRBAC();
+    attachSidebarListeners();
     ModuleAccessControl.applyModuleVisibility();
     initMasterDataDashboardLinks();
     initSubMasterConfig();
