@@ -729,7 +729,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Simply set: SYSTEM_ACTIVE_MODULES_ONLY = null;
     // Or call in console: window.setSystemActiveModules(null);
     // =========================================================================
-    let SYSTEM_ACTIVE_MODULES_ONLY = ['masters', 'stock'];
+    let SYSTEM_ACTIVE_MODULES_ONLY = ['masters', 'stock', 'finance'];
 
     // Helper to toggle active modules dynamically from developer console or external scripts
     window.setSystemActiveModules = function(modules) {
@@ -743,26 +743,26 @@ document.addEventListener('DOMContentLoaded', () => {
     // Role-based module permissions configuration table
     // Easily configurable for Normal User, Manager, QA, Administrator, etc.
     const ROLE_MODULE_PERMISSIONS = {
-        'Normal User': ['masters', 'stock', 'part-creation'],
-        'Stock Control': ['masters', 'stock', 'part-creation'],
-        'Manager': ['masters', 'stock', 'sales', 'purchase', 'part-creation'],
-        'QA': ['masters', 'stock', 'plpi', 'part-creation'],
+        'Normal User': ['masters', 'stock', 'finance', 'part-creation'],
+        'Stock Control': ['masters', 'stock', 'finance', 'part-creation'],
+        'Manager': ['masters', 'stock', 'sales', 'purchase', 'finance', 'part-creation'],
+        'QA': ['masters', 'stock', 'plpi', 'finance', 'part-creation'],
         'Admin': ['masters', 'stock', 'sales', 'purchase', 'hr', 'plpi', 'finance', 'part-creation'],
         'Finance': ['masters', 'finance', 'purchase', 'sales'],
-        'Transport': ['masters', 'stock'],
-        'RP': ['masters', 'stock', 'plpi']
+        'Transport': ['masters', 'stock', 'finance'],
+        'RP': ['masters', 'stock', 'plpi', 'finance']
     };
 
     // User-specific module assignments configuration table
     const USER_MODULE_PERMISSIONS = {
-        'SP03': ['masters', 'stock'] // Current user explicitly assigned Master Data Setup & Stock Management
+        'SP03': ['masters', 'stock', 'finance'] // Current user explicitly assigned Master Data Setup, Stock Management & Finance
     };
 
     const CURRENT_USER_PROFILE = {
         userId: 'SP03',
         userName: 'SP03',
         defaultRole: 'Normal User',
-        assignedModules: ['masters', 'stock']
+        assignedModules: ['masters', 'stock', 'finance']
     };
 
     let currentActiveModule = 'masters';
@@ -1036,6 +1036,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        if (moduleName === 'finance') {
+            document.querySelectorAll('.fin-sub-panel').forEach(p => { 
+                p.classList.add('hidden'); 
+                p.style.display = ''; 
+            });
+            const finHome = document.getElementById('panel-fin-home');
+            if (finHome) {
+                finHome.classList.remove('hidden');
+                finHome.style.display = 'block';
+            }
+        }
+
         // Update sidebar logo branding
         const logoIcon = document.querySelector('#sidebar-logo .logo-icon');
         const logoText = document.querySelector('#sidebar-logo .logo-text');
@@ -1264,17 +1276,72 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="sidebar-module-header" style="padding: 10px 14px; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #4f46e5; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
                     <span>💳</span> Finance &amp; Ledger
                 </div>
-                <a href="javascript:void(0)" class="nav-item active" id="nav-fin-coa-sub">
-                    <span class="nav-icon">📊</span> Chart of Accounts
+                <a href="javascript:void(0)" class="nav-item active" id="nav-fin-home-sub">
+                    <span class="nav-icon">🏠</span> Finance Overview
                 </a>
-                <a href="javascript:void(0)" class="nav-item" data-action="mock" data-name="General Ledger">
-                    <span class="nav-icon">📘</span> General Ledger
+
+                <div style="padding: 8px 14px 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; display: flex; align-items: center; gap: 4px;">
+                    <span>📊</span> Rules &amp; Controls
+                </div>
+                <a href="javascript:void(0)" class="nav-item" id="nav-fin-posting-control-sub">
+                    <span class="nav-icon">📊</span> Posting Control
                 </a>
-                <a href="javascript:void(0)" class="nav-item" data-action="mock" data-name="Payment Modes">
-                    <span class="nav-icon">💳</span> Payment Modes &amp; Budgets
+                <a href="javascript:void(0)" class="nav-item" id="nav-fin-posting-details-sub">
+                    <span class="nav-icon">⚙️</span> Posting Control Details
                 </a>
-                <a href="javascript:void(0)" class="nav-item" data-action="mock" data-name="Tax Configuration">
-                    <span class="nav-icon">💸</span> Tax Configuration
+                <a href="javascript:void(0)" class="nav-item" id="nav-fin-voucher-series-sub">
+                    <span class="nav-icon">🔢</span> Voucher Series
+                </a>
+                <a href="javascript:void(0)" class="nav-item" id="nav-fin-user-groups-voucher-sub">
+                    <span class="nav-icon">🔐</span> User Groups (Voucher)
+                </a>
+                <a href="javascript:void(0)" class="nav-item" id="nav-fin-user-groups-period-sub">
+                    <span class="nav-icon">👥</span> User Groups (Period)
+                </a>
+
+                <div style="padding: 8px 14px 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; display: flex; align-items: center; gap: 4px;">
+                    <span>⚡</span> Tax &amp; Reporting
+                </div>
+                <a href="javascript:void(0)" class="nav-item" id="nav-fin-automatic-tax-sub">
+                    <span class="nav-icon">⚡</span> Automatic Tax Proposal
+                </a>
+                <a href="javascript:void(0)" class="nav-item" id="nav-fin-tax-details-sub">
+                    <span class="nav-icon">📑</span> Tax Proposal Details
+                </a>
+                <a href="javascript:void(0)" class="nav-item" id="nav-fin-tax-codes-sub">
+                    <span class="nav-icon">🏷️</span> Tax Codes &amp; Rates
+                </a>
+
+                <div style="padding: 8px 14px 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; display: flex; align-items: center; gap: 4px;">
+                    <span>🏦</span> Accounts &amp; Ledger
+                </div>
+                <a href="javascript:void(0)" class="nav-item" id="nav-fin-accounts-sub">
+                    <span class="nav-icon">🏦</span> Accounts Master
+                </a>
+                <a href="javascript:void(0)" class="nav-item" id="nav-fin-account-group-sub">
+                    <span class="nav-icon">📁</span> Account Groups
+                </a>
+                <a href="javascript:void(0)" class="nav-item" id="nav-fin-cost-center-sub">
+                    <span class="nav-icon">🏢</span> Cost Centers
+                </a>
+                <a href="javascript:void(0)" class="nav-item" id="nav-fin-coa-sub">
+                    <span class="nav-icon">🌳</span> Chart of Accounts (Tree)
+                </a>
+
+                <div style="padding: 8px 14px 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; display: flex; align-items: center; gap: 4px;">
+                    <span>📅</span> Periods &amp; Rates
+                </div>
+                <a href="javascript:void(0)" class="nav-item" id="nav-fin-accounting-years-sub">
+                    <span class="nav-icon">📆</span> Accounting Years
+                </a>
+                <a href="javascript:void(0)" class="nav-item" id="nav-fin-accounting-periods-sub">
+                    <span class="nav-icon">📅</span> Accounting Periods
+                </a>
+                <a href="javascript:void(0)" class="nav-item" id="nav-fin-payment-terms-sub">
+                    <span class="nav-icon">📜</span> Payment Terms
+                </a>
+                <a href="javascript:void(0)" class="nav-item" id="nav-fin-currency-rates-sub">
+                    <span class="nav-icon">💱</span> Currency Rates
                 </a>
             `;
         } else if (isHr) {
@@ -1478,13 +1545,38 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Finance sub-item handlers
-        const btnFinCoaSub = document.getElementById('nav-fin-coa-sub');
-        if (btnFinCoaSub) {
-            btnFinCoaSub.addEventListener('click', (e) => {
-                e.preventDefault();
-                switchModule('finance');
-            });
-        }
+        const finSidebarMap = [
+            { id: 'nav-fin-home-sub', target: 'fin-home' },
+            { id: 'nav-fin-posting-control-sub', target: 'fin-posting-control' },
+            { id: 'nav-fin-posting-details-sub', target: 'fin-posting-control-details' },
+            { id: 'nav-fin-voucher-series-sub', target: 'fin-voucher-series-type' },
+            { id: 'nav-fin-user-groups-voucher-sub', target: 'fin-user-groups-voucher' },
+            { id: 'nav-fin-user-groups-period-sub', target: 'fin-user-groups-period' },
+            { id: 'nav-fin-automatic-tax-sub', target: 'fin-automatic-tax-proposal' },
+            { id: 'nav-fin-tax-details-sub', target: 'fin-tax-proposal-details' },
+            { id: 'nav-fin-tax-codes-sub', target: 'fin-tax-codes' },
+            { id: 'nav-fin-accounts-sub', target: 'fin-accounts' },
+            { id: 'nav-fin-account-group-sub', target: 'fin-account-group' },
+            { id: 'nav-fin-cost-center-sub', target: 'fin-cost-center' },
+            { id: 'nav-fin-coa-sub', target: 'fin-coa' },
+            { id: 'nav-fin-accounting-years-sub', target: 'fin-accounting-years' },
+            { id: 'nav-fin-accounting-periods-sub', target: 'fin-accounting-periods' },
+            { id: 'nav-fin-payment-terms-sub', target: 'fin-payment-terms' },
+            { id: 'nav-fin-currency-rates-sub', target: 'fin-currency-rates' }
+        ];
+        finSidebarMap.forEach(item => {
+            const el = document.getElementById(item.id);
+            if (el) {
+                el.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    sidebarNavMenu.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                    el.classList.add('active');
+                    if (typeof window.switchFinanceSubPanel === 'function') {
+                        window.switchFinanceSubPanel(item.target);
+                    }
+                });
+            }
+        });
 
         // User Sub-sub-items click handlers
         const subSubItems = sidebarNavMenu.querySelectorAll('.sub-sub-item');
@@ -1519,9 +1611,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             if (moduleName === 'finance') {
-                const finModal = document.getElementById('finance-modal-overlay');
-                if (finModal) finModal.classList.remove('hidden');
-                // Do not switch module yet, wait for modal selection
+                switchModule('finance');
+                showToast(`Entered B&S ERP: FINANCE & LEDGER Module`, 'success');
             } else {
                 switchModule(moduleName);
                 showToast(`Entered B&S ERP: ${moduleName.toUpperCase()} Module`, 'success');
@@ -2710,9 +2801,8 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(companies));
         showToast(`Company Profile for '${companyConfig.companyName}' (ID: ${companyConfig.companyId}) saved successfully in database!`, "success");
         
-        // Sync other module dropdowns
-        if (typeof populateCompanyDropdown === 'function') populateCompanyDropdown();
-        if (typeof populateUserCreationCompanyDropdown === 'function') populateUserCreationCompanyDropdown();
+        // Sync all ERP company dropdowns from single source of truth
+        populateAllCompanyDropdowns();
 
         // 7. Return to list view
         showCompanyListView();
@@ -3336,6 +3426,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 customers = [...defaultCustomers];
             }
         }
+        populateAllCompanyDropdowns();
     }
 
     function saveCustomersState() {
@@ -4099,43 +4190,99 @@ SyriMed Healthcare`
         }
     }
 
-    function populateCompanyDropdown() {
-        const selectEl = document.getElementById('usr-alloc-company-select');
-        if (!selectEl) return;
-        selectEl.innerHTML = '';
-        companies.forEach(comp => {
-            const opt = document.createElement('option');
-            opt.value = comp.companyId;
-            opt.textContent = `${comp.companyId} (${comp.companyName})`;
-            selectEl.appendChild(opt);
-        });
-        updateAllocSiteCheckboxes();
-     }
+    function populateCompanyDropdown(elementId, opts) {
+        // Legacy no-arg call: populate usr-alloc-company-select (backward compat)
+        if (!elementId || typeof elementId !== 'string') {
+            populateCompanyDropdown('usr-alloc-company-select', { includeBlank: false, activeOnly: true });
+            updateAllocSiteCheckboxes();
+            return;
+        }
+        opts = opts || {};
+        var el = document.getElementById(elementId);
+        if (!el) return;
+
+        var includeBlank = opts.includeBlank !== undefined ? opts.includeBlank : true;
+        var blankLabel   = opts.blankLabel  !== undefined ? opts.blankLabel  : '-- Select Company --';
+        var blankValue   = opts.blankValue  !== undefined ? opts.blankValue  : '';
+        var allOption    = opts.allOption   || false;
+        var activeOnly   = opts.activeOnly  !== undefined ? opts.activeOnly  : true;
+        var displayFn    = opts.displayFn   || function(c) { return c.companyId + ' - ' + c.companyName; };
+        var valueFn      = opts.valueFn     || function(c) { return c.companyId; };
+        var prevValue    = el.value || '';
+
+        el.innerHTML = '';
+
+        var list = activeOnly
+            ? companies.filter(function(c) { return c.status !== 'Inactive'; })
+            : companies.slice();
+
+        if (allOption) {
+            var allOpt = document.createElement('option');
+            allOpt.value = '';
+            allOpt.textContent = 'All Companies';
+            el.appendChild(allOpt);
+        } else if (includeBlank) {
+            var blankOpt = document.createElement('option');
+            blankOpt.value = blankValue;
+            blankOpt.textContent = blankLabel;
+            el.appendChild(blankOpt);
+        }
+
+        if (list.length === 0) {
+            var emptyOpt = document.createElement('option');
+            emptyOpt.value = '';
+            emptyOpt.textContent = '(No Active Companies)';
+            el.appendChild(emptyOpt);
+        } else {
+            list.forEach(function(c) {
+                var opt = document.createElement('option');
+                opt.value = valueFn(c);
+                opt.textContent = displayFn(c);
+                el.appendChild(opt);
+            });
+        }
+
+        // Restore previous selection if still valid
+        if (prevValue) {
+            var found = Array.from(el.options).some(function(o) { return o.value === prevValue; });
+            if (found) el.value = prevValue;
+        }
+    }
+
+    // Populates ALL company dropdowns across every ERP module from the single source of truth.
+    // Call after: (1) loadSavedConfig(), (2) any company save/update.
+    function populateAllCompanyDropdowns() {
+        // Master Data Setup
+        populateCompanyDropdown('site-company-select', { includeBlank: false, activeOnly: true });
+        populateCompanyDropdown('usr-new-company-id', { includeBlank: true, blankLabel: '-- Select Company --', activeOnly: true });
+        populateCompanyDropdown('usr-alloc-company-select', { includeBlank: false, activeOnly: true });
+        // Customer Creation
+        populateCompanyDropdown('cust-form-company', { includeBlank: false, activeOnly: true });
+        populateCompanyDropdown('cust-credit-parent-company', { includeBlank: true, blankLabel: '-- Select Parent Company --', activeOnly: false });
+        // Supplier Setup
+        populateCompanyDropdown('sup-form-company', { includeBlank: false, activeOnly: true });
+        // Part Creation
+        populateCompanyDropdown('pc-form-company', { includeBlank: true, blankLabel: '-- Select Company --', activeOnly: true });
+        // Finance / Ledger
+        populateCompanyDropdown('coa-company-filter', { allOption: true, activeOnly: true });
+        populateCompanyDropdown('gl-company-select',  { allOption: true, activeOnly: true });
+        // Finance list-view filter dropdowns
+        ['cr-filter-company','tc-filter-company','cost-company-filter','ag-filter-company','acc-filter-company',
+         'pt-filter-company','filter-ugp-company','filter-aper-company','filter-ay-company','filter-vst-company',
+         'filter-ugvs-company','filter-pc-company','filter-pcd-company','atp-filter-company','filter-tpd-company'
+        ].forEach(function(id) { populateCompanyDropdown(id, { allOption: true, activeOnly: true }); });
+        // Finance modal form selects
+        ['modal-tc-company','modal-ag-company','modal-acc-company','modal-pt-company']
+        .forEach(function(id) { populateCompanyDropdown(id, { includeBlank: true, blankLabel: '-- Select Company --', activeOnly: true }); });
+        // Finance record form selects
+        ['ugp-form-company','aper-form-company','ay-form-company','vst-form-company',
+         'ugvs-form-company','pcd-form-company','tpd-form-company','atp-form-company'
+        ].forEach(function(id) { populateCompanyDropdown(id, { includeBlank: true, blankLabel: '-- Select Company --', activeOnly: true }); });
+    }
 
     function populateUserCreationCompanyDropdown() {
-        const selectEl = document.getElementById('usr-new-company-id');
-        if (!selectEl) return;
-        
-        // Save current selected value
-        const currentVal = selectEl.value;
-        selectEl.innerHTML = '';
-        
-        // Add default empty/placeholder option
-        const placeholderOpt = document.createElement('option');
-        placeholderOpt.value = '';
-        placeholderOpt.textContent = '';
-        selectEl.appendChild(placeholderOpt);
-
-        companies.forEach(comp => {
-            const opt = document.createElement('option');
-            opt.value = comp.companyId;
-            opt.textContent = `${comp.companyId} (${comp.companyName})`;
-            selectEl.appendChild(opt);
-        });
-        
-        if (currentVal) {
-            selectEl.value = currentVal;
-        }
+        // Delegates to centralized company dropdown utility
+        populateCompanyDropdown('usr-new-company-id', { includeBlank: true, blankLabel: '', blankValue: '', activeOnly: true });
     }
 
     function updateAllocSiteCheckboxes() {
@@ -7508,31 +7655,73 @@ SyriMed Healthcare`
             });
         }
 
+        let currentFinanceSubPanel = 'fin-home';
+        const finMastersList = [
+            { id: 'fin-user-groups-voucher', name: 'User Groups Per Voucher Series', icon: '🔐', code: 'MAS-11' },
+            { id: 'fin-posting-control', name: 'Posting Control', icon: '📊', code: 'MAS-12' },
+            { id: 'fin-posting-control-details', name: 'Posting Control Details', icon: '⚙️', code: 'MAS-12B' },
+            { id: 'fin-automatic-tax-proposal', name: 'Automatic Tax Proposal', icon: '⚡', code: 'MAS-14' },
+            { id: 'fin-tax-proposal-details', name: 'Tax Proposal Details', icon: '📑', code: 'MAS-13' }
+        ];
+
+        window.switchFinanceSubPanel = function(targetId) {
+            // fin-automatic-tax-proposal is now a dedicated master screen
+            if (targetId === 'fin-cost') targetId = 'fin-cost-center';
+            if (targetId === 'fin-groups') targetId = 'fin-account-group';
+            if (targetId === 'fin-payterm') targetId = 'fin-payment-terms';
+            currentFinanceSubPanel = targetId || 'fin-home';
+            if (currentFinanceSubPanel === 'fin-home' || currentFinanceSubPanel === 'fin-currency-rates' || currentFinanceSubPanel === 'fin-tax-codes' || currentFinanceSubPanel === 'fin-cost-center' || currentFinanceSubPanel === 'fin-cost' || currentFinanceSubPanel === 'fin-account-group' || currentFinanceSubPanel === 'fin-groups' || currentFinanceSubPanel === 'fin-accounts' || currentFinanceSubPanel === 'fin-payment-terms' || currentFinanceSubPanel === 'fin-payterm' || currentFinanceSubPanel === 'fin-user-groups-period' || currentFinanceSubPanel === 'fin-accounting-periods' || currentFinanceSubPanel === 'fin-accounting-years' || currentFinanceSubPanel === 'fin-voucher-series-type' || currentFinanceSubPanel === 'fin-user-groups-voucher' || currentFinanceSubPanel === 'fin-posting-control' || currentFinanceSubPanel === 'fin-posting-control-details' || currentFinanceSubPanel === 'fin-tax-proposal-details' || currentFinanceSubPanel === 'fin-automatic-tax-proposal') {
+                const headerEl = document.querySelector('#finance-setup-workspace > .page-title-bar') || document.querySelector('#finance-workspace .page-title-bar');
+                if (headerEl) headerEl.style.display = 'none';
+            }
+
+            const targetPanel = document.getElementById(`panel-${targetId}`);
+            if (targetPanel) {
+                document.querySelectorAll('.fin-sub-panel').forEach(p => { 
+                    p.classList.add('hidden'); 
+                    p.style.display = ''; 
+                });
+                targetPanel.classList.remove('hidden');
+                targetPanel.style.display = 'block';
+
+                const badge = document.getElementById('fin-active-screen-badge');
+                if (badge) {
+                    const link = document.querySelector(`.mod-dash-link[data-fin-nav="${targetId}"]`);
+                    let linkText = link ? link.textContent.trim().replace('↗', '').trim() : targetId;
+                    badge.textContent = `Active Screen: ${linkText}`;
+                }
+
+                if (targetId === 'fin-automatic-tax-proposal' && window.AutomaticTaxProposalModule && typeof window.AutomaticTaxProposalModule.renderTable === 'function') {
+                    window.AutomaticTaxProposalModule.renderTable();
+                    window.AutomaticTaxProposalModule.renderKPIs();
+                }
+                if (targetId === 'fin-tax-proposal-details' && window.TaxProposalDetailsModule && typeof window.TaxProposalDetailsModule.renderTable === 'function') {
+                    window.TaxProposalDetailsModule.renderTable();
+                    window.TaxProposalDetailsModule.renderKPIs();
+                }
+                if (targetId === 'fin-posting-control' && window.PostingControlHeaderModule && typeof window.PostingControlHeaderModule.renderTable === 'function') {
+                    window.PostingControlHeaderModule.renderTable();
+                    window.PostingControlHeaderModule.renderKPIs();
+                }
+                if (targetId === 'fin-posting-control-details' && window.PostingControlModule && typeof window.PostingControlModule.renderTable === 'function') {
+                    window.PostingControlModule.renderTable();
+                    window.PostingControlModule.renderKPIs();
+                }
+                if (targetId === 'fin-user-groups-voucher' && window.UserGroupsVoucherModule && typeof window.UserGroupsVoucherModule.renderTable === 'function') {
+                    window.UserGroupsVoucherModule.renderTable();
+                    window.UserGroupsVoucherModule.renderKPIs();
+                }
+            }
+        };
+
         // Handle internal finance navigation links (e.g. Chart of Accounts, Cost Centers, etc.)
         const finNavLinks = document.querySelectorAll('.mod-dash-link[data-fin-nav]');
         finNavLinks.forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
                 const targetId = link.getAttribute('data-fin-nav');
-                const targetPanel = document.getElementById(`panel-${targetId}`);
-                
-                if (targetPanel) {
-                    // Hide all finance sub-panels
-                    document.querySelectorAll('.fin-sub-panel').forEach(p => { 
-                        p.classList.add('hidden'); 
-                        p.style.display = ''; 
-                    });
-                    
-                    // Show target panel
-                    targetPanel.classList.remove('hidden');
-                    targetPanel.style.display = 'block';
-                    
-                    // Update active screen badge
-                    const badge = document.getElementById('fin-active-screen-badge');
-                    if (badge) {
-                        let linkText = link.textContent.trim().replace('↗', '').trim();
-                        badge.textContent = `Active Screen: ${linkText}`;
-                    }
+                if (typeof window.switchFinanceSubPanel === 'function') {
+                    window.switchFinanceSubPanel(targetId);
                 }
             });
         });
@@ -7882,6 +8071,21 @@ SyriMed Healthcare`
             { title: 'Item Master Catalog', module: 'item-setup', id: 'nav-item-setup-sub', type: 'Master Data', icon: '📦' },
             { title: 'Dashboard', module: 'other', id: 'nav-dashboard', type: 'Module', icon: '📊' },
             { title: 'Finance / Ledger', module: 'finance', id: 'nav-finance', type: 'Module', icon: '💳' },
+            { title: 'Automatic Tax Proposal (ERP-FIN-MAS-014)', module: 'finance', finSub: 'fin-automatic-tax-proposal', type: 'Finance Masters', icon: '⚡' },
+            { title: 'Tax Proposal Details (ERP-FIN-MAS-013)', module: 'finance', finSub: 'fin-tax-proposal-details', type: 'Finance Masters', icon: '📑' },
+            { title: 'Posting Control (ERP-FIN-MAS-012)', module: 'finance', finSub: 'fin-posting-control', type: 'Finance Masters', icon: '📊' },
+            { title: 'Posting Control Details (ERP-FIN-MAS-012)', module: 'finance', finSub: 'fin-posting-control-details', type: 'Finance Masters', icon: '⚙️' },
+            { title: 'User Groups Per Voucher Series (ERP-FIN-MAS-011)', module: 'finance', finSub: 'fin-user-groups-voucher', type: 'Finance Masters', icon: '🔐' },
+            { title: 'Voucher Series Per Voucher Type (ERP-FIN-MAS-010)', module: 'finance', finSub: 'fin-voucher-series-type', type: 'Finance Masters', icon: '🔢' },
+            { title: 'Accounting Years (ERP-FIN-MAS-009)', module: 'finance', finSub: 'fin-accounting-years', type: 'Finance Masters', icon: '📅' },
+            { title: 'Accounting Periods (ERP-FIN-MAS-008)', module: 'finance', finSub: 'fin-accounting-periods', type: 'Finance Masters', icon: '📆' },
+            { title: 'User Group per Period (ERP-FIN-MAS-007)', module: 'finance', finSub: 'fin-user-groups-period', type: 'Finance Masters', icon: '👥' },
+            { title: 'Payment Terms (ERP-FIN-MAS-006)', module: 'finance', finSub: 'fin-payment-terms', type: 'Finance Masters', icon: '💳' },
+            { title: 'Accounts Master (ERP-FIN-MAS-005)', module: 'finance', finSub: 'fin-accounts', type: 'Finance Masters', icon: '📋' },
+            { title: 'Account Groups (ERP-FIN-MAS-004)', module: 'finance', finSub: 'fin-account-group', type: 'Finance Masters', icon: '📁' },
+            { title: 'Cost Center (ERP-FIN-MAS-003)', module: 'finance', finSub: 'fin-cost-center', type: 'Finance Masters', icon: '🏢' },
+            { title: 'Tax Codes (ERP-FIN-MAS-002)', module: 'finance', finSub: 'fin-tax-codes', type: 'Finance Masters', icon: '📑' },
+            { title: 'Currency Rates (ERP-FIN-MAS-001)', module: 'finance', finSub: 'fin-currency-rates', type: 'Finance Masters', icon: '💱' },
             { title: 'Inventory', module: 'stock', id: 'nav-inventory', type: 'Module', icon: '📦' },
             { title: 'Purchasing', module: 'purchase', id: 'nav-purchasing', type: 'Module', icon: '🛒' },
             { title: 'Distribution', module: 'sales', id: 'nav-distribution', type: 'Module', icon: '🚚' },
@@ -8052,6 +8256,17 @@ SyriMed Healthcare`
                         window.SupplierWorkflowModule.openSupplierViewModal(item.supplier.supplierCode);
                     }
                 }, 100);
+                return;
+            }
+
+            // 2.5. If it's a Finance Master Subpanel
+            if (item.finSub) {
+                switchModule('finance');
+                setTimeout(() => {
+                    if (typeof window.switchFinanceSubPanel === 'function') {
+                        window.switchFinanceSubPanel(item.finSub);
+                    }
+                }, 80);
                 return;
             }
 
@@ -10241,6 +10456,7 @@ Workflow Status: ${data.status || 'DRAFT'}
 
     // Initialize page
     loadSavedConfig();
+    populateAllCompanyDropdowns(); // Populate all company dropdowns from single source of truth
     loadSavedSupplierConfig();
     initResetPassword();
     initUserSetup();

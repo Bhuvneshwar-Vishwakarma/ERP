@@ -944,6 +944,15 @@
         if (!role) return;
         currentRole = role;
 
+        const roleSelector = document.getElementById('sup-workflow-role-selector');
+        if (roleSelector) {
+            roleSelector.value = role;
+        }
+        const rbacSelector = document.getElementById('rbac-role-selector');
+        if (rbacSelector && ['Finance', 'QA', 'RP', 'Admin'].includes(role)) {
+            rbacSelector.value = role;
+        }
+
         renderSupplierList();
 
         if (editingSupplierNo) {
